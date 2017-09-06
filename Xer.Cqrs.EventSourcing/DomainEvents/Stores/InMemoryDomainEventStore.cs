@@ -2,12 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Xer.Cqrs.EventSourcing.Exceptions;
 
 namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
 {
     public class InMemoryDomainEventStore<TAggregate> : DomainEventStore<TAggregate> where TAggregate : EventSourcedAggregateRoot
     {
-        private readonly IDictionary<Guid, IReadOnlyCollection<IDomainEvent>> _domainEventsByAggregateId = new Dictionary<Guid, IReadOnlyCollection<IDomainEvent>>();
+        private readonly IDictionary<Guid, DomainEventStream> _domainEventStreamsByAggregateId = new Dictionary<Guid, DomainEventStream>();
 
         public InMemoryDomainEventStore(DomainEventPublisher publisher)
             : base(publisher)
@@ -15,61 +16,42 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
 
         }
 
-        public override IReadOnlyCollection<IDomainEvent> GetDomainEventStream(Guid aggreggateId)
+        public override DomainEventStream GetDomainEventStream(Guid aggreggateId)
         {
-            IReadOnlyCollection<IDomainEvent> domainEvents;
+            DomainEventStream stream;
 
-            if(!_domainEventsByAggregateId.TryGetValue(aggreggateId, out domainEvents))
-            { 
-                domainEvents = new List<IDomainEvent>().AsReadOnly();
+            if(!_domainEventStreamsByAggregateId.TryGetValue(aggreggateId, out stream))
+            {
+                stream = DomainEventStream.Empty;
             }
 
-            return domainEvents;
+            // Return a new copy, not the actual reference.
+            return new DomainEventStream(stream.AggregateId, stream);
         }
 
-        public override ILookup<Guid, IReadOnlyCollection<IDomainEvent>> GetAllDomainEventStreamsGroupedById()
+        public override IReadOnlyCollection<DomainEventStream> GetAllDomainEventStreams()
         {
-            return _domainEventsByAggregateId.ToLookup(d => d.Key, d => d.Value);
+            // Return new copies, not the actual references.
+            return _domainEventStreamsByAggregateId.Select(s => new DomainEventStream(s.Key, s.Value))
+                                                   .ToList()
+                                                   .AsReadOnly();
         }
 
-        protected override bool Commit(IDomainEvent domainEvent)
+        protected override void Commit(DomainEventStream domainEventStreamToCommit)
         {
-            IReadOnlyCollection<IDomainEvent> existingDomainEvents;
+            DomainEventStream existingStream;
 
-            if (_domainEventsByAggregateId.TryGetValue(domainEvent.AggregateId, out existingDomainEvents))
+            if (_domainEventStreamsByAggregateId.TryGetValue(domainEventStreamToCommit.AggregateId, out existingStream))
             {
+                // Aggregate stream already exists.
                 // Append and update.
-                _domainEventsByAggregateId[domainEvent.AggregateId] = AppendUncommittedDomainEventsToExisting(existingDomainEvents, domainEvent);
+                _domainEventStreamsByAggregateId[domainEventStreamToCommit.AggregateId] = existingStream.AppendStream(domainEventStreamToCommit);
             }
-            else // Aggregate does not yet exist.
+            else 
             {
-                // Get all uncommitted domain events.
-                List<IDomainEvent> uncommitedDomainEvents = new List<IDomainEvent>() { domainEvent };
-
                 // Save.
-                _domainEventsByAggregateId.Add(domainEvent.AggregateId, uncommitedDomainEvents.AsReadOnly());
+                _domainEventStreamsByAggregateId.Add(domainEventStreamToCommit.AggregateId, new DomainEventStream(domainEventStreamToCommit.AggregateId, domainEventStreamToCommit));
             }
-
-            return true;
-        }
-
-        private IReadOnlyCollection<IDomainEvent> AppendUncommittedDomainEventsToExisting(IReadOnlyCollection<IDomainEvent> existingDomainEvents, IDomainEvent domainEventToCommit)
-        {
-            // Get last event.
-            IDomainEvent lastEvent = existingDomainEvents.LastOrDefault();
-
-            if(lastEvent.TimeStamp > domainEventToCommit.TimeStamp)
-            {
-                return existingDomainEvents;
-            }
-
-            int newListCount = existingDomainEvents.Count + 1;
-
-            List<IDomainEvent> mergedDomainEvents = new List<IDomainEvent>(newListCount);
-            mergedDomainEvents.AddRange(existingDomainEvents);
-            mergedDomainEvents.Add(domainEventToCommit);
-
-            return mergedDomainEvents.AsReadOnly();
         }
     }
 }

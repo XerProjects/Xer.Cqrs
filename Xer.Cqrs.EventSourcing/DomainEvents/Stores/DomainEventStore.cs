@@ -14,31 +14,30 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
             _publisher = publisher;
         }
 
-        public abstract IReadOnlyCollection<IDomainEvent> GetDomainEventStream(Guid aggreggateId);
-        public abstract ILookup<Guid, IReadOnlyCollection<IDomainEvent>> GetAllDomainEventStreamsGroupedById();
+        public abstract DomainEventStream GetDomainEventStream(Guid aggreggateId);
+        public abstract IReadOnlyCollection<DomainEventStream> GetAllDomainEventStreams();
 
         public void Save(TAggregate aggregateRoot)
         {
-            var domainEventsToCommit = aggregateRoot.GetUncommittedDomainEvents();
+            DomainEventStream domainEventsToCommit = aggregateRoot.FlushUncommitedDomainEvents();
+            
+            Commit(domainEventsToCommit);
 
-            foreach (IDomainEvent domainEvent in domainEventsToCommit)
+            foreach (IDomainEvent commitedEvent in domainEventsToCommit)
             {
-                if (Commit(domainEvent))
-                {
-                    NotifySubscribers(domainEvent);
-                }
+                NotifySubscribers(commitedEvent);
             }
 
             // Clear after committing and publishing.
-            aggregateRoot.ClearUncommitedDomainEvents();
+            // aggregateRoot.ClearUncommitedDomainEventStream();
         }
 
         /// <summary>
         /// Commit the domain event to the store.
         /// </summary>
-        /// <param name="domainEventToCommit">Domain event to store.</param>
+        /// <param name="domainEventStreamToCommit">Domain event to store.</param>
         /// <returns>True, if domain event has been successfully committed.</returns>
-        protected abstract bool Commit(IDomainEvent domainEventToCommit);
+        protected abstract void Commit(DomainEventStream domainEventStreamToCommit);
 
         /// <summary>
         /// Publishes the domain event to event subscribers.

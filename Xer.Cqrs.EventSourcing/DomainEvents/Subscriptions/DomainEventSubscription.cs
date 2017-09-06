@@ -6,7 +6,7 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Subscriptions
 {
     public class DomainEventSubscription : IDomainEventSubscription
     {
-        private Dictionary<Type, List<Action<IDomainEvent>>> _handlerByDomainEventType = new Dictionary<Type, List<Action<IDomainEvent>>>();
+        private readonly Dictionary<Type, List<Action<IDomainEvent>>> _handlerByDomainEventType = new Dictionary<Type, List<Action<IDomainEvent>>>();
 
         public void NotifySubscribers<TTopic>(TTopic domainEvent) where TTopic : IDomainEvent
         {

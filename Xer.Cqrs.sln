@@ -4,7 +4,7 @@ VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs", "Xer.Cqrs\Xer.Cqrs.csproj", "{BDF57B64-636E-4C03-A7F0-986A3E9A6AF0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.EventSourcing", "Xer.Cqrs.EventSourcing\Xer.Cqrs.EventSourcing.csproj", "{76EDEAB0-9099-4A89-B1F6-D33C53A45BD8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.DomainDriven.EventSourcing", "Xer.DomainDriven.EventSourcing\Xer.DomainDriven.EventSourcing.csproj", "{76EDEAB0-9099-4A89-B1F6-D33C53A45BD8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xer.DomainDriven", "Xer.DomainDriven\Xer.DomainDriven.csproj", "{109C8CD7-3C6C-48D5-9E83-BFCE82823D6E}"
 EndProject

@@ -1,10 +1,8 @@
-﻿using Xer.Cqrs.Commands;
-using Xer.Cqrs.Exceptions;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using Xer.Cqrs.Exceptions;
 
 namespace Xer.Cqrs.Validation.Commands
 {

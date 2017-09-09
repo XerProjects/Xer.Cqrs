@@ -1,5 +1,4 @@
 ﻿using Xer.Cqrs.Infrastructure.Queries;
-using Xer.Cqrs.Queries;
 
 namespace Xer.Cqrs.Infrastructure.Dispatchers
 {

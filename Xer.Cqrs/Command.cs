@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Xer.Cqrs.Validation;
-using Xer.Cqrs.Exceptions;
 
-namespace Xer.Cqrs.Commands
+namespace Xer.Cqrs
 {
     public abstract class Command : ICommand
     {

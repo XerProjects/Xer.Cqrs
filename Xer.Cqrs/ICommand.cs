@@ -1,7 +1,6 @@
-﻿using Xer.Cqrs.Validation;
-using System;
+﻿using System;
 
-namespace Xer.Cqrs.Commands
+namespace Xer.Cqrs
 {
     public interface ICommand
     {

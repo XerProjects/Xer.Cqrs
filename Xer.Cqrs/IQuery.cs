@@ -1,4 +1,4 @@
-﻿namespace Xer.Cqrs.Queries
+﻿namespace Xer.Cqrs
 {
     public interface IQuery<out TResult>
     {

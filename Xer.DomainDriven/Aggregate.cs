@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Xer.Cqrs
+namespace Xer.DomainDriven
 {
-    public abstract class AggregateRoot : Entity
+    public abstract class Aggregate : Entity
     {
-        public AggregateRoot(Guid aggregateId) 
+        public Aggregate(Guid aggregateId) 
             : base(aggregateId)
         {
         }

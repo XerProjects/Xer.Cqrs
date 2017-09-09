@@ -2,10 +2,11 @@
 using System;
 using System.Collections.Generic;
 using Xer.Cqrs.EventSourcing.Exceptions;
+using Xer.DomainDriven;
 
 namespace Xer.Cqrs.EventSourcing
 {
-    public abstract class EventSourcedAggregateRoot : AggregateRoot
+    public abstract class EventSourcedAggregateRoot : Aggregate
     {
         private readonly Queue<IDomainEvent> _uncommittedDomainEvents = new Queue<IDomainEvent>();
         private readonly DomainEventApplierRegistration _domainEventApplierRegistration = new DomainEventApplierRegistration();
@@ -101,7 +102,7 @@ namespace Xer.Cqrs.EventSourcing
             Action<IDomainEvent> domainEventApplier = _domainEventApplierRegistration.GetDomainEventApplier(domainEvent);
             if (domainEventApplier == null)
             {
-                throw new UnableToApplyDomainEventException(domainEvent, 
+                throw new DomainEventNotAppliedException(domainEvent, 
                     $"{GetType().Name} is not configured to support domain event of type {domainEvent.GetType().Name}");
             }
 
@@ -121,7 +122,7 @@ namespace Xer.Cqrs.EventSourcing
             }
             catch(Exception ex)
             {
-                throw new UnableToApplyDomainEventException(domainEvent,
+                throw new DomainEventNotAppliedException(domainEvent,
                     "Exception occured while trying to apply domain event.",
                     ex);
             }
@@ -139,7 +140,7 @@ namespace Xer.Cqrs.EventSourcing
         #region Domain Event Handler Registrations
 
         /// <summary>
-        /// Domain event applier registration.
+        /// Holds the actions to be executed in handling specific types of domain event.
         /// </summary>
         protected class DomainEventApplierRegistration
         {

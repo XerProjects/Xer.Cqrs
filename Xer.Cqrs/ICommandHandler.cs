@@ -1,4 +1,4 @@
-﻿namespace Xer.Cqrs.Infrastructure.Commands
+﻿namespace Xer.Cqrs
 {
     public interface ICommandHandler<in TCommand> where TCommand : ICommand
     {

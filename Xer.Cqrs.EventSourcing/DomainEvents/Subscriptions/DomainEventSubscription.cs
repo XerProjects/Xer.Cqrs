@@ -6,16 +6,16 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Subscriptions
 {
     public class DomainEventSubscription : IDomainEventSubscription
     {
-        private readonly Dictionary<Type, List<Action<IDomainEvent>>> _handlerByDomainEventType = new Dictionary<Type, List<Action<IDomainEvent>>>();
+        private readonly Dictionary<Type, List<Action<IDomainEvent>>> _subscriberActionsByDomainEventType = new Dictionary<Type, List<Action<IDomainEvent>>>();
 
         public void NotifySubscribers<TTopic>(TTopic domainEvent) where TTopic : IDomainEvent
         {
             Type domainEventType = domainEvent.GetType();
 
-            List<Action<IDomainEvent>> handlers;
-            if (_handlerByDomainEventType.TryGetValue(domainEventType, out handlers))
+            List<Action<IDomainEvent>> subscriberActions;
+            if (_subscriberActionsByDomainEventType.TryGetValue(domainEventType, out subscriberActions))
             {
-                foreach (var handler in handlers)
+                foreach (var handler in subscriberActions)
                 {
                     handler.Invoke(domainEvent);
                 }
@@ -27,13 +27,13 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Subscriptions
             Type topicType = typeof(TTopic);
 
             List<Action<IDomainEvent>> handlers;
-            if (_handlerByDomainEventType.TryGetValue(topicType, out handlers))
+            if (_subscriberActionsByDomainEventType.TryGetValue(topicType, out handlers))
             {
-                _handlerByDomainEventType[topicType].Add(new Action<IDomainEvent>((domainEvent) => subscriber.Handle((TTopic)domainEvent)));
+                _subscriberActionsByDomainEventType[topicType].Add(new Action<IDomainEvent>((domainEvent) => subscriber.Handle((TTopic)domainEvent)));
             }
             else
             {
-                _handlerByDomainEventType.Add(topicType, new List<Action<IDomainEvent>>
+                _subscriberActionsByDomainEventType.Add(topicType, new List<Action<IDomainEvent>>
                 {
                     new Action<IDomainEvent>((domainEvent) => subscriber.Handle((TTopic)domainEvent))
                 });

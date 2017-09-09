@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Xer.Cqrs
+namespace Xer.DomainDriven
 {
     public abstract class ValueObject : IEquatable<ValueObject>
     {

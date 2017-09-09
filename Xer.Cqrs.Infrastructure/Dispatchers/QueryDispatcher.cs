@@ -1,7 +1,6 @@
-﻿using Xer.Cqrs.Infrastructure.Queries;
-using Xer.Cqrs.Queries;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Xer.Cqrs.Infrastructure.Queries;
 
 namespace Xer.Cqrs.Infrastructure.Dispatchers
 {

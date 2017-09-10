@@ -32,5 +32,16 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
             AggregateId = aggregateId;
             Version = 0;
         }
+
+        /// <summary>
+        /// Initializes a domain event with a the specified version.
+        /// </summary>
+        /// <param name="aggregateId">Aggregate Id.</param>
+        /// <param name="version">Expection next version of the aggregate root.</param>
+        public DomainEvent(Guid aggregateId, int version)
+        {
+            AggregateId = aggregateId;
+            Version = version;
+        }
     }
 }

@@ -14,10 +14,7 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Subscriptions
             List<Action<IDomainEvent>> subscriberActions;
             if (_subscriberActionsByDomainEventType.TryGetValue(domainEventType, out subscriberActions))
             {
-                foreach (var handler in subscriberActions)
-                {
-                    handler.Invoke(domainEvent);
-                }
+                subscriberActions.ForEach(h => h.Invoke(domainEvent));
             }
         }
 
@@ -28,13 +25,13 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Subscriptions
             List<Action<IDomainEvent>> handlers;
             if (_subscriberActionsByDomainEventType.TryGetValue(topicType, out handlers))
             {
-                _subscriberActionsByDomainEventType[topicType].Add(new Action<IDomainEvent>((domainEvent) => subscriber.Handle((TTopic)domainEvent)));
+                _subscriberActionsByDomainEventType[topicType].Add((domainEvent) => subscriber.Handle((TTopic)domainEvent));
             }
             else
             {
                 _subscriberActionsByDomainEventType.Add(topicType, new List<Action<IDomainEvent>>
                 {
-                    new Action<IDomainEvent>((domainEvent) => subscriber.Handle((TTopic)domainEvent))
+                    (domainEvent) => subscriber.Handle((TTopic)domainEvent)
                 });
             }
         }

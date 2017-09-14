@@ -1,4 +1,6 @@
-﻿namespace Xer.Cqrs
+﻿using System.Threading;
+
+namespace Xer.Cqrs
 {
     /// <summary>
     /// Process commands and delegates to handlers.
@@ -6,6 +8,5 @@
     public interface ICommandDispatcher
     {
         void Dispatch(ICommand command);
-        void RegisterHandler<TCommand>(ICommandHandler<TCommand> commandHandler) where TCommand : ICommand;
     }
 }

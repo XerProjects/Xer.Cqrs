@@ -4,9 +4,9 @@ using System.Text;
 
 namespace Xer.Cqrs.Validation
 {
-    public interface IRequirement<TTarget>
+    public interface IValidationRequirement<TTarget>
     {
-        string ErorMessage { get; }
+        string ErrorMessage { get; }
         bool IsSatisfiedBy(TTarget target);
     }
 }

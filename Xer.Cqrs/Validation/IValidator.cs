@@ -4,9 +4,8 @@ using System.Text;
 
 namespace Xer.Cqrs.Validation
 {
-    public interface IValidator<T>
+    public interface IValidator<in TTarget> where TTarget : class
     {
-        void Validate(T obj);
-        void AddRequirement<TTarget>(IRequirement<TTarget> requirement);
+        void Validate(TTarget target);
     }
 }

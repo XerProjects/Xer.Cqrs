@@ -1,21 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using static Xer.Cqrs.Dispatchers.CommandHandlerRegistration;
 
-namespace Xer.Cqrs.Dispatchers
+namespace Xer.Cqrs.Dispatchers.Async
 {
-    public class CommandDispatcher : ICommandDispatcher
+    public class CommandAsyncDispatcher : ICommandAsyncDispatcher
     {
         private readonly CommandHandlerRegistration _registration;
 
-        public CommandDispatcher(CommandHandlerRegistration registration)
+        public CommandAsyncDispatcher(CommandHandlerRegistration registration)
         {
             _registration = registration;
         }
 
-        public virtual void Dispatch(ICommand command)
+        public Task DispatchAsync(ICommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
             Type comandType = command.GetType();
 
@@ -31,8 +31,7 @@ namespace Xer.Cqrs.Dispatchers
                 tasks.Add(task);
             }
 
-            // Wait synchronously.
-            Task.WhenAll(tasks).GetAwaiter().GetResult();
+            return Task.WhenAll(tasks);
         }
     }
 }

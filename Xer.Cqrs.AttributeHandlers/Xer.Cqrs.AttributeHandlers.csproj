@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Xer.DomainDriven\Xer.DomainDriven.csproj" />
+    <ProjectReference Include="..\Xer.Cqrs\Xer.Cqrs.csproj" />
   </ItemGroup>
 
 </Project>

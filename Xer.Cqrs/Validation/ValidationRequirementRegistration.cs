@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Xer.Cqrs.Validation
 {
     public class ValidationRequirementRegistration
     {
-        private IDictionary<Type, ICollection<ValidateRequirementDelegate>> _requirementValidationByCommandType = new Dictionary<Type, ICollection<ValidateRequirementDelegate>>();
+        private readonly Dictionary<Type, ICollection<ValidateRequirementDelegate>> _requirementValidationByCommandType = new Dictionary<Type, ICollection<ValidateRequirementDelegate>>();
 
         /// <summary>
         /// Add a command specification to this validator instance.

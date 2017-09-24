@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using Xer.Cqrs.Exceptions;
 using static Xer.Cqrs.Validation.ValidationRequirementRegistration;
 
 namespace Xer.Cqrs.Validation

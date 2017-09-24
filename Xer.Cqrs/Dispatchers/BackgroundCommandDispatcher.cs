@@ -5,38 +5,40 @@ using Xer.Cqrs.Registrations;
 
 namespace Xer.Cqrs.Dispatchers
 {
-    public class CommandDispatcher : ICommandDispatcher, ICommandAsyncDispatcher
+    public class BackgroundCommandDispatcher : ICommandDispatcher, ICommandAsyncDispatcher
     {
         private readonly ICommandHandlerProvider _provider;
 
-        public CommandDispatcher(ICommandHandlerProvider provider)
+        public BackgroundCommandDispatcher(ICommandHandlerProvider provider) 
         {
             _provider = provider;
         }
 
         /// <summary>
-        /// Dispatch the command to the registered command handlers.
+        /// Dispatch the command to the registered command handlers in the background.
         /// </summary>
         /// <param name="command">Command to dispatch.</param>
         public void Dispatch(ICommand command)
         {
-            // Wait Task completion.
-            DispatchAsync(command).Await();
+            DispatchAsync(command).PropagateAnyExceptions();
         }
 
         /// <summary>
-        /// Dispatch the command to the registered command handlers asynchronously.
+        /// Dispatch the command to the registered command handlers in the background.
         /// </summary>
         /// <param name="command">Command to dispatch.</param>
         /// <param name="cancellationToken">Optional cancellation token to support cancellation.</param>
         /// <returns>Task which can be awaited asynchronously.</returns>
         public Task DispatchAsync(ICommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
-            Type comandType = command.GetType();
+            return Task.Run(() =>
+            {
+                Type comandType = command.GetType();
 
-            CommandAsyncHandlerDelegate handleCommandAsyncDelegate = _provider.GetCommandHandler(comandType);
+                CommandAsyncHandlerDelegate handleCommandAsyncDelegate = _provider.GetCommandHandler(comandType);
 
-           return handleCommandAsyncDelegate.Invoke(command, cancellationToken);
+                return handleCommandAsyncDelegate.Invoke(command, cancellationToken);
+            });
         }
     }
 }

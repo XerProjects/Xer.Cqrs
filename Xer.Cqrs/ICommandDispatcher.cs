@@ -2,11 +2,12 @@
 
 namespace Xer.Cqrs
 {
-    /// <summary>
-    /// Process commands and delegates to handlers.
-    /// </summary>
     public interface ICommandDispatcher
     {
+        /// <summary>
+        /// Dispatch the command to the registered command handlers.
+        /// </summary>
+        /// <param name="command">Command to dispatch.</param>
         void Dispatch(ICommand command);
     }
 }

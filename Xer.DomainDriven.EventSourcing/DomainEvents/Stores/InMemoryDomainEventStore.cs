@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
@@ -18,7 +19,7 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
         {
             DomainEventStream stream;
 
-            if(!_domainEventStreamsByAggregateId.TryGetValue(aggreggateId, out stream))
+            if (!_domainEventStreamsByAggregateId.TryGetValue(aggreggateId, out stream))
             {
                 stream = DomainEventStream.Empty;
             }
@@ -27,12 +28,17 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
             return new DomainEventStream(stream.AggregateId, stream);
         }
 
-        public override IReadOnlyCollection<DomainEventStream> GetAllDomainEventStreams()
+        public override DomainEventStream GetDomainEventStream(Guid aggreggateId, int version)
         {
-            // Return new copies, not the actual references.
-            return _domainEventStreamsByAggregateId.Select(s => new DomainEventStream(s.Key, s.Value))
-                                                   .ToList()
-                                                   .AsReadOnly();
+            DomainEventStream stream;
+
+            if(!_domainEventStreamsByAggregateId.TryGetValue(aggreggateId, out stream))
+            {
+                stream = DomainEventStream.Empty;
+            }
+
+            // Return a new copy, not the actual reference.
+            return new DomainEventStream(stream.AggregateId, stream.TakeWhile(e => e.AggregateVersion <= version));
         }
 
         protected override void Commit(DomainEventStream domainEventStreamToCommit)

@@ -29,7 +29,7 @@ namespace Xer.DomainDriven.EventSourcing
         /// Constructor to build this entity from the domain event stream.
         /// </summary>
         /// <param name="history">Domain event stream.</param>
-        protected EventSourcedAggregate(DomainEventStream history)
+        public EventSourcedAggregate(DomainEventStream history)
             : this(Guid.Empty)
         {
             if(history == null)
@@ -45,27 +45,22 @@ namespace Xer.DomainDriven.EventSourcing
             }
         }
 
-        /// <summary>
-        /// Clear all internally tracked domain events.
-        /// </summary>
-        //public void ClearUncommitedDomainEventStream()
-        //{
-        //    _uncommittedDomainEvents.Clear();
-        //}
+        // <summary>
+        // Clear all internally tracked domain events.
+        // </summary>
+        internal void ClearUncommitedDomainEvents()
+        {
+            _uncommittedDomainEvents.Clear();
+        }
 
         /// <summary>
         /// Get an event stream of all the uncommitted domain events applied to this entity.
         /// This will also clear out all internally tracked domain events.
         /// </summary>
         /// <returns>Stream of uncommitted domain events.</returns>
-        public DomainEventStream FlushUncommitedDomainEvents()
+        internal DomainEventStream GetUncommitedDomainEvents()
         {
-            DomainEventStream uncommittedStream = new DomainEventStream(Id, _uncommittedDomainEvents);
-
-            // Clear.
-            _uncommittedDomainEvents.Clear();
-
-            return uncommittedStream;
+            return new DomainEventStream(Id, _uncommittedDomainEvents);
         }
 
         /// <summary>
@@ -102,17 +97,18 @@ namespace Xer.DomainDriven.EventSourcing
             if (domainEventApplier == null)
             {
                 throw new DomainEventNotAppliedException(domainEvent, 
-                    $"{GetType().Name} is not configured to support domain event of type {domainEvent.GetType().Name}");
+                    $"{GetType().Name} is not configured to apply domain event of type {domainEvent.GetType().Name}");
             }
 
             try
             {
                 domainEventApplier.Invoke(domainEvent);
 
-                // Update version.
-                Version = domainEvent.Version;
+                // Bump up version.
+                Version++;
+
                 // Updated.
-                Updated = domainEvent.TimeStamp;
+                Updated = DateTime.Now;
 
                 if (markDomainEventForCommit)
                 {
@@ -122,7 +118,7 @@ namespace Xer.DomainDriven.EventSourcing
             catch(Exception ex)
             {
                 throw new DomainEventNotAppliedException(domainEvent,
-                    "Exception occured while trying to apply domain event.",
+                    $"Exception occured while trying to apply domain event of type {domainEvent.GetType().Name}.",
                     ex);
             }
         }

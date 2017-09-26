@@ -11,10 +11,7 @@ namespace Xer.Cqrs.AttributeHandlers.Registrations
     public class CommandHandlerAttributeRegistration : IAttributedHandlerRegistration, ICommandHandlerProvider
     {
         #region Declarations
-
-        private static readonly Type CommandHandlerAttributeType = typeof(CommandHandlerAttribute);
-        private static readonly TypeInfo CommandTypeInfo = typeof(ICommand).GetTypeInfo();
-
+        
         private static readonly MethodInfo NonGenericRegisterCommandHandlerMethod = typeof(CommandHandlerAttributeRegistration).GetTypeInfo().DeclaredMethods.First(m => m.Name == nameof(registerCommandHandlerMethods));
 
         private readonly IDictionary<Type, CommandAsyncHandlerDelegate> _commandHandlerDelegatesByCommandType = new Dictionary<Type, CommandAsyncHandlerDelegate>();
@@ -76,46 +73,17 @@ namespace Xer.Cqrs.AttributeHandlers.Registrations
 
         private static IEnumerable<CommandHandlerMethod> GetCommandHandlerMethods(Type commandHandlerType)
         {
-            var methods = commandHandlerType
-                .GetRuntimeMethods()
-                .Where(m => m.CustomAttributes.Any(a => a.AttributeType == CommandHandlerAttributeType));
-
             List<CommandHandlerMethod> commandHandlerMethods = new List<CommandHandlerMethod>();
 
-            foreach(MethodInfo methodInfo in methods)
+            foreach(MethodInfo methodInfo in commandHandlerType.GetRuntimeMethods())
             {
-                ParameterInfo[] methodParameters = methodInfo.GetParameters();
-
-                ParameterInfo commandParameter = methodParameters.FirstOrDefault(p => CommandTypeInfo.IsAssignableFrom(p.ParameterType.GetTypeInfo()));
-
-                if (commandParameter == null)
+                if (!methodInfo.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute)))
                 {
-                    // Parameter is not a command. Skip.
-                    throw new InvalidOperationException($"Methods marked with [CommandHandler] should accept a command parameter: {methodInfo.Name}");
+                    // Method not marked with [CommandHandler]. Skip.
+                    continue;
                 }
 
-                Type commandType = commandParameter.ParameterType;
-
-                bool isAsync;
-
-                // Only valid return types are Task/void.
-                if (methodInfo.ReturnType == typeof(Task))
-                {
-                    isAsync = true;
-                }
-                else if(methodInfo.ReturnType == typeof(void))
-                {
-                    isAsync = false;
-                }
-                else
-                {
-                    // Return type is not Task/void. Invalid.
-                    throw new InvalidOperationException($"Method marked with [CommandHandler] can only have void or a Task as return value: {methodInfo.Name}");
-                }
-
-                bool supportsCancellation = methodParameters.Any(p => p.ParameterType == typeof(CancellationToken));
-
-                commandHandlerMethods.Add(new CommandHandlerMethod(commandType, methodInfo, isAsync, supportsCancellation));
+                commandHandlerMethods.Add(CommandHandlerMethod.Create(methodInfo));
             }
 
             return commandHandlerMethods;
@@ -131,111 +99,11 @@ namespace Xer.Cqrs.AttributeHandlers.Registrations
                 throw new InvalidOperationException($"Duplicate command handler registered for {commandType.Name}.");
             }
 
-            CommandAsyncHandlerDelegate newHandleCommandDelegate;
-
-            if (commandHandlerMethod.IsAsync)
-            {
-                newHandleCommandDelegate = createAsyncDelegate<TAttributed, TCommand>(attributedObjectFactory, commandHandlerMethod);
-            }
-            else
-            {
-                newHandleCommandDelegate = createWrappedSyncDelegate<TAttributed, TCommand>(attributedObjectFactory, commandHandlerMethod);
-            }
+            CommandAsyncHandlerDelegate newHandleCommandDelegate = commandHandlerMethod.CreateDelegate<TAttributed, TCommand>(attributedObjectFactory);
 
             _commandHandlerDelegatesByCommandType.Add(commandType, newHandleCommandDelegate);
         }
 
-        private static CommandAsyncHandlerDelegate createAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> commandHandler, CommandHandlerMethod commandHandlerMethod)
-        {
-            if (commandHandlerMethod.SupportsCancellation)
-            {
-                return createCancellableAsyncDelegate<TAttributed, TCommand>(commandHandler, commandHandlerMethod);
-            }
-            else
-            {
-                return createNonCancellableAsyncDelegate<TAttributed, TCommand>(commandHandler, commandHandlerMethod);
-            }
-        }
-
-        private static CommandAsyncHandlerDelegate createWrappedSyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, CommandHandlerMethod commandHandlerMethod)
-        {
-            AttributedCommandHandlerDelegate<TAttributed, TCommand> action = (AttributedCommandHandlerDelegate<TAttributed, TCommand>)commandHandlerMethod.MethodInfo.CreateDelegate(typeof(AttributedCommandHandlerDelegate<TAttributed, TCommand>));
-
-            CommandAsyncHandlerDelegate newHandleCommandDelegate = (c, ct) =>
-            {
-                TAttributed instance = attributedObjectFactory.Invoke();
-
-                if (instance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a command handler instance for {c.GetType().Name}");
-                }
-
-                action.Invoke(instance, (TCommand)c);
-
-                return Task.FromResult(0);
-            };
-
-            return newHandleCommandDelegate;
-        }
-
-        private static CommandAsyncHandlerDelegate createCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, CommandHandlerMethod commandHandlerMethod)
-        {
-            AttributedCommandAsyncHandlerCancellableDelegate<TAttributed, TCommand> action = (AttributedCommandAsyncHandlerCancellableDelegate<TAttributed, TCommand>)commandHandlerMethod.MethodInfo.CreateDelegate(typeof(AttributedCommandAsyncHandlerCancellableDelegate<TAttributed, TCommand>));
-
-            CommandAsyncHandlerDelegate newHandleCommandDelegate = (c, ct) =>
-            {
-                TAttributed instance = attributedObjectFactory.Invoke();
-
-                if (instance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a command handler instance for {c.GetType().Name}");
-                }
-
-                return action.Invoke(instance, (TCommand)c, ct);
-            };
-
-            return newHandleCommandDelegate;
-        }
-
-        private static CommandAsyncHandlerDelegate createNonCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, CommandHandlerMethod commandHandlerMethod)
-        {
-            AttributedCommandAsyncHandlerDelegate<TAttributed, TCommand> action = (AttributedCommandAsyncHandlerDelegate<TAttributed, TCommand>)commandHandlerMethod.MethodInfo.CreateDelegate(typeof(AttributedCommandAsyncHandlerDelegate<TAttributed, TCommand>));
-
-            CommandAsyncHandlerDelegate newHandleCommandDelegate = (c, ct) =>
-            {
-                TAttributed instance = attributedObjectFactory.Invoke();
-
-                if (instance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a command handler instance for {c.GetType().Name}");
-                }
-
-                return action.Invoke(instance, (TCommand)c);
-            };
-
-            return newHandleCommandDelegate;
-        }
-
         #endregion Functions
-
-        #region Inner CommandHandlerMethod Class
-
-        private class CommandHandlerMethod
-        {
-            public Type CommandType { get; }
-            public MethodInfo MethodInfo { get; }
-            public bool IsAsync { get; private set; }
-            public bool SupportsCancellation { get; }
-
-            public CommandHandlerMethod(Type commandType, MethodInfo methodInfo, bool isAsync, bool supportsCancellation)
-            {
-                CommandType = commandType ?? throw new ArgumentNullException(nameof(commandType));
-                MethodInfo = methodInfo ?? throw new ArgumentNullException(nameof(methodInfo));
-                IsAsync = isAsync;
-                SupportsCancellation = supportsCancellation;
-            }
-        }
-
-        #endregion Inner CommandHandlerMethod Class
     }
 }

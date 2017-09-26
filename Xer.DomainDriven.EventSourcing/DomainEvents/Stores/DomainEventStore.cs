@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Xer.DomainDriven.EventSourcing.DomainEvents.Publishers;
 
 namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
 {
@@ -12,12 +13,34 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
             _publisher = publisher;
         }
 
+        /// <summary>
+        /// Get all domain events of aggregate.
+        /// </summary>
+        /// <param name="aggreggateId">ID of the aggregate.</param>
+        /// <returns>All domain events for the aggregate.</returns>
         public abstract DomainEventStream GetDomainEventStream(Guid aggreggateId);
-        public abstract IReadOnlyCollection<DomainEventStream> GetAllDomainEventStreams();
 
+        /// <summary>
+        /// Get domain events of aggregate from the beginning up to the specified version.
+        /// </summary>
+        /// <param name="aggreggateId">ID of the aggregate.</param>
+        /// <param name="version">Target aggregate version.</param>
+        /// <returns>All domain events for the aggregate.</returns>
+        public abstract DomainEventStream GetDomainEventStream(Guid aggreggateId, int version);
+
+        /// <summary>
+        /// Commit the domain event to the store.
+        /// </summary>
+        /// <param name="domainEventStreamToCommit">Domain event to store.</param>
+        protected abstract void Commit(DomainEventStream domainEventStreamToCommit);
+
+        /// <summary>
+        /// Persist aggregate to the event store.
+        /// </summary>
+        /// <param name="aggregateRoot">Aggregate to persist.</param>
         public void Save(TAggregate aggregateRoot)
         {
-            DomainEventStream domainEventsToCommit = aggregateRoot.FlushUncommitedDomainEvents();
+            DomainEventStream domainEventsToCommit = aggregateRoot.GetUncommitedDomainEvents();
             
             Commit(domainEventsToCommit);
 
@@ -27,15 +50,8 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
             }
 
             // Clear after committing and publishing.
-            // aggregateRoot.ClearUncommitedDomainEventStream();
+            aggregateRoot.ClearUncommitedDomainEvents();
         }
-
-        /// <summary>
-        /// Commit the domain event to the store.
-        /// </summary>
-        /// <param name="domainEventStreamToCommit">Domain event to store.</param>
-        /// <returns>True, if domain event has been successfully committed.</returns>
-        protected abstract void Commit(DomainEventStream domainEventStreamToCommit);
 
         /// <summary>
         /// Publishes the domain event to event subscribers.
@@ -43,7 +59,7 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
         /// <param name="domainEvent">Domain event to publish.</param>
         private void NotifySubscribers(IDomainEvent domainEvent)
         {
-            _publisher.Publish(domainEvent);
+            _publisher.PublishAsync(domainEvent).ContinueWith(async t => await t);
         }
     }
 }

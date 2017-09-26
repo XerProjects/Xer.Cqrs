@@ -1,7 +1,10 @@
-﻿namespace Xer.DomainDriven.EventSourcing.DomainEvents
+﻿using System.Threading;
+using System.Threading.Tasks;
+
+namespace Xer.DomainDriven.EventSourcing.DomainEvents
 {
     public interface IDomainEventPublisher
     {
-        void Publish(IDomainEvent domainEvent);
+        Task PublishAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

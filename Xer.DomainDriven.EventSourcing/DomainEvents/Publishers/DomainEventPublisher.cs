@@ -1,24 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Xer.DomainDriven.EventSourcing.DomainEvents.Publishers
 {
     public class DomainEventPublisher : IDomainEventPublisher
     {
-        protected IReadOnlyList<IDomainEventSubscription> Subscriptions { get; }
+        private readonly IDomainEventSubscription _subscription;
 
-        public DomainEventPublisher(IEnumerable<IDomainEventSubscription> subscriptions)
+        public DomainEventPublisher(IDomainEventSubscription subscription)
         {
-            Subscriptions = subscriptions.ToList().AsReadOnly() ?? throw new ArgumentNullException(nameof(subscriptions));
+            _subscription = subscription;
         }
-        
-        public virtual void Publish(IDomainEvent domainEvent)
+
+        public Task PublishAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default(CancellationToken))
         {
-            foreach (var subscription in Subscriptions)
-            {
-                subscription.NotifySubscribers(domainEvent);
-            }
+            return _subscription.NotifySubscribersAsync(domainEvent, cancellationToken);
         }
     }
 }

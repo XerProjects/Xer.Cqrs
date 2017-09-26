@@ -6,14 +6,14 @@ using Xer.DomainDriven.EventSourcing.Exceptions;
 
 namespace Xer.DomainDriven.EventSourcing.DomainEvents
 {
-    public class DomainEventStream : IEnumerable<IDomainEvent>
+    public sealed class DomainEventStream : IEnumerable<IDomainEvent>
     {
         /// <summary>
         /// Empty stream.
         /// </summary>
         public static readonly DomainEventStream Empty = new DomainEventStream(Guid.Empty, Enumerable.Empty<IDomainEvent>());
 
-        private readonly Queue<IDomainEvent> _domainEvents;
+        private readonly ICollection<IDomainEvent> _domainEvents;
 
         /// <summary>
         /// Id of the aggregate which owns this stream.
@@ -23,7 +23,12 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
         /// <summary>
         /// Version of the latest domain event in this stream.
         /// </summary>
-        public int LatestDomainEventVersion { get; }
+        public int LastDomainEventVersion { get; }
+
+        /// <summary>
+        /// Get number of domain events in the stream.
+        /// </summary>
+        public int DomainEventCount => _domainEvents.Count;
 
         /// <summary>
         /// Constructs a new instance of a read-only stream.
@@ -43,10 +48,10 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
 
             if (copy.Count > 0)
             {
-                LatestDomainEventVersion = copy[copy.Count - 1].Version;
+                LastDomainEventVersion = copy.Last().AggregateVersion;
             }
 
-            _domainEvents = new Queue<IDomainEvent>(copy);
+            _domainEvents = new List<IDomainEvent>(copy);
         }
 
         /// <summary>
@@ -62,12 +67,12 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
                 return true;
             }
 
-            return LatestDomainEventVersion > firstOtherDomainEvent.Version;
+            return LastDomainEventVersion > firstOtherDomainEvent.AggregateVersion;
         }
 
         public DomainEventStream AppendDomainEvent(IDomainEvent domainEventToAppend)
         {
-            if (LatestDomainEventVersion >= domainEventToAppend.Version)
+            if (LastDomainEventVersion >= domainEventToAppend.AggregateVersion)
             {
                 throw new DomainEventVersionConflictException(domainEventToAppend,
                     "Domain event being appended is older than the latest event in the stream.");

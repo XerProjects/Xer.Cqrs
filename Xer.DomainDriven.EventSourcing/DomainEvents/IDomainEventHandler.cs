@@ -3,9 +3,9 @@
     public interface IDomainEventHandler<in TDomainEvent> where TDomainEvent : IDomainEvent
     {
         /// <summary>
-        /// Updates the read DB with the domain events.
+        /// Make an operation based on the domain event.
         /// </summary>
-        /// <param name="domainEventGroup"></param>
+        /// <param name="domainEvent">Domain event.</param>
         void Handle(TDomainEvent domainEvent);
     }
 }

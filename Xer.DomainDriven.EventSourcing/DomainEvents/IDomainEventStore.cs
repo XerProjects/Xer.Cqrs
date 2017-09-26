@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Xer.DomainDriven.EventSourcing.DomainEvents
 {
@@ -7,6 +8,6 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
     {
         void Save(TAggregate aggregateRoot);
         DomainEventStream GetDomainEventStream(Guid aggreggateId);
-        IReadOnlyCollection<DomainEventStream> GetAllDomainEventStreams();
+        DomainEventStream GetDomainEventStream(Guid aggreggateId, int version = 1);
     }
 }

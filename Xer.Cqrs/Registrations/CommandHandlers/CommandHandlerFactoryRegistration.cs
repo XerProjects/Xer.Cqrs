@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Xer.Cqrs.Registrations.CommandHandlers
 {
-    public partial class CommandHandlerRegistration : ICommandHandlerProvider, ICommandHandlerFactoryRegistration
+    public partial class CommandHandlerFactoryRegistration : ICommandHandlerProvider, ICommandHandlerFactoryRegistration
     {
         #region Declarations
 

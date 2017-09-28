@@ -63,7 +63,6 @@ namespace Xer.Cqrs.Tests.Mocks.QueryHandlers
     public class TestAttributedQueryHandlerNoReturnType
     {
         private readonly ITestOutputHelper _outputHelper;
-        private static int _instanceCounter = 0;
 
         public TestAttributedQueryHandlerNoReturnType(ITestOutputHelper testOutputHelper)
         {

@@ -27,7 +27,7 @@ namespace Xer.Cqrs.Tests
             [Fact]
             public async Task Dispatch_Command_To_Registered_Command_Handler()
             {
-                var registration = new CommandHandlerRegistration();
+                var registration = new CommandHandlerFactoryRegistration();
                 registration.Register(() => (ICommandAsyncHandler<DoSomethingAsyncCommand>)new TestCommandHandler(_outputHelper));
 
                 var dispatcher = new CommandDispatcher(registration);
@@ -37,7 +37,7 @@ namespace Xer.Cqrs.Tests
             [Fact]
             public async Task Dispatch_Command_To_Registered_Command_Handler_With_CancellationToken()
             {
-                var registration = new CommandHandlerRegistration();
+                var registration = new CommandHandlerFactoryRegistration();
                 registration.Register(() => (ICommandAsyncHandler<DoSomethingAsyncCommand>)new TestCommandHandler(_outputHelper));
 
                 var cts = new CancellationTokenSource();
@@ -72,7 +72,7 @@ namespace Xer.Cqrs.Tests
                 {
                     try
                     {
-                        var registration = new CommandHandlerRegistration();
+                        var registration = new CommandHandlerFactoryRegistration();
                         registration.Register(() => (ICommandAsyncHandler<ThrowExceptionCommand>)new TestCommandHandler(_outputHelper));
 
                         var dispatcher = new CommandDispatcher(registration);
@@ -103,7 +103,7 @@ namespace Xer.Cqrs.Tests
             [Fact]
             public void Dispatch_Command_To_Registered_Command_Handler()
             {
-                var registration = new CommandHandlerRegistration();
+                var registration = new CommandHandlerFactoryRegistration();
                 registration.Register(() => (ICommandHandler<DoSomethingAsyncCommand>)new TestCommandHandler(_outputHelper));
 
                 var dispatcher = new CommandDispatcher(registration);
@@ -117,7 +117,7 @@ namespace Xer.Cqrs.Tests
                 {
                     try
                     {
-                        var registration = new CommandHandlerRegistration();
+                        var registration = new CommandHandlerFactoryRegistration();
                         registration.Register(() => (ICommandHandler<ThrowExceptionCommand>)new TestCommandHandler(_outputHelper));
 
                         var dispatcher = new CommandDispatcher(registration);

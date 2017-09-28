@@ -5,7 +5,7 @@ using Xer.Cqrs.Dispatchers;
 
 namespace Xer.Cqrs.Registrations.QueryHandlers
 {
-    public partial class QueryHandlerRegistration : IQueryHandlerProvider, IQueryHandlerFactoryRegistration
+    public partial class QueryHandlerFactoryRegistration : IQueryHandlerProvider, IQueryHandlerFactoryRegistration
     {
         #region Declarations
 

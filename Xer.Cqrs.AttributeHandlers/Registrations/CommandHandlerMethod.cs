@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.Registrations;
@@ -9,12 +10,22 @@ namespace Xer.Cqrs.AttributeHandlers.Registrations
 {
     internal class CommandHandlerMethod
     {
+        #region Declarations
+
         private static readonly TypeInfo CommandTypeInfo = typeof(ICommand).GetTypeInfo();
+
+        #endregion Declarations
+
+        #region Properties
 
         public Type CommandType { get; }
         public MethodInfo MethodInfo { get; }
         public bool IsAsync { get; }
         public bool SupportsCancellation { get; }
+
+        #endregion Properties
+
+        #region Constructors
 
         private CommandHandlerMethod(Type commandType, MethodInfo methodInfo, bool isAsync, bool supportsCancellation)
         {
@@ -23,6 +34,8 @@ namespace Xer.Cqrs.AttributeHandlers.Registrations
             IsAsync = isAsync;
             SupportsCancellation = supportsCancellation;
         }
+
+        #endregion Constructors
 
         #region Methods
 
@@ -73,6 +86,11 @@ namespace Xer.Cqrs.AttributeHandlers.Registrations
             else if (methodInfo.ReturnType == typeof(void))
             {
                 isAsync = false;
+
+                if(methodInfo.CustomAttributes.Any(p => p.AttributeType == typeof(AsyncStateMachineAttribute)))
+                {
+                    throw new InvalidOperationException($"Methods marked with async void are not allowed. Exceptions from async void methods may crash the application: {methodInfo.Name}");
+                }
             }
             else
             {

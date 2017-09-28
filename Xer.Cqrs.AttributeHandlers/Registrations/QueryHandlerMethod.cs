@@ -11,13 +11,23 @@ namespace Xer.Cqrs.AttributeHandlers.Registrations
 {
     internal class QueryHandlerMethod
     {
+        #region Declarations
+
         private static readonly TypeInfo TaskTypeInfo = typeof(Task).GetTypeInfo();
+
+        #endregion Declarations
+
+        #region Properties
 
         public Type QueryType { get; }
         public Type QueryReturnType { get; }
         public MethodInfo MethodInfo { get; }
         public bool IsAsync { get; }
         public bool SupportsCancellation { get; }
+
+        #endregion Properties
+
+        #region Constructors
 
         private QueryHandlerMethod(Type queryType, Type queryReturnType, MethodInfo methodInfo, bool isAsync, bool supportsCancellation)
         {
@@ -28,8 +38,10 @@ namespace Xer.Cqrs.AttributeHandlers.Registrations
             SupportsCancellation = supportsCancellation;
         }
 
+        #endregion Constructors
+
         #region Methods
-        
+
         public QueryAsyncHandlerDelegate<TResult> CreateDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TQuery : IQuery<TResult>
         {
             Type specificQueryType = typeof(TQuery);

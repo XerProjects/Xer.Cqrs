@@ -9,6 +9,16 @@ namespace Xer.Cqrs.Tests.Mocks
 
     }
 
+    public class ThrowExceptionCommand : Command
+    {
+
+    }
+
+    public class DoAsyncVoidHandlerCommand : Command
+    {
+
+    }
+
     public class DoSomethingAsyncCommand : Command
     {
 

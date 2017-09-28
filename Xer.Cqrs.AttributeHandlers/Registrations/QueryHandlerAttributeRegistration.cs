@@ -31,7 +31,7 @@ namespace Xer.Cqrs.AttributeHandlers.Registrations
 
             if (!_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
             {
-                throw new NotSupportedException($"No query handler is registered to handle query of type: { queryType.Name }");
+                throw new HandlerNotFoundException($"No query handler is registered to handle query of type: { queryType.Name }");
             }
 
             return handleQueryDelegate;

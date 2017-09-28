@@ -21,6 +21,15 @@ namespace Xer.Cqrs.Tests.Mocks
         }
     }
 
+
+
+    public class QuerySomethingWithException : QuerySomething<string>
+    {
+        public QuerySomethingWithException(string input) : base(input)
+        {
+        }
+    }
+
     public class QuerySomethingAsync : QuerySomething
     {
         public QuerySomethingAsync(string input) : base(input)
@@ -39,9 +48,9 @@ namespace Xer.Cqrs.Tests.Mocks
         }
     }
 
-    public class QuerySomethingInteger : QuerySomething<int>
+    public class QuerySomethingNonReferenceType : QuerySomething<int>
     {
-        public QuerySomethingInteger(int input) : base(input)
+        public QuerySomethingNonReferenceType(int input) : base(input)
         {
         }
     }

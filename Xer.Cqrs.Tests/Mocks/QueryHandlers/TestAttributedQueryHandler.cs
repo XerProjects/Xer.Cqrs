@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.AttributeHandlers;
 using Xunit.Abstractions;
@@ -7,44 +8,45 @@ namespace Xer.Cqrs.Tests.Mocks.QueryHandlers
 {
     public class TestAttributedQueryHandler
     {
-        private readonly ITestOutputHelper _testOutputHelper;
+        private readonly ITestOutputHelper _outputHelper;
         private static int _instanceCounter = 0;
 
-        public TestAttributedQueryHandler(ITestOutputHelper testOutputHelper)
+        public TestAttributedQueryHandler(ITestOutputHelper outputHelper)
         {
-            _testOutputHelper = testOutputHelper;
+            _outputHelper = outputHelper;
             _instanceCounter++;
         }
 
         [QueryHandler]
         public string QuerySomething(QuerySomething query)
         {
-            _testOutputHelper.WriteLine(query.Data);
-            _testOutputHelper.WriteLine($"Instance #{_instanceCounter}");
+            _outputHelper.WriteLine(query.Data);
+            _outputHelper.WriteLine($"Instance #{_instanceCounter}");
 
             return query.Data;
         }
 
         [QueryHandler]
-        public int QuerySomething(QuerySomethingInteger query)
+        public string QuerySomethingWithException(QuerySomethingWithException query)
         {
-            _testOutputHelper.WriteLine(query.Data.ToString());
+            _outputHelper.WriteLine(query.Data);
+            _outputHelper.WriteLine($"Instance #{_instanceCounter}");
+
+            throw new NotImplementedException("This will fail.");
+        }
+
+        [QueryHandler]
+        public int QuerySomething(QuerySomethingNonReferenceType query)
+        {
+            _outputHelper.WriteLine(query.Data.ToString());
 
             return query.Data;
         }
-
-        //[QueryHandler]
-        //public Task<string> QuerySomethingAsync(QuerySomething querySomething)
-        //{
-        //    _testOutputHelper.WriteLine(querySomething.InputMessage);
-
-        //    return Task.FromResult(querySomething.InputMessage);
-        //}
 
         [QueryHandler]
         public Task<string> QuerySomethingAsync(QuerySomethingAsync query)
         {
-            _testOutputHelper.WriteLine(query.Data);
+            _outputHelper.WriteLine(query.Data);
 
             return Task.FromResult(query.Data);
         }
@@ -52,9 +54,26 @@ namespace Xer.Cqrs.Tests.Mocks.QueryHandlers
         [QueryHandler]
         public Task<string> QuerySomethingAsync(QuerySomethingAsyncWithDelay query, CancellationToken cancellationToken)
         {
-            _testOutputHelper.WriteLine(query.Data);
+            _outputHelper.WriteLine(query.Data);
 
             return Task.FromResult(query.Data);
+        }
+    }
+
+    public class TestAttributedQueryHandlerNoReturnType
+    {
+        private readonly ITestOutputHelper _outputHelper;
+        private static int _instanceCounter = 0;
+
+        public TestAttributedQueryHandlerNoReturnType(ITestOutputHelper testOutputHelper)
+        {
+            _outputHelper = testOutputHelper;
+        }
+
+        [QueryHandler]
+        public void ThisShouldNotBeAllowed(QuerySomething query)
+        {
+            _outputHelper.WriteLine(query.Data);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.AttributeHandlers;
 using Xunit.Abstractions;
@@ -18,6 +19,14 @@ namespace Xer.Cqrs.Tests.Mocks.CommandHandlers
         public void DoSomething(DoSomethingCommand command)
         {
             _output.WriteLine($"Handled {command.GetType().Name}~");
+        }
+
+        [CommandHandler]
+        public void DoSomethingWithException(ThrowExceptionCommand command)
+        {
+            _output.WriteLine($"Handled {command.GetType().Name}~");
+
+            throw new NotImplementedException("This will fail.");
         }
 
         [CommandHandler]
@@ -44,6 +53,24 @@ namespace Xer.Cqrs.Tests.Mocks.CommandHandlers
             ctx.ThrowIfCancellationRequested();
 
             _output.WriteLine($"Handled {command.GetType().Name}~");
+        }
+    }
+
+    public class TestAttributedCommandHandlerWithAsyncVoid
+    {
+        private readonly ITestOutputHelper _output;
+
+        public TestAttributedCommandHandlerWithAsyncVoid(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
+        [CommandHandler]
+        public async void DoAsyncVoidHandlerCommand(DoAsyncVoidHandlerCommand command)
+        {
+            _output.WriteLine($"Handled {command.GetType().Name}~");
+
+            await Task.Yield();
         }
     }
 }

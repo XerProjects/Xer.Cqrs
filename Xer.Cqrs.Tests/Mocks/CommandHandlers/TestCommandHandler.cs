@@ -9,10 +9,12 @@ namespace Xer.Cqrs.Tests.Mocks.CommandHandlers
                                       ICommandAsyncHandler<DoSomethingAsyncCommand>,
                                       ICommandAsyncHandler<DoSomethingAsyncWithCancellationCommand>,
                                       ICommandAsyncHandler<DoSomethingAsyncForSpecifiedDurationCommand>,
+                                      ICommandAsyncHandler<ThrowExceptionCommand>,
                                       ICommandHandler<DoSomethingCommand>,
                                       ICommandHandler<DoSomethingAsyncCommand>,
                                       ICommandHandler<DoSomethingAsyncWithCancellationCommand>,
-                                      ICommandHandler<DoSomethingAsyncForSpecifiedDurationCommand>
+                                      ICommandHandler<DoSomethingAsyncForSpecifiedDurationCommand>,
+                                      ICommandHandler<ThrowExceptionCommand>
     {
         private readonly ITestOutputHelper _outputHelper;
 
@@ -41,6 +43,13 @@ namespace Xer.Cqrs.Tests.Mocks.CommandHandlers
             handle(command);
         }
 
+        public void Handle(ThrowExceptionCommand command)
+        {
+            handle(command);
+
+            throw new NotImplementedException("This will fail.");
+        }
+
         public Task HandleAsync(DoSomethingCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
             handle(command);
@@ -67,6 +76,13 @@ namespace Xer.Cqrs.Tests.Mocks.CommandHandlers
             handle(command);
 
             return Task.CompletedTask;
+        }
+
+        public Task HandleAsync(ThrowExceptionCommand command, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            handle(command);
+
+            throw new NotImplementedException("This will fail.");
         }
 
         private void handle<TCommand>(TCommand command) where TCommand : ICommand

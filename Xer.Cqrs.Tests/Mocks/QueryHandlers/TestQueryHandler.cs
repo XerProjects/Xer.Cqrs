@@ -6,12 +6,14 @@ using Xunit.Abstractions;
 namespace Xer.Cqrs.Tests.Mocks.QueryHandlers
 {
     public class TestQueryHandler : IQueryHandler<QuerySomething, string>,
-                                    IQueryHandler<QuerySomethingInteger, int>,
+                                    IQueryHandler<QuerySomethingNonReferenceType, int>,
                                     IQueryHandler<QuerySomethingAsync, string>,
+                                    IQueryHandler<QuerySomethingWithException, string>,
                                     IQueryAsyncHandler<QuerySomething, string>,
-                                    IQueryAsyncHandler<QuerySomethingInteger, int>,
+                                    IQueryAsyncHandler<QuerySomethingNonReferenceType, int>,
                                     IQueryAsyncHandler<QuerySomethingAsync, string>,
-                                    IQueryAsyncHandler<QuerySomethingAsyncWithDelay, string>
+                                    IQueryAsyncHandler<QuerySomethingAsyncWithDelay, string>,
+                                    IQueryAsyncHandler<QuerySomethingWithException, string>
     {
         private readonly ITestOutputHelper _output;
 
@@ -27,7 +29,7 @@ namespace Xer.Cqrs.Tests.Mocks.QueryHandlers
             return query.Data;
         }
 
-        public int Handle(QuerySomethingInteger query)
+        public int Handle(QuerySomethingNonReferenceType query)
         {
             handle(query);
 
@@ -41,6 +43,13 @@ namespace Xer.Cqrs.Tests.Mocks.QueryHandlers
             return query.Data;
         }
 
+        public string Handle(QuerySomethingWithException query)
+        {
+            handle(query);
+
+            throw new NotImplementedException("This will fail.");
+        }
+
         public Task<string> HandleAsync(QuerySomething query, CancellationToken cancellationToken = default(CancellationToken))
         {
             handle(query);
@@ -48,7 +57,7 @@ namespace Xer.Cqrs.Tests.Mocks.QueryHandlers
             return Task.FromResult(query.Data);
         }
 
-        public Task<int> HandleAsync(QuerySomethingInteger query, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<int> HandleAsync(QuerySomethingNonReferenceType query, CancellationToken cancellationToken = default(CancellationToken))
         {
             handle(query);
 
@@ -69,6 +78,13 @@ namespace Xer.Cqrs.Tests.Mocks.QueryHandlers
             await Task.Delay(query.DelayInMilliseconds, cancellationToken);
 
             return query.Data;
+        }
+
+        public Task<string> HandleAsync(QuerySomethingWithException query, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            handle(query);
+
+            throw new NotImplementedException("This will fail.");
         }
 
         private void handle<TResult>(IQuery<TResult> query)

@@ -4,16 +4,6 @@
     {
         public static readonly Task CompletedTask = Task.FromResult(0);
 
-        public static void PropagateAnyExceptions(this Task task)
-        {
-            if(task == null)
-            {
-                throw new ArgumentNullException(nameof(task));
-            }
-
-            task.ContinueWith(async completedTask => await completedTask);
-        }
-
         public static void Await(this Task task)
         {
             if (task == null)

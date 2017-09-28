@@ -8,6 +8,6 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
     {
         void Save(TAggregate aggregateRoot);
         DomainEventStream GetDomainEventStream(Guid aggreggateId);
-        DomainEventStream GetDomainEventStream(Guid aggreggateId, int version = 1);
+        DomainEventStream GetDomainEventStream(Guid aggreggateId, int version);
     }
 }

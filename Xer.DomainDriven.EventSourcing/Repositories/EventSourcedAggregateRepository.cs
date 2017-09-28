@@ -15,6 +15,7 @@ namespace Xer.DomainDriven.EventSourcing.Repositories
         }
 
         public abstract TAggregate GetById(Guid aggregateId);
+        public abstract TAggregate GetById(Guid aggregateId, int version);
         public abstract void Save(TAggregate aggregate);
     }
 }

@@ -20,7 +20,7 @@ namespace Xer.Cqrs.Dispatchers
         /// <param name="command">Command to dispatch.</param>
         public void Dispatch(ICommand command)
         {
-            DispatchAsync(command).PropagateAnyExceptions();
+            DispatchAsync(command).Await();
         }
 
         /// <summary>

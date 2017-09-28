@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xer.DomainDriven.EventSourcing.DomainEvents;
 using Xer.DomainDriven.EventSourcing.DomainEvents.Stores;
@@ -22,7 +23,7 @@ namespace Xer.DomainDriven.EventSourcing.EventStore
             _configuration = configuration;
         }
 
-        public override async Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggregateId)
+        public override async Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggregateId, CancellationToken cancellationToken = default(CancellationToken))
         {
             using (var connection = EventStoreConnection.Create(createIpEndpoint(_configuration)))
             {
@@ -57,7 +58,7 @@ namespace Xer.DomainDriven.EventSourcing.EventStore
             }
         }
 
-        public override async Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggregateId, int version)
+        public override async Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggregateId, int version, CancellationToken cancellationToken = default(CancellationToken))
         {
             using (var connection = EventStoreConnection.Create(createIpEndpoint(_configuration)))
             {
@@ -92,7 +93,7 @@ namespace Xer.DomainDriven.EventSourcing.EventStore
             }
         }
 
-        protected override async Task CommitAsync(DomainEventStream domainEventStreamToCommit)
+        protected override async Task CommitAsync(DomainEventStream domainEventStreamToCommit, CancellationToken cancellationToken = default(CancellationToken))
         {
             using (var connection = EventStoreConnection.Create(createIpEndpoint(_configuration)))
             {

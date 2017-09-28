@@ -25,6 +25,13 @@ namespace Xer.DomainDriven.EventSourcing.Tests.Mocks.Repositories
             return new TestAggregate(history);
         }
 
+        public override TestAggregate GetById(Guid aggregateId, int version)
+        {
+            var history = DomainEventStore.GetDomainEventStream(aggregateId, version);
+
+            return new TestAggregate(history);
+        }
+
         public override void Save(TestAggregate aggregate)
         {
             DomainEventStore.Save(aggregate);
@@ -43,7 +50,14 @@ namespace Xer.DomainDriven.EventSourcing.Tests.Mocks.Repositories
 
         public override async Task<TestAggregate> GetByIdAsync(Guid aggregateId, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var history = await DomainEventStore.GetDomainEventStreamAsync(aggregateId);
+            var history = await DomainEventStore.GetDomainEventStreamAsync(aggregateId, cancellationToken);
+
+            return new TestAggregate(history);
+        }
+
+        public override async Task<TestAggregate> GetByIdAsync(Guid aggregateId, int version, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var history = await DomainEventStore.GetDomainEventStreamAsync(aggregateId, version, cancellationToken);
 
             return new TestAggregate(history);
         }

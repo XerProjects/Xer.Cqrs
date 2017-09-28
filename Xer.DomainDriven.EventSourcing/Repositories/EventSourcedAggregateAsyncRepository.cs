@@ -17,6 +17,7 @@ namespace Xer.DomainDriven.EventSourcing.Repositories
         }
         
         public abstract Task<TAggregate> GetByIdAsync(Guid aggregateId, CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<TAggregate> GetByIdAsync(Guid aggregateId, int version, CancellationToken cancellationToken = default(CancellationToken));
         public abstract Task SaveAsync(TAggregate aggregate, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

@@ -26,6 +26,11 @@ namespace Xer.DomainDriven.EventSourcing.Tests.Mocks
             ApplyChange(new TestAggregateModified(Id, Version + 1, newData));
         }
 
+        public void ThrowExceptionOnDomainEventHandler()
+        {
+            ApplyChange(new TestAggregateModified(Id, Version + 1, "Throw"));
+        }
+
         protected override void RegisterDomainEventAppliers(DomainEventApplierRegistration applierRegistration)
         {
             applierRegistration.RegisterDomainEventApplier<TestAggregateCreated>(OnTestAggregateCreated);

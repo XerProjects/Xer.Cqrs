@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Xer.DomainDriven.EventSourcing.DomainEvents.Publishers;
 
 namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
 {
@@ -53,7 +52,7 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
 
             await CommitAsync(domainEventsToCommit, cancellationToken).ConfigureAwait(false);
 
-            await Task.WhenAll(domainEventsToCommit.Select(d => NotifySubscribersAsync(d))).ConfigureAwait(false);
+            NotifySubscribersInBackground(domainEventsToCommit, cancellationToken);
 
             // Clear after committing and publishing.
             aggregateRoot.ClearUncommitedDomainEvents();
@@ -62,12 +61,15 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
         /// <summary>
         /// Publishes the domain event to event subscribers asynchronously.
         /// </summary>
-        /// <param name="domainEvent">Domain event to publish.</param>
+        /// <param name="domainEvents">Domain events to publish.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Task which can be awaited asynchronously.</returns>
-        private Task NotifySubscribersAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default(CancellationToken))
+        private void NotifySubscribersInBackground(IEnumerable<IDomainEvent> domainEvents, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return _publisher.PublishAsync(domainEvent);
+            TaskUtility.RunInBackground(() =>
+            {
+                IEnumerable<Task> publishTasks = domainEvents.Select(e => _publisher.PublishAsync(e, cancellationToken));
+                return Task.WhenAll(publishTasks);
+            });
         }
     }
 }

@@ -52,7 +52,7 @@ namespace Xer.Cqrs.Tests
                 Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                 {
                     var registration = new CommandHandlerAttributeRegistration();
-                    registration.RegisterAttributedMethods(() => new TestAttributedCommandHandler(_outputHelper));
+                    registration.RegisterAttributedHandler(() => new TestAttributedCommandHandler(_outputHelper));
 
                     var cts = new CancellationTokenSource();
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using Xer.DomainDriven.EventSourcing.DomainEvents;
 using Xer.DomainDriven.EventSourcing.DomainEvents.Publishers;
 using Xer.DomainDriven.EventSourcing.DomainEvents.Stores;
@@ -40,14 +41,46 @@ namespace Xer.DomainDriven.EventSourcing.Tests
                 var aggregate = new TestAggregate(id);
                 repository.Save(aggregate);
 
+                // Event may not have yet been handled in background.
+                Thread.Sleep(500);
+
                 Assert.Equal(id, repository.GetById(id).Id);
 
                 Assert.Equal(1, handler.NumberOfTimesInvoked);
 
                 aggregate.ChangeAggregateData("Test 1");
                 repository.Save(aggregate);
+
+                // Event may not have yet been handled in background.
+                Thread.Sleep(500);
                 
                 Assert.Equal(2, handler.NumberOfTimesInvoked);
+            }
+
+            [Fact]
+            public void Domain_Event_Handler_Exception_Should_Be_Ignored()
+            {
+                var handler = new TestDomainEventHandler(_testOutput);
+                var subscription = new DomainEventSubscription();
+                subscription.Subscribe((IDomainEventHandler<TestAggregateCreated>)handler);
+                subscription.Subscribe((IDomainEventAsyncHandler<TestAggregateModified>)handler);
+                var publisher = new DomainEventPublisher(subscription);
+                var eventStore = new InMemoryDomainEventStore<TestAggregate>(publisher);
+                var repository = new TestEventSourcedAggregateRepository(eventStore);
+                var id = Guid.NewGuid();
+
+                var aggregate = new TestAggregate(id);
+                repository.Save(aggregate);
+
+                // Event may not have yet been handled in background.
+                Thread.Sleep(500);
+
+                Assert.Equal(id, repository.GetById(id).Id);
+
+                Assert.Equal(1, handler.NumberOfTimesInvoked);
+
+                aggregate.ThrowExceptionOnDomainEventHandler();
+                repository.Save(aggregate);
             }
         }
     }

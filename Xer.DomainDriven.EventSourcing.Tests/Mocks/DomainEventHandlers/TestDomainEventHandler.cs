@@ -29,6 +29,11 @@ namespace Xer.DomainDriven.EventSourcing.Tests.Mocks.DomainEventHandlers
 
         public Task HandleAsync(TestAggregateModified domainEvent, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if(domainEvent.ModifiedData == "Throw")
+            {
+                throw new Exception("Exception is triggered.");
+            }
+
             _testOutput.WriteLine($"{GetType().Name} has async handled {domainEvent.GetType()}");
             NumberOfTimesInvoked++;
 

@@ -32,9 +32,9 @@ namespace Xer.Cqrs.Dispatchers
         /// <returns>Task which can be awaited asynchronously.</returns>
         public Task DispatchAsync(ICommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
-            Type comandType = command.GetType();
+            Type commandType = command.GetType();
 
-            CommandAsyncHandlerDelegate handleCommandAsyncDelegate = _provider.GetCommandHandler(comandType);
+            CommandAsyncHandlerDelegate handleCommandAsyncDelegate = _provider.GetCommandHandler(commandType);
             
             return handleCommandAsyncDelegate.Invoke(command, cancellationToken);
         }

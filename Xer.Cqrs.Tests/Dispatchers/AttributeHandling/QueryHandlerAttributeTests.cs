@@ -30,7 +30,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                     try
                     {
                         var registration = new QueryHandlerAttributeRegistration();
-                        registration.RegisterAttributedMethods(() => new TestAttributedQueryHandlerNoReturnType(_outputHelper));
+                        registration.RegisterAttributedHandler(() => new TestAttributedQueryHandlerNoReturnType(_outputHelper));
                     }
                     catch (Exception ex)
                     {
@@ -58,7 +58,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
             public async Task Multiple_Dispatch_To_Query_Handler_Attributed_Object()
             {
                 var registration = new QueryHandlerAttributeRegistration();
-                registration.RegisterAttributedMethods(() => new TestAttributedQueryHandler(_outputHelper));
+                registration.RegisterAttributedHandler(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
                 var result1 = dispatcher.DispatchAsync(new QuerySomething("Test message 1."));
@@ -76,7 +76,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
             public async Task Dispatch_To_Query_Handler_Attributed_Object()
             {
                 var registration = new QueryHandlerAttributeRegistration();
-                registration.RegisterAttributedMethods(() => new TestAttributedQueryHandler(_outputHelper));
+                registration.RegisterAttributedHandler(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
                 var result = await dispatcher.DispatchAsync(new QuerySomethingAsync("Test async message."));
@@ -88,7 +88,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
             public async Task Dispatch_To_Query_Handler_Attributed_Object_With_CancellationToken()
             {
                 var registration = new QueryHandlerAttributeRegistration();
-                registration.RegisterAttributedMethods(() => new TestAttributedQueryHandler(_outputHelper));
+                registration.RegisterAttributedHandler(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
                 var result = await dispatcher.DispatchAsync(new QuerySomethingAsyncWithDelay("Test async message with cancellation token.", 10000));
@@ -104,7 +104,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                     try
                     {
                         var registration = new QueryHandlerAttributeRegistration();
-                        registration.RegisterAttributedMethods(() => new TestAttributedQueryHandler(_outputHelper));
+                        registration.RegisterAttributedHandler(() => new TestAttributedQueryHandler(_outputHelper));
 
                         var dispatcher = new QueryDispatcher(registration);
 
@@ -136,7 +136,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
             public void Multiple_Dispatch_To_Query_Handler_Attributed_Object()
             {
                 var registration = new QueryHandlerAttributeRegistration();
-                registration.RegisterAttributedMethods(() => new TestAttributedQueryHandler(_outputHelper));
+                registration.RegisterAttributedHandler(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
                 var result1 = dispatcher.Dispatch(new QuerySomething("Test message 1."));
@@ -148,7 +148,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
             public void Dispatch_To_Query_Handler_Attributed_Object()
             {
                 var registration = new QueryHandlerAttributeRegistration();
-                registration.RegisterAttributedMethods(() => new TestAttributedQueryHandler(_outputHelper));
+                registration.RegisterAttributedHandler(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
                 var result = dispatcher.Dispatch(new QuerySomethingAsync("Test async message."));
@@ -160,7 +160,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
             public void Dispatch_To_Query_Handler_Attributed_Object_With_CancellationToken()
             {
                 var registration = new QueryHandlerAttributeRegistration();
-                registration.RegisterAttributedMethods(() => new TestAttributedQueryHandler(_outputHelper));
+                registration.RegisterAttributedHandler(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
                 var result = dispatcher.Dispatch(new QuerySomethingAsyncWithDelay("Test async message with cancellation token.", 10000));
@@ -176,7 +176,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                     try
                     {
                         var registration = new QueryHandlerAttributeRegistration();
-                        registration.RegisterAttributedMethods(() => new TestAttributedQueryHandler(_outputHelper));
+                        registration.RegisterAttributedHandler(() => new TestAttributedQueryHandler(_outputHelper));
 
                         var dispatcher = new QueryDispatcher(registration);
 

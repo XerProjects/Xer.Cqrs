@@ -1,21 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
 {
-    public class InMemoryDomainEventStore<TAggregate> : DomainEventStore<TAggregate> where TAggregate : EventSourcedAggregate
+    public class InMemoryDomainEventAsyncStore<TAggregate> : DomainEventAsyncStore<TAggregate> where TAggregate : EventSourcedAggregate
     {
         private readonly IDictionary<Guid, DomainEventStream> _domainEventStreamsByAggregateId = new Dictionary<Guid, DomainEventStream>();
 
-        public InMemoryDomainEventStore(IDomainEventPublisher publisher)
+        public InMemoryDomainEventAsyncStore(IDomainEventPublisher publisher) 
             : base(publisher)
         {
-
         }
 
-        public override DomainEventStream GetDomainEventStream(Guid aggreggateId)
+        public override Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggreggateId, CancellationToken cancellationToken = default(CancellationToken))
         {
             DomainEventStream stream;
 
@@ -25,23 +25,23 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
             }
 
             // Return a new copy, not the actual reference.
-            return new DomainEventStream(stream.AggregateId, stream);
+            return Task.FromResult(new DomainEventStream(stream.AggregateId, stream));
         }
 
-        public override DomainEventStream GetDomainEventStream(Guid aggreggateId, int version)
+        public override Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggreggateId, int version, CancellationToken cancellationToken = default(CancellationToken))
         {
             DomainEventStream stream;
 
-            if(!_domainEventStreamsByAggregateId.TryGetValue(aggreggateId, out stream))
+            if (!_domainEventStreamsByAggregateId.TryGetValue(aggreggateId, out stream))
             {
                 stream = DomainEventStream.Empty;
             }
 
             // Return a new copy, not the actual reference.
-            return new DomainEventStream(stream.AggregateId, stream.TakeWhile(e => e.AggregateVersion <= version));
+            return Task.FromResult(new DomainEventStream(stream.AggregateId, stream.TakeWhile(e => e.AggregateVersion <= version)));
         }
 
-        protected override void Commit(DomainEventStream domainEventStreamToCommit)
+        protected override Task CommitAsync(DomainEventStream domainEventStreamToCommit, CancellationToken cancellationToken = default(CancellationToken))
         {
             DomainEventStream existingStream;
 
@@ -51,11 +51,13 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
                 // Append and update.
                 _domainEventStreamsByAggregateId[domainEventStreamToCommit.AggregateId] = existingStream.AppendDomainEventStream(domainEventStreamToCommit);
             }
-            else 
+            else
             {
                 // Save.
                 _domainEventStreamsByAggregateId.Add(domainEventStreamToCommit.AggregateId, new DomainEventStream(domainEventStreamToCommit.AggregateId, domainEventStreamToCommit));
             }
+
+            return TaskUtility.CompletedTask;
         }
     }
 }

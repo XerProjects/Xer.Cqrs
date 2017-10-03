@@ -20,6 +20,6 @@ namespace Xer.Cqrs.AttributeHandlers
         /// </summary>
         /// <typeparam name="TAttributed">Type of the objects which contains the attributed methods.</typeparam>
         /// <param name="attributedHandlerFactory">Factory which will create the instance of the TAttributed object.</param>
-        void RegisterAttributedMethods<TAttributed>(Func<TAttributed> attributedHandlerFactory);
+        void RegisterAttributedHandler<TAttributed>(Func<TAttributed> attributedHandlerFactory);
     }
 }

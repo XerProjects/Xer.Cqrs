@@ -32,7 +32,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                     try
                     {
                         var registration = new CommandHandlerAttributeRegistration();
-                        registration.RegisterAttributedMethods(() => new TestAttributedCommandHandlerWithAsyncVoid(_outputHelper));
+                        registration.RegisterAttributedHandler(() => new TestAttributedCommandHandlerWithAsyncVoid(_outputHelper));
                     }
                     catch (Exception ex)
                     {
@@ -60,7 +60,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
             public void Dispatch_Command_To_Attributed_Object()
             {
                 var registration = new CommandHandlerAttributeRegistration();
-                registration.RegisterAttributedMethods(() => new TestAttributedCommandHandler(_outputHelper));
+                registration.RegisterAttributedHandler(() => new TestAttributedCommandHandler(_outputHelper));
 
                 var dispatcher = new CommandDispatcher(registration);
                 dispatcher.DispatchAsync(new DoSomethingAsyncCommand());
@@ -70,7 +70,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
             public void Dispatch_Command_To_Attributed_Object_With_Cancellation()
             {
                 var registration = new CommandHandlerAttributeRegistration();
-                registration.RegisterAttributedMethods(() => new TestAttributedCommandHandler(_outputHelper));
+                registration.RegisterAttributedHandler(() => new TestAttributedCommandHandler(_outputHelper));
 
                 var cts = new CancellationTokenSource();
 
@@ -84,7 +84,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                 return Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                 {
                     var registration = new CommandHandlerAttributeRegistration();
-                    registration.RegisterAttributedMethods(() => new TestAttributedCommandHandler(_outputHelper));
+                    registration.RegisterAttributedHandler(() => new TestAttributedCommandHandler(_outputHelper));
 
                     var cts = new CancellationTokenSource();
 
@@ -105,7 +105,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                     try
                     {
                         var registration = new CommandHandlerAttributeRegistration();
-                        registration.RegisterAttributedMethods(() => new TestAttributedCommandHandler(_outputHelper));
+                        registration.RegisterAttributedHandler(() => new TestAttributedCommandHandler(_outputHelper));
 
                         var dispatcher = new CommandDispatcher(registration);
                         await dispatcher.DispatchAsync(new ThrowExceptionCommand());
@@ -136,7 +136,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
             public void Dispatch_Command_To_Attributed_Object()
             {
                 var registration = new CommandHandlerAttributeRegistration();
-                registration.RegisterAttributedMethods(() => new TestAttributedCommandHandler(_outputHelper));
+                registration.RegisterAttributedHandler(() => new TestAttributedCommandHandler(_outputHelper));
 
                 var dispatcher = new CommandDispatcher(registration);
                 dispatcher.Dispatch(new DoSomethingCommand());
@@ -150,7 +150,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                     try
                     {
                         var registration = new CommandHandlerAttributeRegistration();
-                        registration.RegisterAttributedMethods(() => new TestAttributedCommandHandler(_outputHelper));
+                        registration.RegisterAttributedHandler(() => new TestAttributedCommandHandler(_outputHelper));
 
                         var dispatcher = new CommandDispatcher(registration);
                         dispatcher.Dispatch(new ThrowExceptionCommand());

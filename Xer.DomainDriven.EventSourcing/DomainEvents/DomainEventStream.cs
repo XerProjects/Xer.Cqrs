@@ -6,7 +6,7 @@ using Xer.DomainDriven.EventSourcing.Exceptions;
 
 namespace Xer.DomainDriven.EventSourcing.DomainEvents
 {
-    public sealed class DomainEventStream : IEnumerable<IDomainEvent>
+    public sealed class DomainEventStream : IReadOnlyCollection<IDomainEvent>
     {
         /// <summary>
         /// Empty stream.
@@ -28,7 +28,7 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
         /// <summary>
         /// Get number of domain events in the stream.
         /// </summary>
-        public int DomainEventCount => _domainEvents.Count;
+        public int Count => _domainEvents.Count;
 
         /// <summary>
         /// Constructs a new instance of a read-only stream.
@@ -43,15 +43,13 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
             }
 
             AggregateId = aggregateId;
-
-            List<IDomainEvent> copy = new List<IDomainEvent>(domainEvents);
-
-            if (copy.Count > 0)
+            
+            if (domainEvents.Count() > 0)
             {
-                LastDomainEventVersion = copy.Last().AggregateVersion;
+                LastDomainEventVersion = domainEvents.Last().AggregateVersion;
             }
 
-            _domainEvents = new List<IDomainEvent>(copy);
+            _domainEvents = new List<IDomainEvent>(domainEvents);
         }
 
         /// <summary>
@@ -89,7 +87,7 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
             return new DomainEventStream(AggregateId, mergedStream);
         }
 
-        public DomainEventStream AppendStream(DomainEventStream streamToAppend)
+        public DomainEventStream AppendDomainEventStream(DomainEventStream streamToAppend)
         {
             if (HasGreaterVersionThan(streamToAppend))
             {

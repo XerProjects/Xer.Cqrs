@@ -48,8 +48,8 @@ namespace Xer.Cqrs.AttributeHandlers.Registrations
         /// - Return a Task object.
         /// - (Optional) Request for a CancellationToken as parameter to listen for cancellation from Dispatcher.
         /// </summary>
-        /// <param name="attributedObjectFactory">Object which contains methods marked with [CommandHandler].</param>
-        public void RegisterAttributedMethods<TAttributed>(Func<TAttributed> attributedObjectFactory)
+        /// <param name="attributedHandlerFactory">Object which contains methods marked with [CommandHandler].</param>
+        public void RegisterAttributedHandler<TAttributed>(Func<TAttributed> attributedHandlerFactory)
         {
             Type attributedObjectType = typeof(TAttributed);
 
@@ -62,7 +62,7 @@ namespace Xer.Cqrs.AttributeHandlers.Registrations
 
                 genericRegisterCommandHandlerMethod.Invoke(this, new object[]
                 {
-                    attributedObjectFactory, commandHandlerMethod
+                    attributedHandlerFactory, commandHandlerMethod
                 });
             }
         }

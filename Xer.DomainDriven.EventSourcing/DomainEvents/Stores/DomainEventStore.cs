@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using Xer.DomainDriven.EventSourcing.DomainEvents.Publishers;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
 {
@@ -44,10 +45,7 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
             
             Commit(domainEventsToCommit);
 
-            foreach (IDomainEvent commitedEvent in domainEventsToCommit)
-            {
-                NotifySubscribers(commitedEvent);
-            }
+            NotifySubscribersInBackground(domainEventsToCommit);
 
             // Clear after committing and publishing.
             aggregateRoot.ClearUncommitedDomainEvents();
@@ -56,10 +54,14 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
         /// <summary>
         /// Publishes the domain event to event subscribers.
         /// </summary>
-        /// <param name="domainEvent">Domain event to publish.</param>
-        private void NotifySubscribers(IDomainEvent domainEvent)
+        /// <param name="domainEvents">Domain events to publish.</param>
+        private void NotifySubscribersInBackground(IEnumerable<IDomainEvent> domainEvents)
         {
-            _publisher.PublishAsync(domainEvent).ContinueWith(async t => await t);
+            TaskUtility.RunInBackground(() =>
+            {
+                IEnumerable<Task> publishTasks = domainEvents.Select(e => _publisher.PublishAsync(e));
+                return Task.WhenAll(publishTasks);
+            });
         }
     }
 }

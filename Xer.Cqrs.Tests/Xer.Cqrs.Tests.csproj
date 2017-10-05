@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Xer.Cqrs.AttributeHandlers\Xer.Cqrs.AttributeHandlers.csproj" />
-    <ProjectReference Include="..\Xer.Cqrs\Xer.Cqrs.csproj" />
+    <ProjectReference Include="..\Xer.Cqrs.CommandStack\Xer.Cqrs.CommandStack.csproj" />
+    <ProjectReference Include="..\Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj" />
   </ItemGroup>
 
 </Project>

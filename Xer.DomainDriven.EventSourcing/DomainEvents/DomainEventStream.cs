@@ -6,7 +6,7 @@ using Xer.DomainDriven.EventSourcing.Exceptions;
 
 namespace Xer.DomainDriven.EventSourcing.DomainEvents
 {
-    public sealed class DomainEventStream : IReadOnlyCollection<IDomainEvent>
+    public sealed class DomainEventStream : IEnumerable<IDomainEvent>
     {
         /// <summary>
         /// Empty stream.
@@ -19,6 +19,11 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
         /// Id of the aggregate which owns this stream.
         /// </summary>
         public Guid AggregateId { get; }
+        
+        /// <summary>
+        /// Version of the first domain event in this stream.
+        /// </summary>
+        public int FirstDomainEventVersion { get; }
 
         /// <summary>
         /// Version of the latest domain event in this stream.
@@ -28,7 +33,7 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
         /// <summary>
         /// Get number of domain events in the stream.
         /// </summary>
-        public int Count => _domainEvents.Count;
+        public int DomainEventCount { get; }
 
         /// <summary>
         /// Constructs a new instance of a read-only stream.
@@ -43,33 +48,24 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
             }
 
             AggregateId = aggregateId;
+            DomainEventCount = domainEvents.Count();
             
-            if (domainEvents.Count() > 0)
+            if (DomainEventCount > 0)
             {
+                FirstDomainEventVersion = domainEvents.First().AggregateVersion;
                 LastDomainEventVersion = domainEvents.Last().AggregateVersion;
             }
 
             _domainEvents = new List<IDomainEvent>(domainEvents);
         }
 
-        /// <summary>
-        /// Check if this stream's domain events have a greater version than the other's oldest domain event.
-        /// </summary>
-        /// <param name="other">Other domain event stream.</param>
-        /// <returns>True, if latest version in this stream has a greater version than the other's oldest domain event. Otherwise, false.</returns>
-        public bool HasGreaterVersionThan(DomainEventStream other)
-        {
-            IDomainEvent firstOtherDomainEvent = other._domainEvents.FirstOrDefault();
-            if(firstOtherDomainEvent == null)
-            {
-                return true;
-            }
-
-            return LastDomainEventVersion > firstOtherDomainEvent.AggregateVersion;
-        }
-
         public DomainEventStream AppendDomainEvent(IDomainEvent domainEventToAppend)
         {
+            if (domainEventToAppend == null)
+            {
+                throw new ArgumentNullException(nameof(domainEventToAppend));
+            }
+
             if (LastDomainEventVersion >= domainEventToAppend.AggregateVersion)
             {
                 throw new DomainEventVersionConflictException(domainEventToAppend,
@@ -89,7 +85,12 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
 
         public DomainEventStream AppendDomainEventStream(DomainEventStream streamToAppend)
         {
-            if (HasGreaterVersionThan(streamToAppend))
+            if(streamToAppend == null)
+            {
+                throw new ArgumentNullException(nameof(streamToAppend));
+            }
+
+            if (LastDomainEventVersion >= streamToAppend.FirstDomainEventVersion)
             {
                 throw new DomainEventStreamVersionConflictException(streamToAppend,
                     "Domain event stream being appended contains some entries that are older than the latest event in the stream.");
@@ -100,8 +101,7 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents
                 throw new InvalidOperationException("Cannot append streams of different aggregates.");
             }
 
-            List<IDomainEvent> mergedStream = new List<IDomainEvent>(this);
-            mergedStream.AddRange(streamToAppend);
+            IEnumerable<IDomainEvent> mergedStream = this.Concat(streamToAppend);
 
             return new DomainEventStream(AggregateId, streamToAppend);
         }

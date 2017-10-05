@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xer.Cqrs.CommandStack;
 using Xunit.Abstractions;
 
 namespace Xer.Cqrs.Tests.Mocks.CommandHandlers

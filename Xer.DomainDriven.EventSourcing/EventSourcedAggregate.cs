@@ -139,13 +139,13 @@ namespace Xer.DomainDriven.EventSourcing
         /// </summary>
         protected class DomainEventApplierRegistration
         {
-            private readonly Dictionary<Type, Action<IDomainEvent>> _appliersByDomainEventType = new Dictionary<Type, Action<IDomainEvent>>();
+            private readonly IDictionary<Type, Action<IDomainEvent>> _appliersByDomainEventType = new Dictionary<Type, Action<IDomainEvent>>();
 
             public void RegisterDomainEventApplier<TDomainEvent>(Action<TDomainEvent> applier) where TDomainEvent : IDomainEvent
             {
                 Type domainEventType = typeof(TDomainEvent);
 
-                Action<IDomainEvent> domainEventApplier = new Action<IDomainEvent>((d) => applier.Invoke((TDomainEvent)d));
+                Action<IDomainEvent> domainEventApplier = (d) => applier.Invoke((TDomainEvent)d);
 
                 _appliersByDomainEventType.Add(domainEventType, domainEventApplier);
             }

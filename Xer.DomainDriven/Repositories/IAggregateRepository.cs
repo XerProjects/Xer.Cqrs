@@ -6,6 +6,5 @@ namespace Xer.DomainDriven.Repositories
     {
         void Save(TAggregate aggregate);
         TAggregate GetById(Guid aggregateId);
-        TAggregate GetById(Guid aggregateId, int version);
     }
 }

@@ -47,7 +47,7 @@ namespace System.Threading.Tasks
             });
         }
 
-        public static void HandleAnyException(this Task task, Action<Exception> exceptionHandler)
+        public static void HandleAnyExceptions(this Task task, Action<Exception> exceptionHandler)
         {
             if (task == null)
             {

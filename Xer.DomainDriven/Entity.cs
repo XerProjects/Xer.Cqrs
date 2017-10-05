@@ -2,7 +2,7 @@
 
 namespace Xer.DomainDriven
 {
-    public abstract class Entity : IIdentity<Guid>
+    public abstract class Entity
     {
         public Guid Id { get; protected set; }
         public DateTime Created { get; protected set; }

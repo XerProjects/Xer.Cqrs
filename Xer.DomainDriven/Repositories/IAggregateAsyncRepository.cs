@@ -8,6 +8,5 @@ namespace Xer.DomainDriven.Repositories
     {
         Task SaveAsync(TAggregate aggregate, CancellationToken cancellationToken = default(CancellationToken));
         Task<TAggregate> GetByIdAsync(Guid aggregateId, CancellationToken cancellationToken = default(CancellationToken));
-        Task<TAggregate> GetByIdAsync(Guid aggregateId, int version, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

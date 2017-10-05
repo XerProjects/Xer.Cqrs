@@ -7,7 +7,7 @@ namespace Xer.DomainDriven.EventSourcing.Repositories
 {
     public abstract class EventSourcedAggregateRepository<TAggregate> : IEventSourcedAggregateRepository<TAggregate> where TAggregate : EventSourcedAggregate
     {
-        protected virtual IDomainEventStore<TAggregate> DomainEventStore { get; }
+        protected IDomainEventStore<TAggregate> DomainEventStore { get; }
 
         public EventSourcedAggregateRepository(IDomainEventStore<TAggregate> eventStore)
         {

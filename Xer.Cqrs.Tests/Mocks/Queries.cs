@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Xer.Cqrs.QueryStack;
 
 namespace Xer.Cqrs.Tests.Mocks
 {

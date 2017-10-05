@@ -2,13 +2,13 @@
 
 namespace Xer.DomainDriven
 {
-    public abstract class ValueObject : IEquatable<ValueObject>
+    public abstract class ValueObject<T> : IEquatable<T> where T : class
     {
-        protected abstract bool ValueEquals(ValueObject other);
+        protected abstract bool ValueEquals(T other);
 
         public override bool Equals(object obj)
         {
-            ValueObject other = obj as ValueObject;
+            T other = obj as T;
             if(other == null)
             {
                 return false;
@@ -17,12 +17,12 @@ namespace Xer.DomainDriven
             return ValueEquals(other);
         }
 
-        public bool Equals(ValueObject other)
+        public bool Equals(T other)
         {
             return ValueEquals(other);
         }
 
-        public static bool operator ==(ValueObject obj1, ValueObject obj2)
+        public static bool operator ==(ValueObject<T> obj1, ValueObject<T> obj2)
         {
             if(ReferenceEquals(obj1, null) && ReferenceEquals(obj2, null))
             {
@@ -37,7 +37,7 @@ namespace Xer.DomainDriven
             return false;
         }
 
-        public static bool operator !=(ValueObject obj1, ValueObject obj2)
+        public static bool operator !=(ValueObject<T> obj1, ValueObject<T> obj2)
         {
             return !(obj1 == obj2);
         }

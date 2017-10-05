@@ -1,8 +1,12 @@
-﻿using Xer.DomainDriven.Repositories;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Xer.DomainDriven.Repositories;
 
 namespace Xer.DomainDriven.EventSourcing.Repositories
 {
     public interface IEventSourcedAggregateAsyncRepository<TAggregate> : IAggregateAsyncRepository<TAggregate> where TAggregate : EventSourcedAggregate
     {
+        Task<TAggregate> GetByIdAsync(Guid aggregateId, int version, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

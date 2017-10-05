@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Xer.Cqrs.Dispatchers;
-using Xer.Cqrs.Registrations.QueryHandlers;
+using Xer.Cqrs.QueryStack;
+using Xer.Cqrs.QueryStack.Dispatchers;
+using Xer.Cqrs.QueryStack.Registrations;
 using Xer.Cqrs.Tests.Mocks;
-using Xer.Cqrs.Tests.Mocks.CommandHandlers;
 using Xer.Cqrs.Tests.Mocks.QueryHandlers;
 using Xunit;
 using Xunit.Abstractions;

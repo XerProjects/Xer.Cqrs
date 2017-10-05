@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Xer.Cqrs.AttributeHandlers.Registrations;
-using Xer.Cqrs.Dispatchers;
-using Xer.Cqrs.Registrations.CommandHandlers;
+using Xer.Cqrs.CommandStack;
+using Xer.Cqrs.CommandStack.Dispatchers;
+using Xer.Cqrs.CommandStack.Registrations;
 using Xer.Cqrs.Tests.Mocks;
 using Xer.Cqrs.Tests.Mocks.CommandHandlers;
 using Xunit;
@@ -52,7 +52,7 @@ namespace Xer.Cqrs.Tests
                 Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                 {
                     var registration = new CommandHandlerAttributeRegistration();
-                    registration.RegisterAttributedHandler(() => new TestAttributedCommandHandler(_outputHelper));
+                    registration.RegisterCommandHandlerAttributes(() => new TestAttributedCommandHandler(_outputHelper));
 
                     var cts = new CancellationTokenSource();
 

@@ -42,10 +42,24 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
         public void Save(TAggregate aggregateRoot)
         {
             DomainEventStream domainEventsToCommit = aggregateRoot.GetUncommitedDomainEvents();
-            
-            Commit(domainEventsToCommit);
 
-            NotifySubscribersInBackground(domainEventsToCommit);
+            try
+            {
+                Commit(domainEventsToCommit);
+            }
+            catch(Exception ex)
+            {
+                OnCommitError(ex);
+            }
+
+            try
+            {
+                PublishDomainEvents(domainEventsToCommit);
+            }
+            catch(Exception ex)
+            {
+                OnPublishError(ex);
+            }
 
             // Clear after committing and publishing.
             aggregateRoot.ClearUncommitedDomainEvents();
@@ -53,15 +67,35 @@ namespace Xer.DomainDriven.EventSourcing.DomainEvents.Stores
 
         /// <summary>
         /// Publishes the domain event to event subscribers.
+        /// Default implementation publishes domain events in background.
         /// </summary>
         /// <param name="domainEvents">Domain events to publish.</param>
-        private void NotifySubscribersInBackground(IEnumerable<IDomainEvent> domainEvents)
+        protected virtual void PublishDomainEvents(IEnumerable<IDomainEvent> domainEvents)
         {
             TaskUtility.RunInBackground(() =>
             {
                 IEnumerable<Task> publishTasks = domainEvents.Select(e => _publisher.PublishAsync(e));
                 return Task.WhenAll(publishTasks);
-            });
+            }, 
+            OnPublishError);
+        }
+
+        /// <summary>
+        /// Provide child class to handle exceptions that occur while publishing.
+        /// </summary>
+        /// <param name="ex">Exception that occured while publishing domain events.</param>
+        protected virtual void OnPublishError(Exception ex)
+        {
+
+        }
+
+        /// <summary>
+        /// Provide child class to handle exceptions that occur while committing.
+        /// </summary>
+        /// <param name="ex">Exception that occured while publishing domain events.</param>
+        protected virtual void OnCommitError(Exception ex)
+        {
+
         }
     }
 }

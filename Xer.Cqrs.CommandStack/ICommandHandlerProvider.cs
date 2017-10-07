@@ -11,12 +11,12 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <param name="commandType">Type of command to be handled.</param>
         /// <returns>Instance of invokeable CommandAsyncHandlerDelegate.</returns>
-        CommandAsyncHandlerDelegate GetCommandHandler(Type commandType);
+        CommandHandlerDelegate GetCommandHandler(Type commandType);
     }
 
     /// <summary>
     /// Delatate to handle command.
     /// </summary>
     /// <param name="command">Command to handle.</param>
-    public delegate Task CommandAsyncHandlerDelegate(ICommand command, CancellationToken cancellationToken = default(CancellationToken));
+    public delegate Task CommandHandlerDelegate(ICommand command, CancellationToken cancellationToken = default(CancellationToken));
 }

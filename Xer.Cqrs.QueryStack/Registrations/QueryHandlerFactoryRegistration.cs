@@ -19,9 +19,9 @@ namespace Xer.Cqrs.QueryStack.Registrations
         /// </summary>
         /// <param name="queryType">Type of query to be handled.</param>
         /// <returns>Instance of invokeable QueryAsyncHandlerDelegate.</returns>
-        public QueryAsyncHandlerDelegate<TResult> GetQueryHandler<TResult>(Type queryType)
+        public QueryHandlerDelegate<TResult> GetQueryHandler<TResult>(Type queryType)
         {
-            QueryAsyncHandlerDelegate<TResult> handleQueryDelegate;
+            QueryHandlerDelegate<TResult> handleQueryDelegate;
 
             if (!_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
             {
@@ -45,14 +45,14 @@ namespace Xer.Cqrs.QueryStack.Registrations
         {
             Type queryType = typeof(TQuery);
 
-            QueryAsyncHandlerDelegate<TResult> handleQueryDelegate;
+            QueryHandlerDelegate<TResult> handleQueryDelegate;
 
             if (_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
             {
                 throw new InvalidOperationException($"Duplicate query async handler registered for {queryType.Name}.");
             }
 
-            QueryAsyncHandlerDelegate<TResult> newHandleQueryDelegate = (q, ct) =>
+            QueryHandlerDelegate<TResult> newHandleQueryDelegate = (q, ct) =>
             {
                 IQueryHandler<TQuery, TResult> queryHandlerInstance = queryHandlerFactory.Invoke();
 
@@ -79,14 +79,14 @@ namespace Xer.Cqrs.QueryStack.Registrations
         {
             Type queryType = typeof(TQuery);
 
-            QueryAsyncHandlerDelegate<TResult> handleQueryDelegate;
+            QueryHandlerDelegate<TResult> handleQueryDelegate;
 
             if (_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
             {
                 throw new InvalidOperationException($"Duplicate query async handler registered for {queryType.Name}.");
             }
 
-            QueryAsyncHandlerDelegate<TResult> newHandleQueryDelegate = (q, ct) =>
+            QueryHandlerDelegate<TResult> newHandleQueryDelegate = (q, ct) =>
             {
                 IQueryAsyncHandler<TQuery, TResult> queryHandlerInstance = queryHandlerFactory.Invoke();
 
@@ -109,19 +109,19 @@ namespace Xer.Cqrs.QueryStack.Registrations
         {
             public IDictionary<Type, object> _storage = new Dictionary<Type, object>();
 
-            public void Add<TResult>(Type queryType, QueryAsyncHandlerDelegate<TResult> handleQueryDelegate)
+            public void Add<TResult>(Type queryType, QueryHandlerDelegate<TResult> handleQueryDelegate)
             {
                 _storage.Add(queryType, handleQueryDelegate);
             }
 
-            public bool TryGetValue<TResult>(Type queryType, out QueryAsyncHandlerDelegate<TResult> handleQueryDelegate)
+            public bool TryGetValue<TResult>(Type queryType, out QueryHandlerDelegate<TResult> handleQueryDelegate)
             {
-                handleQueryDelegate = default(QueryAsyncHandlerDelegate<TResult>);
+                handleQueryDelegate = default(QueryHandlerDelegate<TResult>);
 
                 object value;
                 if (_storage.TryGetValue(queryType, out value))
                 {
-                    handleQueryDelegate = (QueryAsyncHandlerDelegate<TResult>)value;
+                    handleQueryDelegate = (QueryHandlerDelegate<TResult>)value;
                     return true;
                 }
 

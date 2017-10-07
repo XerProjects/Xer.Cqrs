@@ -17,11 +17,11 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// </summary>
         /// <param name="commandType">Type of command to be handled.</param>
         /// <returns>Instance of invokeable CommandAsyncHandlerDelegate.</returns>
-        public CommandAsyncHandlerDelegate GetCommandHandler(Type commandType)
+        public CommandHandlerDelegate GetCommandHandler(Type commandType)
         {
             foreach(ICommandHandlerProvider provider in _providers)
             {
-                CommandAsyncHandlerDelegate handlerDelegate = provider.GetCommandHandler(commandType);
+                CommandHandlerDelegate handlerDelegate = provider.GetCommandHandler(commandType);
                 if(handlerDelegate != null)
                 {
                     return handlerDelegate;

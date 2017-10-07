@@ -34,7 +34,7 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
             {
                 Type commandType = command.GetType();
 
-                CommandAsyncHandlerDelegate commandHandlerDelegate = _provider.GetCommandHandler(commandType);
+                CommandHandlerDelegate commandHandlerDelegate = _provider.GetCommandHandler(commandType);
 
                 return commandHandlerDelegate.Invoke(command, cancellationToken);
             });

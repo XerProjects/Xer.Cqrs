@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Xer.Cqrs.CommandStack.Attributes;
-using Xer.Cqrs.CommandStack.Registrations.AttributeHandling;
 
 namespace Xer.Cqrs.CommandStack.Registrations
 {
@@ -11,9 +10,9 @@ namespace Xer.Cqrs.CommandStack.Registrations
     {
         #region Declarations
         
-        private static readonly MethodInfo NonGenericRegisterCommandHandlerMethod = typeof(CommandHandlerAttributeRegistration).GetTypeInfo().DeclaredMethods.First(m => m.Name == nameof(registerCommandHandlerMethods));
+        private static readonly MethodInfo RegisterCommandHandlerOpenGenericMethodInfo = typeof(CommandHandlerAttributeRegistration).GetTypeInfo().DeclaredMethods.First(m => m.Name == nameof(registerCommandHandlerMethod));
 
-        private readonly IDictionary<Type, CommandAsyncHandlerDelegate> _commandHandlerDelegatesByCommandType = new Dictionary<Type, CommandAsyncHandlerDelegate>();
+        private readonly IDictionary<Type, CommandHandlerDelegate> _commandHandlerDelegatesByCommandType = new Dictionary<Type, CommandHandlerDelegate>();
 
         #endregion Declarations
 
@@ -24,9 +23,9 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// </summary>
         /// <param name="commandType">Type of command to be handled.</param>
         /// <returns>Instance of invokeable CommandAsyncHandlerDelegate.</returns>
-        public CommandAsyncHandlerDelegate GetCommandHandler(Type commandType)
+        public CommandHandlerDelegate GetCommandHandler(Type commandType)
         {
-            CommandAsyncHandlerDelegate handlerDelegate;
+            CommandHandlerDelegate handlerDelegate;
 
             if (!_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out handlerDelegate))
             {
@@ -53,13 +52,15 @@ namespace Xer.Cqrs.CommandStack.Registrations
             Type attributedObjectType = typeof(TAttributed);
 
             // Get all public methods marked with CommandHandler attribute.
-            IEnumerable<CommandHandlerMethod> commandHandlerMethods = GetCommandHandlerMethods(attributedObjectType);
+            IEnumerable<CommandHandlerAttributeMethod> commandHandlerMethods = getCommandHandlerMethods(attributedObjectType);
 
-            foreach (CommandHandlerMethod commandHandlerMethod in commandHandlerMethods)
+            foreach (CommandHandlerAttributeMethod commandHandlerMethod in commandHandlerMethods)
             {                
-                MethodInfo genericRegisterCommandHandlerMethod = NonGenericRegisterCommandHandlerMethod.MakeGenericMethod(attributedObjectType, commandHandlerMethod.CommandType);
+                MethodInfo registerCommandHandlerGenericMethodInfo = RegisterCommandHandlerOpenGenericMethodInfo.MakeGenericMethod(
+                    attributedObjectType, 
+                    commandHandlerMethod.CommandType);
 
-                genericRegisterCommandHandlerMethod.Invoke(this, new object[]
+                registerCommandHandlerGenericMethodInfo.Invoke(this, new object[]
                 {
                     attributedHandlerFactory, commandHandlerMethod
                 });
@@ -70,11 +71,26 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
         #region Functions
 
-        private static IEnumerable<CommandHandlerMethod> GetCommandHandlerMethods(Type commandHandlerType)
+        private void registerCommandHandlerMethod<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, CommandHandlerAttributeMethod commandHandlerMethod) where TCommand : ICommand
         {
-            List<CommandHandlerMethod> commandHandlerMethods = new List<CommandHandlerMethod>();
+            Type commandType = typeof(TCommand);
 
-            foreach(MethodInfo methodInfo in commandHandlerType.GetRuntimeMethods())
+            CommandHandlerDelegate handleCommandDelegate;
+            if (_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out handleCommandDelegate))
+            {
+                throw new InvalidOperationException($"Duplicate command handler registered for {commandType.Name}.");
+            }
+
+            CommandHandlerDelegate newHandleCommandDelegate = commandHandlerMethod.CreateDelegate<TAttributed, TCommand>(attributedObjectFactory);
+
+            _commandHandlerDelegatesByCommandType.Add(commandType, newHandleCommandDelegate);
+        }
+
+        private static IEnumerable<CommandHandlerAttributeMethod> getCommandHandlerMethods(Type commandHandlerType)
+        {
+            List<CommandHandlerAttributeMethod> commandHandlerMethods = new List<CommandHandlerAttributeMethod>();
+
+            foreach (MethodInfo methodInfo in commandHandlerType.GetRuntimeMethods())
             {
                 if (!methodInfo.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute)))
                 {
@@ -82,25 +98,10 @@ namespace Xer.Cqrs.CommandStack.Registrations
                     continue;
                 }
 
-                commandHandlerMethods.Add(CommandHandlerMethod.Create(methodInfo));
+                commandHandlerMethods.Add(CommandHandlerAttributeMethod.Create(methodInfo));
             }
 
             return commandHandlerMethods;
-        }
-
-        private void registerCommandHandlerMethods<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, CommandHandlerMethod commandHandlerMethod) where TCommand : ICommand
-        {
-            Type commandType = typeof(TCommand);
-
-            CommandAsyncHandlerDelegate handleCommandDelegate;
-            if (_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out handleCommandDelegate))
-            {
-                throw new InvalidOperationException($"Duplicate command handler registered for {commandType.Name}.");
-            }
-
-            CommandAsyncHandlerDelegate newHandleCommandDelegate = commandHandlerMethod.CreateDelegate<TAttributed, TCommand>(attributedObjectFactory);
-
-            _commandHandlerDelegatesByCommandType.Add(commandType, newHandleCommandDelegate);
         }
 
         #endregion Functions

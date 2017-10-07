@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Xer.Cqrs.QueryStack;
-using Xer.Cqrs.QueryStack.Registrations.AttributeHandling;
 
 namespace Xer.Cqrs.QueryStack.Registrations
 {
@@ -11,9 +9,9 @@ namespace Xer.Cqrs.QueryStack.Registrations
     {
         #region Declarations
 
-        private static readonly MethodInfo NonGenericRegisterAsyncQueryHandlerMethod = typeof(QueryHandlerAttributeRegistration).GetTypeInfo().DeclaredMethods.First(m => m.Name == nameof(registerQueryHandlerMethod));
+        private static readonly MethodInfo RegisterQueryHandlerOpenGenericMethodInfo = typeof(QueryHandlerAttributeRegistration).GetTypeInfo().DeclaredMethods.First(m => m.Name == nameof(registerQueryHandlerMethod));
 
-        private readonly QueryHandlerCache _queryHandlerDelegatesByQueryType = new QueryHandlerCache();
+        private readonly QueryHandlerDelegateStore _queryHandlerDelegatesByQueryType = new QueryHandlerDelegateStore();
 
         #endregion Declarations
 
@@ -24,9 +22,9 @@ namespace Xer.Cqrs.QueryStack.Registrations
         /// </summary>
         /// <param name="queryType">Type of query to be handled.</param>
         /// <returns>Instance of invokeable QueryAsyncHandlerDelegate.</returns>
-        public QueryAsyncHandlerDelegate<TResult> GetQueryHandler<TResult>(Type queryType)
+        public QueryHandlerDelegate<TResult> GetQueryHandler<TResult>(Type queryType)
         {
-            QueryAsyncHandlerDelegate<TResult> handleQueryDelegate;
+            QueryHandlerDelegate<TResult> handleQueryDelegate;
 
             if (!_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
             {
@@ -38,7 +36,7 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
         #endregion IQueryHandlerProvider Implementation
 
-        #region IAttributedHandlerFactoryRegistration Implementation
+        #region IQueryHandlerAttributeRegistration Implementation
 
         /// <summary>
         /// Register all methods of the instance that are marked with [QueryHandler].
@@ -52,54 +50,51 @@ namespace Xer.Cqrs.QueryStack.Registrations
         {
             // Get all public methods marked with CommandHandler attribute.
             Type attributedHandlerType = typeof(TAttributed);
-            IEnumerable<QueryHandlerMethod> queryHandlerMethods = GetQueryHandlerMethods(attributedHandlerType);
+            IEnumerable<QueryHandlerAttributeMethod> queryHandlerMethods = getQueryHandlerMethods(attributedHandlerType);
 
-            foreach (QueryHandlerMethod queryHandlerMethod in queryHandlerMethods)
+            foreach (QueryHandlerAttributeMethod queryHandlerMethod in queryHandlerMethods)
             {
-                MethodInfo genericRegisterQueryHandlerMethod = NonGenericRegisterAsyncQueryHandlerMethod.MakeGenericMethod(attributedHandlerType, queryHandlerMethod.QueryType, queryHandlerMethod.QueryReturnType);
+                MethodInfo registerQueryHandlerGenericMethodInfo = RegisterQueryHandlerOpenGenericMethodInfo.MakeGenericMethod(
+                    attributedHandlerType, 
+                    queryHandlerMethod.QueryType, 
+                    queryHandlerMethod.QueryReturnType);
 
-                genericRegisterQueryHandlerMethod.Invoke(this, new object[]
+                registerQueryHandlerGenericMethodInfo.Invoke(this, new object[]
                 {
                     attributedHandlerFactory, queryHandlerMethod
                 });
             }
         }
 
-        #endregion IAttributedHandlerFactoryRegistration Implementation
+        #endregion IQueryHandlerAttributeRegistration Implementation
 
         #region Functions
 
-        private static IEnumerable<QueryHandlerMethod> GetQueryHandlerMethods(Type queryHandlerType)
-        {
-            List<QueryHandlerMethod> queryHandlerMethods = new List<QueryHandlerMethod>();
-
-            foreach(MethodInfo methodInfo in queryHandlerType.GetRuntimeMethods())
-            {
-                if (!methodInfo.CustomAttributes.Any(a => a.AttributeType == typeof(QueryHandlerAttribute)))
-                {
-                    // Method not marked with [QueryHandler]. Skip.
-                    continue;
-                }
-
-                queryHandlerMethods.Add(QueryHandlerMethod.Create(methodInfo));
-            }
-
-            return queryHandlerMethods;
-        }
-
-        private void registerQueryHandlerMethod<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory, QueryHandlerMethod queryHandlerMethod) where TQuery : IQuery<TResult>
+        private void registerQueryHandlerMethod<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory, QueryHandlerAttributeMethod queryHandlerMethod) where TQuery : IQuery<TResult>
         {
             Type specificQueryType = typeof(TQuery);
 
-            QueryAsyncHandlerDelegate<TResult> handleQueryDelegate;
+            QueryHandlerDelegate<TResult> handleQueryDelegate;
             if (_queryHandlerDelegatesByQueryType.TryGetValue(specificQueryType, out handleQueryDelegate))
             {
                 throw new InvalidOperationException($"Duplicate query handler registered for {specificQueryType.Name} query.");
             }
 
-            QueryAsyncHandlerDelegate<TResult> newHandleQueryDelegate = queryHandlerMethod.CreateDelegate<TAttributed, TQuery, TResult>(attributedObjectFactory);
+            QueryHandlerDelegate<TResult> newHandleQueryDelegate = queryHandlerMethod.CreateDelegate<TAttributed, TQuery, TResult>(attributedObjectFactory);
 
             _queryHandlerDelegatesByQueryType.Add(specificQueryType, newHandleQueryDelegate);
+        }
+
+        private IEnumerable<QueryHandlerAttributeMethod> getQueryHandlerMethods(Type queryHandlerType)
+        {
+            List<QueryHandlerAttributeMethod> queryHandlerMethods = new List<QueryHandlerAttributeMethod>();
+
+            foreach (MethodInfo methodInfo in queryHandlerType.GetRuntimeMethods())
+            {
+                queryHandlerMethods.Add(QueryHandlerAttributeMethod.Create(methodInfo));
+            }
+
+            return queryHandlerMethods;
         }
 
         #endregion Functions
@@ -107,28 +102,27 @@ namespace Xer.Cqrs.QueryStack.Registrations
         #region Inner Cache Class
 
         /// <summary>
-        /// This class takes care of caching different query delegates.
+        /// This class takes care of storing different query delegates with different return types.
         /// </summary>
-        private class QueryHandlerCache
+        private class QueryHandlerDelegateStore
         {
             public readonly IDictionary<Type, object> _storage = new Dictionary<Type, object>();
 
-            public void Add<TResult>(Type queryType, QueryAsyncHandlerDelegate<TResult> queryHandlerDelegate)
+            public void Add<TResult>(Type queryType, QueryHandlerDelegate<TResult> queryHandlerDelegate)
             {
                 _storage.Add(queryType, queryHandlerDelegate);
             }
 
-            public bool TryGetValue<TResult>(Type queryType, out QueryAsyncHandlerDelegate<TResult> queryHandlerDelegate)
+            public bool TryGetValue<TResult>(Type queryType, out QueryHandlerDelegate<TResult> queryHandlerDelegate)
             {
-                queryHandlerDelegate = default(QueryAsyncHandlerDelegate<TResult>);
-
                 object value;
                 if (_storage.TryGetValue(queryType, out value))
                 {
-                    queryHandlerDelegate = (QueryAsyncHandlerDelegate<TResult>)value;
+                    queryHandlerDelegate = (QueryHandlerDelegate<TResult>)value;
                     return true;
                 }
 
+                queryHandlerDelegate = default(QueryHandlerDelegate<TResult>);
                 return false;
             }
         }

@@ -11,7 +11,7 @@ namespace Xer.Cqrs.QueryStack
         /// </summary>
         /// <param name="queryType">Type of query to be handled.</param>
         /// <returns>Instance of invokeable QueryAsyncHandlerDelegate.</returns>
-        QueryAsyncHandlerDelegate<TResult> GetQueryHandler<TResult>(Type queryType);
+        QueryHandlerDelegate<TResult> GetQueryHandler<TResult>(Type queryType);
     }
 
     /// <summary>
@@ -19,5 +19,5 @@ namespace Xer.Cqrs.QueryStack
     /// </summary>
     /// <param name="query">Query to handle.</param>
     /// <returns>Query result.</returns>
-    public delegate Task<TResult> QueryAsyncHandlerDelegate<TResult>(IQuery<TResult> query, CancellationToken cancellationToken = default(CancellationToken));
+    public delegate Task<TResult> QueryHandlerDelegate<TResult>(IQuery<TResult> query, CancellationToken cancellationToken = default(CancellationToken));
 }

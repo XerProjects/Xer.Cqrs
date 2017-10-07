@@ -8,7 +8,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
     {
         #region Declarations
 
-        private readonly IDictionary<Type, CommandAsyncHandlerDelegate> _commandHandlerDelegatesByCommandType = new Dictionary<Type, CommandAsyncHandlerDelegate>();
+        private readonly IDictionary<Type, CommandHandlerDelegate> _commandHandlerDelegatesByCommandType = new Dictionary<Type, CommandHandlerDelegate>();
 
         #endregion Declarations
 
@@ -23,14 +23,14 @@ namespace Xer.Cqrs.CommandStack.Registrations
         {
             Type commandType = typeof(TCommand);
 
-            CommandAsyncHandlerDelegate handleCommandDelegate;
+            CommandHandlerDelegate handleCommandDelegate;
 
             if (_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out handleCommandDelegate))
             {
                 throw new InvalidOperationException($"Duplicate command async handler registered for {commandType.Name}.");
             }
 
-            CommandAsyncHandlerDelegate newHandleCommandDelegate = (c, ct) =>
+            CommandHandlerDelegate newHandleCommandDelegate = (c, ct) =>
             {
                 ICommandHandler<TCommand> commandHandlerInstance = commandHandlerFactory.Invoke();
 
@@ -56,14 +56,14 @@ namespace Xer.Cqrs.CommandStack.Registrations
         {
             Type commandType = typeof(TCommand);
 
-            CommandAsyncHandlerDelegate handleCommandDelegate;
+            CommandHandlerDelegate handleCommandDelegate;
 
             if (_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out handleCommandDelegate))
             {
                 throw new InvalidOperationException($"Duplicate command async handler registered for {commandType.Name}.");
             }
 
-            CommandAsyncHandlerDelegate newHandleCommandDelegate = (c, ct) =>
+            CommandHandlerDelegate newHandleCommandDelegate = (c, ct) =>
             {
                 ICommandAsyncHandler<TCommand> commandHandlerInstance = commandAsyncHandlerFactory.Invoke();
 
@@ -87,9 +87,9 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// </summary>
         /// <param name="commandType">Type of command to be handled.</param>
         /// <returns>Instance of invokeable CommandAsyncHandlerDelegate.</returns>
-        public CommandAsyncHandlerDelegate GetCommandHandler(Type commandType)
+        public CommandHandlerDelegate GetCommandHandler(Type commandType)
         {
-            CommandAsyncHandlerDelegate handleCommandDelegate;
+            CommandHandlerDelegate handleCommandDelegate;
 
             if (!_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out handleCommandDelegate))
             {

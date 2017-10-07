@@ -17,11 +17,11 @@ namespace Xer.Cqrs.QueryStack.Registrations
         /// </summary>
         /// <param name="queryType">Type of query to be handled.</param>
         /// <returns>Instance of invokeable QueryAsyncHandlerDelegate.</returns>
-        public QueryAsyncHandlerDelegate<TResult> GetQueryHandler<TResult>(Type queryType)
+        public QueryHandlerDelegate<TResult> GetQueryHandler<TResult>(Type queryType)
         {
             foreach (IQueryHandlerProvider provider in _providers)
             {
-                QueryAsyncHandlerDelegate<TResult> handlerDelegate = provider.GetQueryHandler<TResult>(queryType);
+                QueryHandlerDelegate<TResult> handlerDelegate = provider.GetQueryHandler<TResult>(queryType);
                 if (handlerDelegate != null)
                 {
                     return handlerDelegate;

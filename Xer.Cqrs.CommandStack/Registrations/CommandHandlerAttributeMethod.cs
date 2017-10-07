@@ -5,9 +5,9 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Xer.Cqrs.CommandStack.Registrations.AttributeHandling
+namespace Xer.Cqrs.CommandStack.Registrations
 {
-    internal class CommandHandlerMethod
+    internal class CommandHandlerAttributeMethod
     {
         #region Declarations
 
@@ -26,7 +26,7 @@ namespace Xer.Cqrs.CommandStack.Registrations.AttributeHandling
 
         #region Constructors
 
-        private CommandHandlerMethod(Type commandType, MethodInfo methodInfo, bool isAsync, bool supportsCancellation)
+        private CommandHandlerAttributeMethod(Type commandType, MethodInfo methodInfo, bool isAsync, bool supportsCancellation)
         {
             CommandType = commandType ?? throw new ArgumentNullException(nameof(commandType));
             MethodInfo = methodInfo ?? throw new ArgumentNullException(nameof(methodInfo));
@@ -38,9 +38,9 @@ namespace Xer.Cqrs.CommandStack.Registrations.AttributeHandling
 
         #region Methods
 
-        public CommandAsyncHandlerDelegate CreateDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) where TCommand : ICommand
+        public CommandHandlerDelegate CreateDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) where TCommand : ICommand
         {
-            CommandAsyncHandlerDelegate newCommandHandlerDelegate;
+            CommandHandlerDelegate newCommandHandlerDelegate;
 
             if (IsAsync)
             {
@@ -61,7 +61,7 @@ namespace Xer.Cqrs.CommandStack.Registrations.AttributeHandling
             return newCommandHandlerDelegate;
         }
 
-        public static CommandHandlerMethod Create(MethodInfo methodInfo)
+        public static CommandHandlerAttributeMethod Create(MethodInfo methodInfo)
         {
             ParameterInfo[] methodParameters = methodInfo.GetParameters();
 
@@ -99,18 +99,18 @@ namespace Xer.Cqrs.CommandStack.Registrations.AttributeHandling
 
             bool supportsCancellation = methodParameters.Any(p => p.ParameterType == typeof(CancellationToken));
 
-            return new CommandHandlerMethod(commandType, methodInfo, isAsync, supportsCancellation);
+            return new CommandHandlerAttributeMethod(commandType, methodInfo, isAsync, supportsCancellation);
         }
 
         #endregion Methods
 
         #region Functions
 
-        private CommandAsyncHandlerDelegate createWrappedSyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory)
+        private CommandHandlerDelegate createWrappedSyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory)
         {
-            AttributedCommandHandlerDelegate<TAttributed, TCommand> action = (AttributedCommandHandlerDelegate<TAttributed, TCommand>)MethodInfo.CreateDelegate(typeof(AttributedCommandHandlerDelegate<TAttributed, TCommand>));
+            Action<TAttributed, TCommand> action = (Action<TAttributed, TCommand>)MethodInfo.CreateDelegate(typeof(Action<TAttributed, TCommand>));
 
-            CommandAsyncHandlerDelegate newHandleCommandDelegate = (c, ct) =>
+            CommandHandlerDelegate newHandleCommandDelegate = (c, ct) =>
             {
                 TAttributed instance = attributedObjectFactory.Invoke();
 
@@ -127,11 +127,11 @@ namespace Xer.Cqrs.CommandStack.Registrations.AttributeHandling
             return newHandleCommandDelegate;
         }
 
-        private CommandAsyncHandlerDelegate createCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory)
+        private CommandHandlerDelegate createCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory)
         {
-            AttributedCommandAsyncHandlerCancellableDelegate<TAttributed, TCommand> action = (AttributedCommandAsyncHandlerCancellableDelegate<TAttributed, TCommand>)MethodInfo.CreateDelegate(typeof(AttributedCommandAsyncHandlerCancellableDelegate<TAttributed, TCommand>));
+            Func<TAttributed, TCommand, CancellationToken, Task> action = (Func<TAttributed, TCommand, CancellationToken, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, CancellationToken, Task>));
 
-            CommandAsyncHandlerDelegate newHandleCommandDelegate = (c, ct) =>
+            CommandHandlerDelegate newHandleCommandDelegate = (c, ct) =>
             {
                 TAttributed instance = attributedObjectFactory.Invoke();
 
@@ -146,11 +146,11 @@ namespace Xer.Cqrs.CommandStack.Registrations.AttributeHandling
             return newHandleCommandDelegate;
         }
 
-        private CommandAsyncHandlerDelegate createNonCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory)
+        private CommandHandlerDelegate createNonCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory)
         {
-            AttributedCommandAsyncHandlerDelegate<TAttributed, TCommand> action = (AttributedCommandAsyncHandlerDelegate<TAttributed, TCommand>)MethodInfo.CreateDelegate(typeof(AttributedCommandAsyncHandlerDelegate<TAttributed, TCommand>));
+            Func<TAttributed, TCommand, Task> action = (Func<TAttributed, TCommand, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, Task>));
 
-            CommandAsyncHandlerDelegate newHandleCommandDelegate = (c, ct) =>
+            CommandHandlerDelegate newHandleCommandDelegate = (c, ct) =>
             {
                 TAttributed instance = attributedObjectFactory.Invoke();
 

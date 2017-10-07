@@ -36,7 +36,7 @@ namespace Xer.Cqrs.QueryStack.Dispatchers
         {
             Type queryType = query.GetType();
 
-            QueryAsyncHandlerDelegate<TResult> handleQueryAsyncDelegate = _provider.GetQueryHandler<TResult>(queryType);
+            QueryHandlerDelegate<TResult> handleQueryAsyncDelegate = _provider.GetQueryHandler<TResult>(queryType);
 
             return handleQueryAsyncDelegate.Invoke(query, cancellationToken);
         }

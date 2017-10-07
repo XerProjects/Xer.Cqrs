@@ -92,16 +92,12 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
             foreach (MethodInfo methodInfo in commandHandlerType.GetRuntimeMethods())
             {
-                if (!methodInfo.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute)))
+                if (methodInfo.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute)))
                 {
-                    // Method not marked with [CommandHandler]. Skip.
-                    continue;
+                    // Return methods marked with [CommandHandler].
+                    yield return CommandHandlerAttributeMethod.Create(methodInfo);
                 }
-
-                commandHandlerMethods.Add(CommandHandlerAttributeMethod.Create(methodInfo));
             }
-
-            return commandHandlerMethods;
         }
 
         #endregion Functions

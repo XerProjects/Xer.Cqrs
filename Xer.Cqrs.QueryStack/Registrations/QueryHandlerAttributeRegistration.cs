@@ -85,16 +85,18 @@ namespace Xer.Cqrs.QueryStack.Registrations
             _queryHandlerDelegatesByQueryType.Add(specificQueryType, newHandleQueryDelegate);
         }
 
-        private IEnumerable<QueryHandlerAttributeMethod> getQueryHandlerMethods(Type queryHandlerType)
+        private static IEnumerable<QueryHandlerAttributeMethod> getQueryHandlerMethods(Type queryHandlerType)
         {
             List<QueryHandlerAttributeMethod> queryHandlerMethods = new List<QueryHandlerAttributeMethod>();
 
             foreach (MethodInfo methodInfo in queryHandlerType.GetRuntimeMethods())
             {
-                queryHandlerMethods.Add(QueryHandlerAttributeMethod.Create(methodInfo));
+                if (methodInfo.CustomAttributes.Any(a => a.AttributeType == typeof(QueryHandlerAttribute)))
+                {
+                    // Return methods marked with [QueryHandler].
+                    yield return QueryHandlerAttributeMethod.Create(methodInfo);
+                }
             }
-
-            return queryHandlerMethods;
         }
 
         #endregion Functions

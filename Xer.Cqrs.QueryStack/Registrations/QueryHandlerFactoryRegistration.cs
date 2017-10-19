@@ -4,34 +4,13 @@ using System.Threading.Tasks;
 
 namespace Xer.Cqrs.QueryStack.Registrations
 {
-    public partial class QueryHandlerFactoryRegistration : IQueryHandlerProvider, IQueryHandlerFactoryRegistration
+    public partial class QueryHandlerFactoryRegistration : IQueryHandlerResolver, IQueryHandlerFactoryRegistration
     {
         #region Declarations
 
         private readonly QueryHandlerCache _queryHandlerDelegatesByQueryType = new QueryHandlerCache();
 
         #endregion Declarations
-
-        #region IQueryAsyncHandlerProvider Implementation
-
-        /// <summary>
-        /// Get the registered query handler delegate to handle the query of the specified type.
-        /// </summary>
-        /// <param name="queryType">Type of query to be handled.</param>
-        /// <returns>Instance of invokeable QueryAsyncHandlerDelegate.</returns>
-        public QueryHandlerDelegate<TResult> GetQueryHandler<TResult>(Type queryType)
-        {
-            QueryHandlerDelegate<TResult> handleQueryDelegate;
-
-            if (!_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
-            {
-                throw new QueryNotHandledException($"No query handler is registered to handle query of type: { queryType.Name }");
-            }
-
-            return handleQueryDelegate;
-        }
-
-        #endregion IQueryAsyncHandlerProvider Implementation
 
         #region IQueryHandlerFactoryRegistration Implementation
 
@@ -102,7 +81,30 @@ namespace Xer.Cqrs.QueryStack.Registrations
         }
 
         #endregion IQueryHandlerFactoryRegistration Implementation
-        
+
+        #region IQueryHandlerResolver Implementation
+
+        /// <summary>
+        /// Get the registered query handler delegate to handle the query of the specified type.
+        /// </summary>
+        /// <param name="queryType">Type of query to be handled.</param>
+        /// <returns>Instance of invokeable QueryAsyncHandlerDelegate.</returns>
+        public QueryHandlerDelegate<TResult> ResolveQueryHandler<TQuery, TResult>() where TQuery : IQuery<TResult>
+        {
+            Type queryType = typeof(TQuery);
+
+            QueryHandlerDelegate<TResult> handleQueryDelegate;
+
+            if (!_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
+            {
+                throw new QueryNotHandledException($"No query handler is registered to handle query of type: { queryType.Name }");
+            }
+
+            return handleQueryDelegate;
+        }
+
+        #endregion IQueryHandlerResolver Implementation
+
         #region Inner Cache Class
 
         private class QueryHandlerCache

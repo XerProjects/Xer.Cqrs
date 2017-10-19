@@ -61,9 +61,9 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                 registration.RegisterQueryHandlerAttributes(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result1 = dispatcher.DispatchAsync(new QuerySomething("Test message 1."));
-                var result2 = dispatcher.DispatchAsync(new QuerySomething("Test message 2."));
-                var result3 = dispatcher.DispatchAsync(new QuerySomething("Test message 3."));
+                var result1 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething("Test message 1."));
+                var result2 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething("Test message 2."));
+                var result3 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething("Test message 3."));
 
                 await Task.WhenAll(result1, result2, result3);
 
@@ -79,7 +79,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                 registration.RegisterQueryHandlerAttributes(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result = await dispatcher.DispatchAsync(new QuerySomethingAsync("Test async message."));
+                var result = await dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomethingAsync("Test async message."));
 
                 Assert.Equal(result, "Test async message.");
             }
@@ -91,7 +91,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                 registration.RegisterQueryHandlerAttributes(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result = await dispatcher.DispatchAsync(new QuerySomethingAsyncWithDelay("Test async message with cancellation token.", 10000));
+                var result = await dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomethingAsyncWithDelay("Test async message with cancellation token.", 10000));
 
                 Assert.Equal(result, "Test async message with cancellation token.");
             }
@@ -108,7 +108,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
 
                         var dispatcher = new QueryDispatcher(registration);
 
-                        return dispatcher.DispatchAsync(new QuerySomethingWithException("This will cause an exception."));
+                        return dispatcher.DispatchAsync<QuerySomethingWithException, string>(new QuerySomethingWithException("This will cause an exception."));
                     }
                     catch (Exception ex)
                     {
@@ -139,9 +139,9 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                 registration.RegisterQueryHandlerAttributes(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result1 = dispatcher.Dispatch(new QuerySomething("Test message 1."));
-                var result2 = dispatcher.Dispatch(new QuerySomething("Test message 2."));
-                var result3 = dispatcher.Dispatch(new QuerySomething("Test message 3."));
+                var result1 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething("Test message 1."));
+                var result2 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething("Test message 2."));
+                var result3 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething("Test message 3."));
             }
 
             [Fact]
@@ -151,7 +151,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                 registration.RegisterQueryHandlerAttributes(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result = dispatcher.Dispatch(new QuerySomethingAsync("Test async message."));
+                var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomethingAsync("Test async message."));
 
                 Assert.Equal(result, "Test async message.");
             }
@@ -163,7 +163,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
                 registration.RegisterQueryHandlerAttributes(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result = dispatcher.Dispatch(new QuerySomethingAsyncWithDelay("Test async message with cancellation token.", 10000));
+                var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomethingAsyncWithDelay("Test async message with cancellation token.", 10000));
 
                 Assert.Equal(result, "Test async message with cancellation token.");
             }
@@ -180,7 +180,7 @@ namespace Xer.Cqrs.Tests.AttributeHandling
 
                         var dispatcher = new QueryDispatcher(registration);
 
-                        dispatcher.Dispatch(new QuerySomethingWithException("This will cause an exception."));
+                        dispatcher.Dispatch<QuerySomethingWithException, string>(new QuerySomethingWithException("This will cause an exception."));
                     }
                     catch (Exception ex)
                     {

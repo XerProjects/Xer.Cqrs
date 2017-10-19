@@ -6,7 +6,7 @@ using Xer.Cqrs.CommandStack.Attributes;
 
 namespace Xer.Cqrs.CommandStack.Registrations
 {
-    public class CommandHandlerAttributeRegistration : ICommandHandlerAttributeRegistration, ICommandHandlerProvider
+    public class CommandHandlerAttributeRegistration : ICommandHandlerAttributeRegistration, ICommandHandlerResolver
     {
         #region Declarations
         
@@ -15,28 +15,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
         private readonly IDictionary<Type, CommandHandlerDelegate> _commandHandlerDelegatesByCommandType = new Dictionary<Type, CommandHandlerDelegate>();
 
         #endregion Declarations
-
-        #region IQueryHandlerProvider Implementation
-
-        /// <summary>
-        /// Get a delegate to handle the command of the specified type.
-        /// </summary>
-        /// <param name="commandType">Type of command to be handled.</param>
-        /// <returns>Instance of invokeable CommandAsyncHandlerDelegate.</returns>
-        public CommandHandlerDelegate GetCommandHandler(Type commandType)
-        {
-            CommandHandlerDelegate handlerDelegate;
-
-            if (!_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out handlerDelegate))
-            {
-                throw new CommandNotHandledException($"No command handler is registered to handle command of type: { commandType.Name }.");
-            }
-
-            return handlerDelegate;
-        }
-
-        #endregion IQueryHandlerProvider Implementation
-
+        
         #region ICommandHandlerAttributeRegistration Implementation
 
         /// <summary>
@@ -68,6 +47,29 @@ namespace Xer.Cqrs.CommandStack.Registrations
         }
 
         #endregion ICommandHandlerAttributeRegistration Implementation
+
+        #region ICommandHandlerResolver Implementation
+
+        /// <summary>
+        /// Get a delegate to handle the command of the specified type.
+        /// </summary>
+        /// <param name="commandType">Type of command to be handled.</param>
+        /// <returns>Instance of invokeable CommandAsyncHandlerDelegate.</returns>
+        public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : ICommand
+        {
+            Type commandType = typeof(TCommand);
+
+            CommandHandlerDelegate handlerDelegate;
+
+            if (!_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out handlerDelegate))
+            {
+                throw new CommandNotHandledException($"No command handler is registered to handle command of type: { commandType.Name }.");
+            }
+
+            return handlerDelegate;
+        }
+
+        #endregion ICommandHandlerResolver Implementation
 
         #region Functions
 

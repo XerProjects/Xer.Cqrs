@@ -6,9 +6,9 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
 {
     public class BackgroundCommandDispatcher : ICommandDispatcher, ICommandAsyncDispatcher
     {
-        private readonly ICommandHandlerProvider _provider;
+        private readonly ICommandHandlerResolver _provider;
 
-        public BackgroundCommandDispatcher(ICommandHandlerProvider provider) 
+        public BackgroundCommandDispatcher(ICommandHandlerResolver provider) 
         {
             _provider = provider;
         }
@@ -17,24 +17,23 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
         /// Dispatch the command to the registered command handlers in the background.
         /// </summary>
         /// <param name="command">Command to dispatch.</param>
-        public void Dispatch(ICommand command)
+        public void Dispatch<TCommand>(TCommand command) where TCommand : ICommand
         {
-            DispatchAsync(command);
+            DispatchAsync(command).ContinueWith(t => t.Await());
         }
 
         /// <summary>
         /// Dispatch the command to the registered command handlers in the background.
         /// </summary>
+        /// <typeparam name="TCommand">Type of command to dispatch.</typeparam>
         /// <param name="command">Command to dispatch.</param>
         /// <param name="cancellationToken">Optional cancellation token to support cancellation.</param>
         /// <returns>Task which can be awaited asynchronously.</returns>
-        public Task DispatchAsync(ICommand command, CancellationToken cancellationToken = default(CancellationToken))
+        public Task DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default(CancellationToken)) where TCommand : ICommand
         {
             return Task.Run(() =>
             {
-                Type commandType = command.GetType();
-
-                CommandHandlerDelegate commandHandlerDelegate = _provider.GetCommandHandler(commandType);
+                CommandHandlerDelegate commandHandlerDelegate = _provider.ResolveCommandHandler<TCommand>();
 
                 return commandHandlerDelegate.Invoke(command, cancellationToken);
             });

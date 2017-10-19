@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Xer.Cqrs.CommandStack.Registrations
 {
-    public partial class CommandHandlerFactoryRegistration : ICommandHandlerProvider, ICommandHandlerFactoryRegistration
+    public partial class CommandHandlerFactoryRegistration : ICommandHandlerResolver, ICommandHandlerFactoryRegistration
     {
         #region Declarations
 
@@ -80,25 +80,27 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
         #endregion ICommandAsyncHandlerFactoryRegistration Implementation
 
-        #region ICommandAsyncHandlerProvider Implementation
+        #region ICommandHandlerResolver Implementation
 
         /// <summary>
         /// Get the registered command handler delegate to handle the command of the specified type.
         /// </summary>
         /// <param name="commandType">Type of command to be handled.</param>
         /// <returns>Instance of invokeable CommandAsyncHandlerDelegate.</returns>
-        public CommandHandlerDelegate GetCommandHandler(Type commandType)
+        public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : ICommand
         {
+            Type commandType = typeof(TCommand);
+
             CommandHandlerDelegate handleCommandDelegate;
 
             if (!_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out handleCommandDelegate))
             {
-                throw new CommandNotHandledException($"No command handler is registered to handle command of type: { commandType.Name }");
+                throw new CommandNotHandledException($"No command handler is registered to handle command of type: { commandType.Name }.");
             }
 
             return handleCommandDelegate;
         }
 
-        #endregion ICommandAsyncHandlerProvider Implementation
+        #endregion ICommandHandlerResolver Implementation
     }
 }

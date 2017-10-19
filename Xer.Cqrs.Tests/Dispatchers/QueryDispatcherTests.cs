@@ -33,7 +33,7 @@ namespace Xer.Cqrs.Tests
                 string data = "Test async message.";
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result = await dispatcher.DispatchAsync(new QuerySomethingAsync(data));
+                var result = await dispatcher.DispatchAsync<QuerySomethingAsync, string>(new QuerySomethingAsync(data));
 
                 Assert.Equal(result, data);
             }
@@ -49,9 +49,9 @@ namespace Xer.Cqrs.Tests
                 string data2 = "Test message 2.";
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result1 = dispatcher.DispatchAsync(new QuerySomething(data1));
-                var result2 = dispatcher.DispatchAsync(new QuerySomething(data2));
-                var result3 = dispatcher.DispatchAsync(new QuerySomethingNonReferenceType(1));
+                var result1 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething(data1));
+                var result2 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething(data2));
+                var result3 = dispatcher.DispatchAsync<QuerySomethingNonReferenceType, int>(new QuerySomethingNonReferenceType(1));
 
                 await Task.WhenAll(result1, result2, result3);
 
@@ -72,7 +72,7 @@ namespace Xer.Cqrs.Tests
 
                 string data = "Test async message with cancellation token.";
 
-                var result = await dispatcher.DispatchAsync(new QuerySomethingAsyncWithDelay(data, 500), cts.Token);
+                var result = await dispatcher.DispatchAsync<QuerySomethingAsyncWithDelay, string>(new QuerySomethingAsyncWithDelay(data, 500), cts.Token);
 
                 Assert.Equal(result, data);
             }
@@ -88,7 +88,7 @@ namespace Xer.Cqrs.Tests
                     var cts = new CancellationTokenSource();
 
                     var dispatcher = new QueryDispatcher(registration);
-                    Task task = dispatcher.DispatchAsync(new QuerySomethingAsyncWithDelay("This will be cancelled", 2000), cts.Token);
+                    Task task = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomethingAsyncWithDelay("This will be cancelled", 2000), cts.Token);
 
                     cts.Cancel();
 
@@ -108,7 +108,7 @@ namespace Xer.Cqrs.Tests
 
                         var dispatcher = new QueryDispatcher(registration);
 
-                        return dispatcher.DispatchAsync(new QuerySomethingWithException("This will cause an exception."));
+                        return dispatcher.DispatchAsync<QuerySomethingWithException, string>(new QuerySomethingWithException("This will cause an exception."));
                     }
                     catch (Exception ex)
                     {
@@ -139,7 +139,7 @@ namespace Xer.Cqrs.Tests
                 registration.Register(() => (IQueryHandler<QuerySomething, string>)new TestQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result = dispatcher.Dispatch(new QuerySomething("Test message."));
+                var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething("Test message."));
 
                 Assert.Equal(result, "Test message.");
             }
@@ -151,7 +151,7 @@ namespace Xer.Cqrs.Tests
                 registration.Register(() => (IQueryHandler<QuerySomethingNonReferenceType, int>)new TestQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result = await dispatcher.DispatchAsync(new QuerySomethingNonReferenceType(1973));
+                var result = await dispatcher.DispatchAsync<QuerySomethingNonReferenceType, int>(new QuerySomethingNonReferenceType(1973));
 
                 Assert.Equal(result, 1973);
             }
@@ -168,7 +168,7 @@ namespace Xer.Cqrs.Tests
 
                         var dispatcher = new QueryDispatcher(registration);
 
-                        dispatcher.Dispatch(new QuerySomethingWithException("This will cause an exception."));
+                        dispatcher.Dispatch<QuerySomethingWithException, string>(new QuerySomethingWithException("This will cause an exception."));
                     }
                     catch (Exception ex)
                     {

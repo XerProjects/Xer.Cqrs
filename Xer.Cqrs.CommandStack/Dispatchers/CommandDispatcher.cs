@@ -6,18 +6,18 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
 {
     public class CommandDispatcher : ICommandDispatcher, ICommandAsyncDispatcher
     {
-        private readonly ICommandHandlerProvider _provider;
+        private readonly ICommandHandlerResolver _resolver;
 
-        public CommandDispatcher(ICommandHandlerProvider provider)
+        public CommandDispatcher(ICommandHandlerResolver resolver)
         {
-            _provider = provider;
+            _resolver = resolver;
         }
 
         /// <summary>
         /// Dispatch the command to the registered command handlers.
         /// </summary>
         /// <param name="command">Command to dispatch.</param>
-        public void Dispatch(ICommand command)
+        public void Dispatch<TCommand>(TCommand command) where TCommand : ICommand
         {
             // Wait Task completion.
             DispatchAsync(command).Await();
@@ -29,11 +29,9 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
         /// <param name="command">Command to dispatch.</param>
         /// <param name="cancellationToken">Optional cancellation token to support cancellation.</param>
         /// <returns>Task which can be awaited asynchronously.</returns>
-        public Task DispatchAsync(ICommand command, CancellationToken cancellationToken = default(CancellationToken))
+        public Task DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default(CancellationToken)) where TCommand : ICommand
         {
-            Type commandType = command.GetType();
-
-            CommandHandlerDelegate handleCommandAsyncDelegate = _provider.GetCommandHandler(commandType);
+            CommandHandlerDelegate handleCommandAsyncDelegate = _resolver.ResolveCommandHandler<TCommand>();
             
             return handleCommandAsyncDelegate.Invoke(command, cancellationToken);
         }

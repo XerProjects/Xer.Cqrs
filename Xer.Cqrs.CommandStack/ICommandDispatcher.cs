@@ -7,7 +7,8 @@ namespace Xer.Cqrs.CommandStack
         /// <summary>
         /// Dispatch the command to the registered command handlers.
         /// </summary>
+        /// <typeparam name="TCommand">Type of command to dispatch.</typeparam>
         /// <param name="command">Command to dispatch.</param>
-        void Dispatch(ICommand command);
+        void Dispatch<TCommand>(TCommand command) where TCommand : ICommand;
     }
 }

@@ -4,7 +4,7 @@ VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.CommandStack", "Xer.Cqrs.CommandStack\Xer.Cqrs.CommandStack.csproj", "{BDF57B64-636E-4C03-A7F0-986A3E9A6AF0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.DomainDriven.EventSourcing", "Xer.DomainDriven.EventSourcing\Xer.DomainDriven.EventSourcing.csproj", "{76EDEAB0-9099-4A89-B1F6-D33C53A45BD8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.EventSourcing", "Xer.Cqrs.EventSourcing\Xer.Cqrs.EventSourcing.csproj", "{76EDEAB0-9099-4A89-B1F6-D33C53A45BD8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.DomainDriven", "Xer.DomainDriven\Xer.DomainDriven.csproj", "{109C8CD7-3C6C-48D5-9E83-BFCE82823D6E}"
 EndProject
@@ -12,11 +12,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Worker", "Xer.Worker\Xe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.Tests", "Xer.Cqrs.Tests\Xer.Cqrs.Tests.csproj", "{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.DomainDriven.EventSourcing.EventStore", "Xer.DomainDriven.EventSourcing.EventStore\Xer.DomainDriven.EventSourcing.EventStore.csproj", "{D2EF60DE-DBF8-42B8-8FE2-7844493F38B3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.EventSourcing.EventStore", "Xer.Cqrs.EventSourcing.EventStore\Xer.Cqrs.EventSourcing.EventStore.csproj", "{D2EF60DE-DBF8-42B8-8FE2-7844493F38B3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.DomainDriven.EventSourcing.Tests", "Xer.DomainDriven.EventSourcing.Tests\Xer.DomainDriven.EventSourcing.Tests.csproj", "{B2315420-95C7-44EF-977B-D34BAD997A98}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.EventSourcing.Tests", "Xer.Cqrs.EventSourcing.Tests\Xer.Cqrs.EventSourcing.Tests.csproj", "{B2315420-95C7-44EF-977B-D34BAD997A98}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.QueryStack", "Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj", "{3BE4E0FA-9992-4F81-BE96-9CFA9FCC1809}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Messajing", "Xer.Messajing\Xer.Messajing.csproj", "{FD0A4BE5-D819-4C4E-8F72-D121E957D38E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.Events", "Xer.Cqrs.Events\Xer.Cqrs.Events.csproj", "{EAD6D545-3EC8-476E-B976-33B8EA8E85BB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -56,6 +60,14 @@ Global
 		{3BE4E0FA-9992-4F81-BE96-9CFA9FCC1809}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3BE4E0FA-9992-4F81-BE96-9CFA9FCC1809}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3BE4E0FA-9992-4F81-BE96-9CFA9FCC1809}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD0A4BE5-D819-4C4E-8F72-D121E957D38E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD0A4BE5-D819-4C4E-8F72-D121E957D38E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD0A4BE5-D819-4C4E-8F72-D121E957D38E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD0A4BE5-D819-4C4E-8F72-D121E957D38E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EAD6D545-3EC8-476E-B976-33B8EA8E85BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAD6D545-3EC8-476E-B976-33B8EA8E85BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAD6D545-3EC8-476E-B976-33B8EA8E85BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAD6D545-3EC8-476E-B976-33B8EA8E85BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

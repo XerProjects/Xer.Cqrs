@@ -1,9 +1,11 @@
-﻿using System;
+﻿using SimpleInjector;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.CommandStack.Dispatchers;
 using Xer.Cqrs.CommandStack.Registrations;
+using Xer.Cqrs.CommandStack.Resolvers;
 using Xer.Cqrs.Tests.Mocks;
 using Xer.Cqrs.Tests.Mocks.CommandHandlers;
 using Xunit;
@@ -25,9 +27,21 @@ namespace Xer.Cqrs.Tests
             }
 
             [Fact]
+            public async Task Dispatch_Command_To_Registered_Command_Handler_In_Container()
+            {
+                var container = new Container();
+                container.Register<ICommandAsyncHandler<DoSomethingAsyncCommand>>(() => new TestCommandHandler(_outputHelper));
+
+                var containerAdapter = new SimpleInjectorContainerAdapter(container);
+
+                var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter));
+                await dispatcher.DispatchAsync(new DoSomethingAsyncCommand());
+            }
+            
+            [Fact]
             public async Task Dispatch_Command_To_Registered_Command_Handler()
             {
-                var registration = new CommandHandlerFactoryRegistration();
+                var registration = new CommandHandlerRegistration();
                 registration.Register(() => (ICommandAsyncHandler<DoSomethingAsyncCommand>)new TestCommandHandler(_outputHelper));
 
                 var dispatcher = new CommandDispatcher(registration);
@@ -37,7 +51,7 @@ namespace Xer.Cqrs.Tests
             [Fact]
             public async Task Dispatch_Command_To_Registered_Command_Handler_With_CancellationToken()
             {
-                var registration = new CommandHandlerFactoryRegistration();
+                var registration = new CommandHandlerRegistration();
                 registration.Register(() => (ICommandAsyncHandler<DoSomethingAsyncCommand>)new TestCommandHandler(_outputHelper));
 
                 var cts = new CancellationTokenSource();
@@ -72,7 +86,7 @@ namespace Xer.Cqrs.Tests
                 {
                     try
                     {
-                        var registration = new CommandHandlerFactoryRegistration();
+                        var registration = new CommandHandlerRegistration();
                         registration.Register(() => (ICommandAsyncHandler<ThrowExceptionCommand>)new TestCommandHandler(_outputHelper));
 
                         var dispatcher = new CommandDispatcher(registration);
@@ -103,7 +117,7 @@ namespace Xer.Cqrs.Tests
             [Fact]
             public void Dispatch_Command_To_Registered_Command_Handler()
             {
-                var registration = new CommandHandlerFactoryRegistration();
+                var registration = new CommandHandlerRegistration();
                 registration.Register(() => (ICommandHandler<DoSomethingAsyncCommand>)new TestCommandHandler(_outputHelper));
 
                 var dispatcher = new CommandDispatcher(registration);
@@ -117,7 +131,7 @@ namespace Xer.Cqrs.Tests
                 {
                     try
                     {
-                        var registration = new CommandHandlerFactoryRegistration();
+                        var registration = new CommandHandlerRegistration();
                         registration.Register(() => (ICommandHandler<ThrowExceptionCommand>)new TestCommandHandler(_outputHelper));
 
                         var dispatcher = new CommandDispatcher(registration);

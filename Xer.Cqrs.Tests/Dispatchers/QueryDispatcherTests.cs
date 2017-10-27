@@ -27,7 +27,7 @@ namespace Xer.Cqrs.Tests
             [Fact]
             public async Task Dispatch_Query_To_Registered_Handler()
             {
-                var registration = new QueryHandlerFactoryRegistration();
+                var registration = new QueryHandlerRegistration();
                 registration.Register(() => (IQueryAsyncHandler<QuerySomethingAsync, string>)new TestQueryHandler(_outputHelper));
 
                 string data = "Test async message.";
@@ -41,7 +41,7 @@ namespace Xer.Cqrs.Tests
             [Fact]
             public async Task Dispatch_Query_Multiple_Times_To_Registered_Handler()
             {
-                var registration = new QueryHandlerFactoryRegistration();
+                var registration = new QueryHandlerRegistration();
                 registration.Register(() => (IQueryAsyncHandler<QuerySomething, string>)new TestQueryHandler(_outputHelper));
                 registration.Register(() => (IQueryAsyncHandler<QuerySomethingNonReferenceType, int>)new TestQueryHandler(_outputHelper));
 
@@ -63,7 +63,7 @@ namespace Xer.Cqrs.Tests
             [Fact]
             public async Task Dispatch_Query_To_Registered_Handler_With_CancellationToken()
             {
-                var registration = new QueryHandlerFactoryRegistration();
+                var registration = new QueryHandlerRegistration();
                 registration.Register(() => (IQueryAsyncHandler<QuerySomethingAsyncWithDelay, string>)new TestQueryHandler(_outputHelper));
 
                 var cts = new CancellationTokenSource();
@@ -82,7 +82,7 @@ namespace Xer.Cqrs.Tests
             {
                 Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                 {
-                    var registration = new QueryHandlerFactoryRegistration();
+                    var registration = new QueryHandlerRegistration();
                     registration.Register(() => (IQueryAsyncHandler<QuerySomethingAsyncWithDelay, string>)new TestQueryHandler(_outputHelper));
 
                     var cts = new CancellationTokenSource();
@@ -103,7 +103,7 @@ namespace Xer.Cqrs.Tests
                 {
                     try
                     {
-                        var registration = new QueryHandlerFactoryRegistration();
+                        var registration = new QueryHandlerRegistration();
                         registration.Register(() => (IQueryAsyncHandler<QuerySomethingWithException, string>)new TestQueryHandler(_outputHelper));
 
                         var dispatcher = new QueryDispatcher(registration);
@@ -135,7 +135,7 @@ namespace Xer.Cqrs.Tests
             [Fact]
             public void Dispatch_To_Registered_Query_Handler()
             {
-                var registration = new QueryHandlerFactoryRegistration();
+                var registration = new QueryHandlerRegistration();
                 registration.Register(() => (IQueryHandler<QuerySomething, string>)new TestQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
@@ -147,7 +147,7 @@ namespace Xer.Cqrs.Tests
             [Fact]
             public async Task Dispatch_Query_With_Non_Reference_Type_Result()
             {
-                var registration = new QueryHandlerFactoryRegistration();
+                var registration = new QueryHandlerRegistration();
                 registration.Register(() => (IQueryHandler<QuerySomethingNonReferenceType, int>)new TestQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
@@ -163,7 +163,7 @@ namespace Xer.Cqrs.Tests
                 {
                     try
                     {
-                        var registration = new QueryHandlerFactoryRegistration();
+                        var registration = new QueryHandlerRegistration();
                         registration.Register(() => (IQueryHandler<QuerySomethingWithException, string>)new TestQueryHandler(_outputHelper));
 
                         var dispatcher = new QueryDispatcher(registration);

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Xer.Cqrs.CommandStack.Validation
 {
-    public interface IValidationRequirement<TTarget>
+    public interface IRequirement<TTarget>
     {
         string ErrorMessage { get; }
         bool IsSatisfiedBy(TTarget target);

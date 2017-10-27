@@ -32,6 +32,11 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
         public Task DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default(CancellationToken)) where TCommand : ICommand
         {
             CommandHandlerDelegate handleCommandAsyncDelegate = _resolver.ResolveCommandHandler<TCommand>();
+
+            if(handleCommandAsyncDelegate == null)
+            {
+                throw new CommandNotHandledException($"No command handler is registered to handle command of type: {typeof(TCommand).Name}.");
+            }
             
             return handleCommandAsyncDelegate.Invoke(command, cancellationToken);
         }

@@ -13,11 +13,9 @@ namespace Xer.Cqrs.CommandStack.Validation
         /// </summary>
         /// <typeparam name="TTarget">Type of object which the requirement is for.</typeparam>
         /// <param name="requirement">Validation requirement.</param>
-        public void RegisterRequirement<TTarget>(IValidationRequirement<TTarget> requirement) where TTarget : class
+        public void RegisterRequirement<TTarget>(IRequirement<TTarget> requirement) where TTarget : class
         {
-            Type commandType = typeof(TTarget);
-
-            addRequirement(commandType, requirement);
+            addRequirement(requirement);
         }
 
         internal IEnumerable<ValidateRequirementDelegate> GetRequirementValidators(Type targetType)
@@ -36,10 +34,11 @@ namespace Xer.Cqrs.CommandStack.Validation
         /// Add command specification.
         /// </summary>
         /// <typeparam name="TTarget">Type of object which the requirement is for.</typeparam>
-        /// <param name="targetType">Type of object which the requirement is for.</param>
         /// <param name="requirement">Validation requirement.</param>
-        private void addRequirement<TTarget>(Type targetType, IValidationRequirement<TTarget> requirement) where TTarget : class
+        private void addRequirement<TTarget>(IRequirement<TTarget> requirement) where TTarget : class
         {
+            Type targetType = typeof(TTarget);
+
             ValidateRequirementDelegate validateRequirementDelegate = (obj) =>
             {
                 bool isSatisfied = requirement.IsSatisfiedBy((TTarget)obj);

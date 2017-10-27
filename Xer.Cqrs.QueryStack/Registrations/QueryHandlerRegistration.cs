@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 
 namespace Xer.Cqrs.QueryStack.Registrations
 {
-    public partial class QueryHandlerFactoryRegistration : IQueryHandlerResolver, IQueryHandlerFactoryRegistration
+    public partial class QueryHandlerRegistration : IQueryHandlerResolver, IQueryHandlerRegistration
     {
         #region Declarations
 
-        private readonly QueryHandlerCache _queryHandlerDelegatesByQueryType = new QueryHandlerCache();
+        private readonly QueryHandlerDelegateStore _queryHandlerDelegatesByQueryType = new QueryHandlerDelegateStore();
 
         #endregion Declarations
 
@@ -104,33 +104,5 @@ namespace Xer.Cqrs.QueryStack.Registrations
         }
 
         #endregion IQueryHandlerResolver Implementation
-
-        #region Inner Cache Class
-
-        private class QueryHandlerCache
-        {
-            public IDictionary<Type, object> _storage = new Dictionary<Type, object>();
-
-            public void Add<TResult>(Type queryType, QueryHandlerDelegate<TResult> handleQueryDelegate)
-            {
-                _storage.Add(queryType, handleQueryDelegate);
-            }
-
-            public bool TryGetValue<TResult>(Type queryType, out QueryHandlerDelegate<TResult> handleQueryDelegate)
-            {
-                handleQueryDelegate = default(QueryHandlerDelegate<TResult>);
-
-                object value;
-                if (_storage.TryGetValue(queryType, out value))
-                {
-                    handleQueryDelegate = (QueryHandlerDelegate<TResult>)value;
-                    return true;
-                }
-
-                return false;
-            }
-        }
-
-        #endregion Inner Cache Class
     }
 }

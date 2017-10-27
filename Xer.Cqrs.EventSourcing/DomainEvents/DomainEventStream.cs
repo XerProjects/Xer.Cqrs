@@ -21,12 +21,12 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
         public Guid AggregateId { get; }
         
         /// <summary>
-        /// Version of the first domain event in this stream.
+        /// Aggregate version of the first domain event in this stream.
         /// </summary>
         public int FirstDomainEventVersion { get; }
 
         /// <summary>
-        /// Version of the latest domain event in this stream.
+        /// Aggregate version of the latest domain event in this stream.
         /// </summary>
         public int LastDomainEventVersion { get; }
 
@@ -48,7 +48,10 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
             }
 
             AggregateId = aggregateId;
-            DomainEventCount = domainEvents.Count();
+
+            _domainEvents = new List<IDomainEvent>(domainEvents);
+
+            DomainEventCount = _domainEvents.Count;
             
             if (DomainEventCount > 0)
             {
@@ -56,9 +59,13 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
                 LastDomainEventVersion = domainEvents.Last().AggregateVersion;
             }
 
-            _domainEvents = new List<IDomainEvent>(domainEvents);
         }
 
+        /// <summary>
+        /// Creates a new domain event stream which has the appended domain event.
+        /// </summary>
+        /// <param name="domainEventToAppend">Domain event to append to the domain event stream.</param>
+        /// <returns>New instance of domain event stream with the appended domain event.</returns>
         public DomainEventStream AppendDomainEvent(IDomainEvent domainEventToAppend)
         {
             if (domainEventToAppend == null)
@@ -83,6 +90,11 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
             return new DomainEventStream(AggregateId, mergedStream);
         }
 
+        /// <summary>
+        /// Creates a new domain event stream which has the appended domain event stream.
+        /// </summary>
+        /// <param name="streamToAppend">Domain event stream to append to this domain event stream.</param>
+        /// <returns>New instance of domain event stream with the appended domain event stream.</returns>
         public DomainEventStream AppendDomainEventStream(DomainEventStream streamToAppend)
         {
             if(streamToAppend == null)

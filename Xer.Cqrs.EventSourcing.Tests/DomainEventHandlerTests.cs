@@ -29,12 +29,12 @@ namespace Xer.Cqrs.EventSourcing.Tests
             {
                 var handler = new TestDomainEventHandler(_testOutput);
 
-                var subscription = new EventHandlerFactoryRegistration();
+                var subscription = new EventHandlerRegistration();
                 subscription.Register<TestAggregateCreated>(() => handler);
                 subscription.Register<TestAggregateModified>(() => handler);
 
                 var publisher = new EventPublisher(subscription);
-                var eventStore = new InMemoryDomainEventStore<TestAggregate>(publisher);
+                var eventStore = new PublishingDomainEventStore<TestAggregate>(new InMemoryDomainEventStore<TestAggregate>(), publisher);
                 var repository = new TestEventSourcedAggregateRepository(eventStore);
                 var id = Guid.NewGuid();
 
@@ -62,12 +62,13 @@ namespace Xer.Cqrs.EventSourcing.Tests
             {
                 var handler = new TestDomainEventHandler(_testOutput);
 
-                var subscription = new EventHandlerFactoryRegistration();
+                var subscription = new EventHandlerRegistration();
                 subscription.Register<TestAggregateCreated>(() => handler);
                 subscription.Register<TestAggregateModified>(() => handler);
 
                 var publisher = new EventPublisher(subscription);
-                var eventStore = new InMemoryDomainEventStore<TestAggregate>(publisher);
+                var eventStore = new PublishingDomainEventStore<TestAggregate>(new InMemoryDomainEventStore<TestAggregate>(), publisher);
+
                 var repository = new TestEventSourcedAggregateRepository(eventStore);
                 var id = Guid.NewGuid();
 
@@ -78,14 +79,17 @@ namespace Xer.Cqrs.EventSourcing.Tests
                 Thread.Sleep(1000);
 
                 Assert.Equal(id, repository.GetById(id).Id);
-
                 Assert.Equal(1, handler.NumberOfTimesInvoked);
-
-                Assert.ThrowsAny<Exception>(() =>
+                
+                publisher.OnError += (e, ex) =>
                 {
-                    aggregate.ThrowExceptionOnEventHandler();
-                    repository.Save(aggregate);
-                });
+                    _testOutput.WriteLine($"Handled {ex.GetType().Name}.");
+
+                    Assert.NotNull(ex);
+                };
+                
+                aggregate.ThrowExceptionOnEventHandler();
+                repository.Save(aggregate);
             }
         }
     }

@@ -49,6 +49,6 @@ namespace Xer.Cqrs.CommandStack.Resolvers
         /// </summary>
         /// <typeparam name="T">Type of object to resolve from container.</typeparam>
         /// <returns>Instance of requested object.</returns>
-        T Resolve<T>();
+        T Resolve<T>() where T : class;
     }
 }

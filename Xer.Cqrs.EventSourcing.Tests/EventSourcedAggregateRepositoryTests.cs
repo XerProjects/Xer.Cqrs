@@ -15,10 +15,10 @@ namespace Xer.Cqrs.EventSourcing.Tests
             [Fact]
             public void Save_Should_Append_To_Domain_Event_Store()
             {
-                var subscription = new EventHandlerFactoryRegistration();
+                var subscription = new EventHandlerRegistration();
 
                 var publisher = new EventPublisher(subscription);
-                var eventStore = new InMemoryDomainEventStore<TestAggregate>(publisher);
+                var eventStore = new PublishingDomainEventStore<TestAggregate>(new InMemoryDomainEventStore<TestAggregate>(), publisher);
                 var repository = new TestEventSourcedAggregateRepository(eventStore);
                 var id = Guid.NewGuid();
                 var aggregate = new TestAggregate(id);

@@ -12,18 +12,8 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
         #region Declarations
 
         private readonly IDictionary<Guid, DomainEventStream> _domainEventStreamsByAggregateId = new Dictionary<Guid, DomainEventStream>();
-        private readonly IEventPublisher _publisher;
 
         #endregion Declarations
-
-        #region Constructors
-
-        public InMemoryDomainEventStore(IEventPublisher publisher)
-        {
-            _publisher = publisher;
-        }
-
-        #endregion Constructors
 
         #region IDomainEventStore Implementation
 
@@ -75,8 +65,6 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
                 DomainEventStream domainEventsToCommit = aggregateRoot.GetUncommitedDomainEvents();
 
                 Commit(domainEventsToCommit);
-                // Publish task asynchronously.
-                PublishDomainEventsAsync(domainEventsToCommit);
 
                 // Clear after committing and publishing.
                 aggregateRoot.ClearUncommitedDomainEvents();
@@ -155,31 +143,6 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
                 _domainEventStreamsByAggregateId.Add(domainEventStreamToCommit.AggregateId,
                     new DomainEventStream(domainEventStreamToCommit.AggregateId, domainEventStreamToCommit));
             }
-        }
-
-        /// <summary>
-        /// Publishes the domain event to event subscribers. 
-        /// Default implementation publishes domain events in background.
-        /// </summary>
-        /// <param name="eventStream">Domain events to publish.</param>
-        protected virtual void PublishDomainEventsAsync(DomainEventStream eventStream)
-        {
-            IEnumerable<Task> publishTasks = eventStream.Select(e => _publisher.PublishAsync(e));
-
-            Task.WhenAll(publishTasks)
-            .HandleAnyExceptions(ex =>
-            {
-                OnPublishError(ex);
-            });
-        }
-
-        /// <summary>
-        /// Provide child class to handle exceptions that occur while publishing.
-        /// </summary>
-        /// <param name="ex">Exception that occured while publishing domain events.</param>
-        protected virtual void OnPublishError(Exception ex)
-        {
-            throw ex;
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Xer.Cqrs.Events
@@ -9,6 +10,11 @@ namespace Xer.Cqrs.Events
     public interface IEventPublisher
     {
         /// <summary>
+        /// Triggers when an exception occurs while handling events.
+        /// </summary>
+        event OnErrorHandler OnError;
+
+        /// <summary>
         /// Publish event to subscribers.
         /// </summary>
         /// <param name="event">Event to publish.</param>
@@ -16,4 +22,6 @@ namespace Xer.Cqrs.Events
         /// <returns>Asynchronous task.</returns>
         Task PublishAsync(IEvent @event, CancellationToken cancellationToken = default(CancellationToken));
     }
+
+    public delegate void OnErrorHandler(EventHandlerDelegate eventHandler, Exception e);
 }

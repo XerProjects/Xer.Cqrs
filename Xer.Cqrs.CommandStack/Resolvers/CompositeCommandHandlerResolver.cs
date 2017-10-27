@@ -5,11 +5,11 @@ namespace Xer.Cqrs.CommandStack.Resolvers
 {
     public class CompositeCommandHandlerResolver : ICommandHandlerResolver
     {
-        private readonly IEnumerable<ICommandHandlerResolver> _providers;
+        private readonly IEnumerable<ICommandHandlerResolver> _resolvers;
 
         public CompositeCommandHandlerResolver(IEnumerable<ICommandHandlerResolver> providers)
         {
-            _providers = providers;
+            _resolvers = providers;
         }
 
         /// <summary>
@@ -18,9 +18,9 @@ namespace Xer.Cqrs.CommandStack.Resolvers
         /// <returns>Instance of invokeable CommandHandlerDelegate.</returns>
         public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : ICommand
         {
-            foreach (ICommandHandlerResolver provider in _providers)
+            foreach (ICommandHandlerResolver resolver in _resolvers)
             {
-                CommandHandlerDelegate handlerDelegate = provider.ResolveCommandHandler<TCommand>();
+                CommandHandlerDelegate handlerDelegate = resolver.ResolveCommandHandler<TCommand>();
                 if (handlerDelegate != null)
                 {
                     return handlerDelegate;

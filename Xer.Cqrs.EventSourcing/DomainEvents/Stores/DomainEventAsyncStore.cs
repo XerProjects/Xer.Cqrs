@@ -9,13 +9,6 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
 {
     public abstract class DomainEventAsyncStore<TAggregate> : IDomainEventAsyncStore<TAggregate> where TAggregate : EventSourcedAggregate
     {
-        private readonly IEventPublisher _publisher;
-
-        public DomainEventAsyncStore(IEventPublisher publisher)
-        {
-            _publisher = publisher;
-        }
-
         /// <summary>
         /// Get all domain events of aggregate asynchronously.
         /// </summary>
@@ -30,7 +23,7 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
         /// <param name="aggreggateId">ID of the aggregate.</param>
         /// <param name="version">Target aggregate version.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>All domain events for the aggregate.</returns>
+        /// <returns>Domain events for the aggregate with the specified version.</returns>
         public abstract Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggreggateId, int version, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -51,9 +44,11 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
         {
             try
             {
+                // Get uncommited events.
                 DomainEventStream domainEventsToCommit = aggregateRoot.GetUncommitedDomainEvents();
+
                 await CommitAsync(domainEventsToCommit, cancellationToken).ConfigureAwait(false);
-                PublishDomainEventsAsync(domainEventsToCommit, cancellationToken);
+
                 // Clear after committing and publishing.
                 aggregateRoot.ClearUncommitedDomainEvents();
             }
@@ -61,32 +56,6 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
             {
                 OnCommitError(ex);
             }
-        }
-
-        /// <summary>
-        /// Publishes the domain event to event subscribers asynchronously.
-        /// Default implementation publishes domain events in background.
-        /// </summary>
-        /// <param name="eventStream">Domain events to publish.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        protected virtual void PublishDomainEventsAsync(DomainEventStream eventStream, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            IEnumerable<Task> publishTasks = eventStream.Select(e => _publisher.PublishAsync(e, cancellationToken));
-
-            Task.WhenAll(publishTasks)
-            .HandleAnyExceptions(ex =>
-            {
-                OnPublishError(ex);
-            });
-        }
-
-        /// <summary>
-        /// Provide child class to handle exceptions that occur while publishing.
-        /// </summary>
-        /// <param name="ex">Exception that occured while publishing domain events.</param>
-        protected virtual void OnPublishError(Exception ex)
-        {
-            throw ex;
         }
 
         /// <summary>

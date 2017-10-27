@@ -56,7 +56,6 @@ namespace Xer.Cqrs.EventSourcing
 
         /// <summary>
         /// Get an event stream of all the uncommitted domain events applied to this entity.
-        /// This will also clear out all internally tracked domain events.
         /// </summary>
         /// <returns>Stream of uncommitted domain events.</returns>
         public DomainEventStream GetUncommitedDomainEvents()
@@ -69,7 +68,7 @@ namespace Xer.Cqrs.EventSourcing
         /// </summary>
         /// <param name="applierRegistration">Domain event applier registration.</param>
         protected abstract void RegisterDomainEventAppliers(DomainEventApplierRegistration applierRegistration);
-
+        
         /// <summary>
         /// Apply domain event to this entity and mark domain event for commit.
         /// </summary>

@@ -2,7 +2,7 @@
 
 namespace Xer.Cqrs.CommandStack
 {
-    public interface ICommandHandlerFactoryRegistration
+    public interface ICommandHandlerRegistration
     {
         /// <summary>
         /// Register command async handler.

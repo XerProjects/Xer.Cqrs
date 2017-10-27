@@ -17,8 +17,7 @@ namespace Xer.Cqrs.EventSourcing.EventStore
     {
         private readonly EventStoreConfiguration _configuration;
 
-        public EventStoreDomainEventStore(IEventPublisher publisher, EventStoreConfiguration configuration) 
-            : base(publisher)
+        public EventStoreDomainEventStore(EventStoreConfiguration configuration)
         {
             _configuration = configuration;
         }

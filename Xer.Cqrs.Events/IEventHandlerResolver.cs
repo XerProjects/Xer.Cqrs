@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Xer.Cqrs.Events
@@ -10,7 +11,7 @@ namespace Xer.Cqrs.Events
         /// </summary>
         /// <typeparam name="TEvent">Type of event to be handled.</typeparam>
         /// <returns>Instance of invokeable EventHandlerDelegate.</returns>
-        EventHandlerDelegate ResolveEventHandler<TEvent>() where TEvent : IEvent;
+        IEnumerable<EventHandlerDelegate> ResolveEventHandlers<TEvent>() where TEvent : IEvent;
     }
 
     /// <summary>

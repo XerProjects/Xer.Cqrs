@@ -6,11 +6,11 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
 {
     public class BackgroundCommandDispatcher : ICommandDispatcher, ICommandAsyncDispatcher
     {
-        private readonly ICommandHandlerResolver _provider;
+        private readonly ICommandHandlerResolver _resolver;
 
         public BackgroundCommandDispatcher(ICommandHandlerResolver provider) 
         {
-            _provider = provider;
+            _resolver = provider;
         }
 
         /// <summary>
@@ -33,7 +33,12 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
         {
             return Task.Run(() =>
             {
-                CommandHandlerDelegate commandHandlerDelegate = _provider.ResolveCommandHandler<TCommand>();
+                CommandHandlerDelegate commandHandlerDelegate = _resolver.ResolveCommandHandler<TCommand>();
+
+                if (commandHandlerDelegate == null)
+                {
+                    throw new CommandNotHandledException($"No command handler is registered to handle command of type: {typeof(TCommand).Name}.");
+                }
 
                 return commandHandlerDelegate.Invoke(command, cancellationToken);
             });

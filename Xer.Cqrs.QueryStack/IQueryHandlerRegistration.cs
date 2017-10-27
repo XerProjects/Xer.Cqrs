@@ -2,7 +2,7 @@
 
 namespace Xer.Cqrs.QueryStack
 {
-    public interface IQueryHandlerFactoryRegistration
+    public interface IQueryHandlerRegistration
     {
         /// <summary>
         /// Register query async handler.

@@ -8,13 +8,6 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
 {
     public abstract class DomainEventStore<TAggregate> : IDomainEventStore<TAggregate> where TAggregate : EventSourcedAggregate
     {
-        private readonly IEventPublisher _publisher;
-
-        public DomainEventStore(IEventPublisher publisher)
-        {
-            _publisher = publisher;
-        }
-
         /// <summary>
         /// Get all domain events of aggregate.
         /// </summary>
@@ -27,7 +20,7 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
         /// </summary>
         /// <param name="aggreggateId">ID of the aggregate.</param>
         /// <param name="version">Target aggregate version.</param>
-        /// <returns>All domain events for the aggregate.</returns>
+        /// <returns>Domain events for the aggregat with the specified version.</returns>
         public abstract DomainEventStream GetDomainEventStream(Guid aggreggateId, int version);
 
         /// <summary>
@@ -44,9 +37,11 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
         {
             try
             {
+                // Get uncommited events.
                 DomainEventStream domainEventsToCommit = aggregateRoot.GetUncommitedDomainEvents();
+
                 Commit(domainEventsToCommit);
-                PublishDomainEventsAsync(domainEventsToCommit);
+
                 // Clear after committing and publishing.
                 aggregateRoot.ClearUncommitedDomainEvents();
             }
@@ -54,31 +49,6 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
             {
                 OnCommitError(ex);
             }
-        }
-
-        /// <summary>
-        /// Publishes the domain event to event subscribers.
-        /// Default implementation publishes domain events in background.
-        /// </summary>
-        /// <param name="eventStream">Domain events to publish.</param>
-        protected virtual void PublishDomainEventsAsync(DomainEventStream eventStream)
-        {
-            IEnumerable<Task> publishTasks = eventStream.Select(e => _publisher.PublishAsync(e));
-
-            Task.WhenAll(publishTasks)
-            .HandleAnyExceptions(ex =>
-            {
-                OnPublishError(ex);
-            });
-        }
-
-        /// <summary>
-        /// Provide child class to handle exceptions that occur while publishing.
-        /// </summary>
-        /// <param name="ex">Exception that occured while publishing domain events.</param>
-        protected virtual void OnPublishError(Exception ex)
-        {
-            throw ex;
         }
 
         /// <summary>

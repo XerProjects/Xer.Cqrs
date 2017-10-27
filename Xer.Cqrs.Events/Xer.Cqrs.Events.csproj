@@ -4,4 +4,8 @@
     <TargetFramework>netstandard1.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="Publishers\EventPublisher.cs~RF171a5baf.TMP" />
+  </ItemGroup>
+
 </Project>

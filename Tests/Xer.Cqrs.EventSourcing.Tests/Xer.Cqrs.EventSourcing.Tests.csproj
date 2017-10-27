@@ -8,16 +8,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0-preview-20171012-09" />
-    <PackageReference Include="MongoDB.Driver" Version="2.4.4" />
-    <PackageReference Include="SimpleInjector" Version="4.0.12" />
     <PackageReference Include="xunit" Version="2.3.1-rc2-build3844" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1-rc2-build3844" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Xer.Cqrs.CommandStack\Xer.Cqrs.CommandStack.csproj" />
-    <ProjectReference Include="..\Xer.Cqrs.Events\Xer.Cqrs.Events.csproj" />
-    <ProjectReference Include="..\Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj" />
+    <ProjectReference Include="..\..\Xer.Cqrs.EventSourcing.EventStore\Xer.Cqrs.EventSourcing.EventStore.csproj" />
+    <ProjectReference Include="..\..\Xer.Cqrs.EventSourcing\Xer.Cqrs.EventSourcing.csproj" />
   </ItemGroup>
 
 </Project>

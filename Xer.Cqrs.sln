@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.16
+VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.CommandStack", "Xer.Cqrs.CommandStack\Xer.Cqrs.CommandStack.csproj", "{BDF57B64-636E-4C03-A7F0-986A3E9A6AF0}"
 EndProject
@@ -10,17 +10,19 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.DomainDriven", "Xer.Dom
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Worker", "Xer.Worker\Xer.Worker.csproj", "{4DFE7747-F89F-4171-874F-461AD378E64E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.Tests", "Xer.Cqrs.Tests\Xer.Cqrs.Tests.csproj", "{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.Tests", "Tests\Xer.Cqrs.Tests\Xer.Cqrs.Tests.csproj", "{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.EventSourcing.EventStore", "Xer.Cqrs.EventSourcing.EventStore\Xer.Cqrs.EventSourcing.EventStore.csproj", "{D2EF60DE-DBF8-42B8-8FE2-7844493F38B3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.EventSourcing.Tests", "Xer.Cqrs.EventSourcing.Tests\Xer.Cqrs.EventSourcing.Tests.csproj", "{B2315420-95C7-44EF-977B-D34BAD997A98}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.EventSourcing.Tests", "Tests\Xer.Cqrs.EventSourcing.Tests\Xer.Cqrs.EventSourcing.Tests.csproj", "{B2315420-95C7-44EF-977B-D34BAD997A98}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.QueryStack", "Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj", "{3BE4E0FA-9992-4F81-BE96-9CFA9FCC1809}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Messajing", "Xer.Messajing\Xer.Messajing.csproj", "{FD0A4BE5-D819-4C4E-8F72-D121E957D38E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.Events", "Xer.Cqrs.Events\Xer.Cqrs.Events.csproj", "{EAD6D545-3EC8-476E-B976-33B8EA8E85BB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B8368CCD-E692-430E-AE0F-4C346C5233F5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -71,6 +73,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB} = {B8368CCD-E692-430E-AE0F-4C346C5233F5}
+		{B2315420-95C7-44EF-977B-D34BAD997A98} = {B8368CCD-E692-430E-AE0F-4C346C5233F5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {03714871-4DA2-4441-880E-E509A0F8205E}

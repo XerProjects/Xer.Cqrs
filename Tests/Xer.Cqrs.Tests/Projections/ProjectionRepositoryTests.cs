@@ -17,7 +17,6 @@ namespace Xer.Cqrs.Tests.Projections
         {
             public void Should_Get_Latest_Projection()
             {
-                var projectionRepo = new InMemoryProjectionRepository<TestAggregateListViewProjection>();
             }
         }
     }

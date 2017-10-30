@@ -12,33 +12,42 @@ namespace Xer.Cqrs.CommandStack.Resolvers
             _containerAdapter = containerAdapter;
         }
 
-        public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : ICommand
+        public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : class, ICommand
         {
-            // Try to resolve async handler first.
-            ICommandAsyncHandler<TCommand> commandAsyncHandler = _containerAdapter.Resolve<ICommandAsyncHandler<TCommand>>();
-
-            if (commandAsyncHandler != null)
+            try
             {
-                return new CommandHandlerDelegate((c, ct) =>
+                // Try to resolve async handler first.
+                ICommandAsyncHandler<TCommand> commandAsyncHandler = _containerAdapter.Resolve<ICommandAsyncHandler<TCommand>>();
+
+                if (commandAsyncHandler != null)
                 {
-                    return commandAsyncHandler.HandleAsync((TCommand)c, ct);
-                });
+                    return CommandHandlerDelegateBuilder.FromCommandHandler(commandAsyncHandler);
+                }
+            }
+            catch(Exception)
+            {
+                // Do nothing.
+                // Some containers may throw exception when no instance is resolved.
             }
 
-            // Try to resolve sync handler next, if no async handler is found.
-            ICommandHandler<TCommand> commandHandler = _containerAdapter.Resolve<ICommandHandler<TCommand>>();
-
-            if (commandHandler != null)
+            try
             {
-                return new CommandHandlerDelegate((c, ct) =>
-                {
-                    commandHandler.Handle((TCommand)c);
+                // Try to resolve sync handler next, if no async handler is found.
+                ICommandHandler<TCommand> commandHandler = _containerAdapter.Resolve<ICommandHandler<TCommand>>();
 
-                    return TaskUtility.CompletedTask;
-                });
+                if (commandHandler != null)
+                {
+                    return CommandHandlerDelegateBuilder.FromCommandHandler(commandHandler);
+                }
+            }
+            catch(Exception)
+            {
+                // Do nothing.
+                // Some containers may throw exception when no instance is resolved.
             }
 
-            throw new CommandNotHandledException($"No command handler registered in the container to handle command of type: { typeof(Command).Name }.");
+            // No handlers are resolved. Throw exception.
+            throw new CommandNotHandledException($"Unable to resolve a command handler from the container to handle command of type: { typeof(Command).Name }.");
         }
     }
 

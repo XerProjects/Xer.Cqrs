@@ -12,7 +12,7 @@ namespace Xer.Cqrs.Events.Resolvers
             _eventHandlerResolvers = eventHandlerResolvers;
         }
 
-        public IEnumerable<EventHandlerDelegate> ResolveEventHandlers<TEvent>() where TEvent : IEvent
+        public IEnumerable<EventHandlerDelegate> ResolveEventHandlers<TEvent>() where TEvent : class, IEvent
         {
             return _eventHandlerResolvers.SelectMany(e => e.ResolveEventHandlers<TEvent>());
         }

@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Xer.Cqrs.QueryStack.Resolvers
 {
@@ -11,30 +12,41 @@ namespace Xer.Cqrs.QueryStack.Resolvers
             _containerAdapter = containerAdapter;
         }
 
-        public QueryHandlerDelegate<TResult> ResolveQueryHandler<TQuery, TResult>() where TQuery : IQuery<TResult>
+        public QueryHandlerDelegate<TResult> ResolveQueryHandler<TQuery, TResult>() where TQuery : class, IQuery<TResult>
         {
-            IQueryAsyncHandler<TQuery, TResult> queryAsyncHandler = _containerAdapter.Resolve<IQueryAsyncHandler<TQuery, TResult>>();
-
-            if(queryAsyncHandler != null)
+            try
             {
-                return new QueryHandlerDelegate<TResult>((q, ct) =>
+                IQueryAsyncHandler<TQuery, TResult> queryAsyncHandler = _containerAdapter.Resolve<IQueryAsyncHandler<TQuery, TResult>>();
+
+                if (queryAsyncHandler != null)
                 {
-                    return queryAsyncHandler.HandleAsync((TQuery)q, ct);
-                });
+                    return QueryHandlerDelegateBuilder.FromQueryHandler(queryAsyncHandler);
+                }
+            }
+            catch(Exception)
+            {
+                // Do nothing.
+                // Some containers may throw exception when no instance is resolved.
             }
 
-            IQueryHandler<TQuery, TResult> queryHandler = _containerAdapter.Resolve<IQueryHandler<TQuery, TResult>>();
-
-            if (queryHandler != null)
+            try
             {
-                return new QueryHandlerDelegate<TResult>((q, ct) =>
+                // Try resolving sync query handler next.
+                IQueryHandler<TQuery, TResult> queryHandler = _containerAdapter.Resolve<IQueryHandler<TQuery, TResult>>();
+
+                if (queryHandler != null)
                 {
-                    TResult result = queryHandler.Handle((TQuery)q);
-                    return Task.FromResult(result);
-                });
+                    return QueryHandlerDelegateBuilder.FromQueryHandler(queryHandler);
+                }
+            }
+            catch(Exception)
+            {
+                // Do nothing.
+                // Some containers may throw exception when no instance is resolved.
             }
 
-            throw new QueryNotHandledException($"No query handler is registered in the container to handles queries of type: {typeof(TQuery).Name}.");
+            // No handlers are resolved. Throw exception.
+            throw new QueryNotHandledException($"Unable to resolve a query handler from the container to handle query of type: {typeof(TQuery).Name}.");
         }
     }
 

@@ -20,30 +20,23 @@ namespace Xer.Cqrs.QueryStack.Registrations
         /// <typeparam name="TQuery">Type of query to be handled.</typeparam>
         /// <typeparam name="TResult">Query's expected result.</typeparam>
         /// <param name="queryHandlerFactory">Synchronous handler which can process the query.</param>
-        public void Register<TQuery, TResult>(Func<IQueryHandler<TQuery, TResult>> queryHandlerFactory) where TQuery : IQuery<TResult>
+        public void Register<TQuery, TResult>(Func<IQueryHandler<TQuery, TResult>> queryHandlerFactory) where TQuery : class, IQuery<TResult>
         {
+            if (queryHandlerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(queryHandlerFactory));
+            }
+
             Type queryType = typeof(TQuery);
 
             QueryHandlerDelegate<TResult> handleQueryDelegate;
 
             if (_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
             {
-                throw new InvalidOperationException($"Duplicate query async handler registered for {queryType.Name}.");
+                throw new InvalidOperationException($"Duplicate query handler registered for {queryType.Name}.");
             }
 
-            QueryHandlerDelegate<TResult> newHandleQueryDelegate = (q, ct) =>
-            {
-                IQueryHandler<TQuery, TResult> queryHandlerInstance = queryHandlerFactory.Invoke();
-
-                if (queryHandlerInstance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a query handler instance for {q.GetType().Name}");
-                }
-
-                TResult result = queryHandlerInstance.Handle((TQuery)q);
-
-                return Task.FromResult(result);
-            };
+            QueryHandlerDelegate<TResult> newHandleQueryDelegate = QueryHandlerDelegateBuilder.FromFactory(queryHandlerFactory);
 
             _queryHandlerDelegatesByQueryType.Add(queryType, newHandleQueryDelegate);
         }
@@ -54,28 +47,23 @@ namespace Xer.Cqrs.QueryStack.Registrations
         /// <typeparam name="TQuery">Type of query to be handled.</typeparam>
         /// <typeparam name="TResult">Query's expected result.</typeparam>
         /// <param name="queryHandlerFactory">Asynchronous handler which can process the query.</param>
-        public void Register<TQuery, TResult>(Func<IQueryAsyncHandler<TQuery, TResult>> queryHandlerFactory) where TQuery : IQuery<TResult>
+        public void Register<TQuery, TResult>(Func<IQueryAsyncHandler<TQuery, TResult>> queryHandlerFactory) where TQuery : class, IQuery<TResult>
         {
+            if (queryHandlerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(queryHandlerFactory));
+            }
+
             Type queryType = typeof(TQuery);
 
             QueryHandlerDelegate<TResult> handleQueryDelegate;
 
             if (_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
             {
-                throw new InvalidOperationException($"Duplicate query async handler registered for {queryType.Name}.");
+                throw new InvalidOperationException($"Duplicate query handler registered for {queryType.Name}.");
             }
 
-            QueryHandlerDelegate<TResult> newHandleQueryDelegate = (q, ct) =>
-            {
-                IQueryAsyncHandler<TQuery, TResult> queryHandlerInstance = queryHandlerFactory.Invoke();
-
-                if (queryHandlerInstance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a query handler instance for {q.GetType().Name}");
-                }
-
-                return queryHandlerInstance.HandleAsync((TQuery)q, ct);
-            };
+            QueryHandlerDelegate<TResult> newHandleQueryDelegate = QueryHandlerDelegateBuilder.FromFactory(queryHandlerFactory);
 
             _queryHandlerDelegatesByQueryType.Add(queryType, newHandleQueryDelegate);
         }
@@ -89,7 +77,7 @@ namespace Xer.Cqrs.QueryStack.Registrations
         /// </summary>
         /// <param name="queryType">Type of query to be handled.</param>
         /// <returns>Instance of invokeable QueryAsyncHandlerDelegate.</returns>
-        public QueryHandlerDelegate<TResult> ResolveQueryHandler<TQuery, TResult>() where TQuery : IQuery<TResult>
+        public QueryHandlerDelegate<TResult> ResolveQueryHandler<TQuery, TResult>() where TQuery : class, IQuery<TResult>
         {
             Type queryType = typeof(TQuery);
 
@@ -97,7 +85,7 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
             if (!_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
             {
-                throw new QueryNotHandledException($"No query handler is registered to handle query of type: { queryType.Name }");
+                throw new QueryNotHandledException($"No query handler is registered to handle query of type: { queryType.Name }.");
             }
 
             return handleQueryDelegate;

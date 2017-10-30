@@ -26,8 +26,13 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// - (Optional) Request for a CancellationToken as parameter to listen for cancellation from Dispatcher.
         /// </summary>
         /// <param name="attributedHandlerFactory">Object which contains methods marked with [CommandHandler].</param>
-        public void RegisterCommandHandlerAttributes<TAttributed>(Func<TAttributed> attributedHandlerFactory) where TAttributed : class
+        public void Register<TAttributed>(Func<TAttributed> attributedHandlerFactory) where TAttributed : class
         {
+            if(attributedHandlerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(attributedHandlerFactory));
+            }
+
             Type attributedObjectType = typeof(TAttributed);
 
             // Get all public methods marked with CommandHandler attribute.
@@ -55,7 +60,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// </summary>
         /// <param name="commandType">Type of command to be handled.</param>
         /// <returns>Instance of invokeable CommandAsyncHandlerDelegate.</returns>
-        public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : ICommand
+        public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : class, ICommand
         {
             Type commandType = typeof(TCommand);
 
@@ -73,7 +78,8 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
         #region Functions
 
-        private void registerCommandHandlerMethod<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, CommandHandlerAttributeMethod commandHandlerMethod) where TCommand : ICommand
+        private void registerCommandHandlerMethod<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, CommandHandlerAttributeMethod commandHandlerMethod) where TAttributed : class
+                                                                                       where TCommand : class, ICommand
         {
             Type commandType = typeof(TCommand);
 
@@ -90,16 +96,17 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
         private static IEnumerable<CommandHandlerAttributeMethod> getCommandHandlerMethods(Type commandHandlerType)
         {
-            List<CommandHandlerAttributeMethod> commandHandlerMethods = new List<CommandHandlerAttributeMethod>();
+            IEnumerable<MethodInfo> methods = commandHandlerType.GetRuntimeMethods().Where(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute)));
 
-            foreach (MethodInfo methodInfo in commandHandlerType.GetRuntimeMethods())
+            List<CommandHandlerAttributeMethod> commandHandlerMethods = new List<CommandHandlerAttributeMethod>(methods.Count());
+
+            foreach (MethodInfo methodInfo in methods)
             {
-                if (methodInfo.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute)))
-                {
-                    // Return methods marked with [CommandHandler].
-                    yield return CommandHandlerAttributeMethod.Create(methodInfo);
-                }
+                // Return methods marked with [CommandHandler].
+                commandHandlerMethods.Add(CommandHandlerAttributeMethod.Create(methodInfo));
             }
+
+            return commandHandlerMethods;
         }
 
         #endregion Functions

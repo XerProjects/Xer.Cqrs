@@ -39,30 +39,26 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
         #region Methods
 
-        public QueryHandlerDelegate<TResult> CreateDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TQuery : IQuery<TResult>
+        public QueryHandlerDelegate<TResult> CreateDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
+                                   where TQuery : class, IQuery<TResult>
         {
             Type specificQueryType = typeof(TQuery);
 
-            QueryHandlerDelegate<TResult> newHandleQueryDelegate;
-
             if (IsAsync)
             {
-
                 if (SupportsCancellation)
                 {
-                    newHandleQueryDelegate = createCancellableAsyncDelegate<TAttributed, TQuery, TResult>(attributedObjectFactory);
+                    return createCancellableAsyncDelegate<TAttributed, TQuery, TResult>(attributedObjectFactory);
                 }
                 else
                 {
-                    newHandleQueryDelegate = createNonCancellableAsyncDelegate<TAttributed, TQuery, TResult>(attributedObjectFactory);
+                    return createNonCancellableAsyncDelegate<TAttributed, TQuery, TResult>(attributedObjectFactory);
                 }
             }
             else
             {
-                newHandleQueryDelegate = createWrappedSyncDelegate<TAttributed, TQuery, TResult>(attributedObjectFactory);
+                return createWrappedSyncDelegate<TAttributed, TQuery, TResult>(attributedObjectFactory);
             }
-
-            return newHandleQueryDelegate;
         }
 
         public static QueryHandlerAttributeMethod Create(MethodInfo methodInfo)
@@ -93,6 +89,11 @@ namespace Xer.Cqrs.QueryStack.Registrations
                 }
             }
 
+            if (!isAsync && supportsCancellation)
+            {
+                throw new InvalidOperationException("Cancellation token support is only available for async methods (Methods returning a Task).");
+            }
+
             TypeInfo genericQueryTypeInfo = typeof(IQuery<>).MakeGenericType(queryMethodReturnType).GetTypeInfo();
 
             ParameterInfo queryParameter = methodParameters.FirstOrDefault(p => genericQueryTypeInfo.IsAssignableFrom(p.ParameterType.GetTypeInfo()));
@@ -110,63 +111,28 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
         #region Functions
 
-        private QueryHandlerDelegate<TResult> createWrappedSyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TQuery : IQuery<TResult>
+        private QueryHandlerDelegate<TResult> createWrappedSyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
+                                                      where TQuery : class, IQuery<TResult>
         {
             Func<TAttributed, TQuery, TResult> func = (Func<TAttributed, TQuery, TResult>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TQuery, TResult>));
 
-            QueryHandlerDelegate<TResult> newHandleQueryDelegate = (q, ct) =>
-            {
-                TAttributed instance = attributedObjectFactory.Invoke();
-
-                if (instance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a query handler instance for {q.GetType().Name}");
-                }
-
-                TResult result = func.Invoke(instance, (TQuery)q);
-
-                return Task.FromResult(result);
-            };
-
-            return newHandleQueryDelegate;
+            return QueryHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, func);
         }
 
-        private QueryHandlerDelegate<TResult> createCancellableAsyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TQuery : IQuery<TResult>
+        private QueryHandlerDelegate<TResult> createCancellableAsyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
+                                                      where TQuery : class, IQuery<TResult>
         {
-            Func<TAttributed, TQuery, CancellationToken, Task<TResult>> func = (Func<TAttributed, TQuery, CancellationToken, Task<TResult>>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TQuery, CancellationToken, Task<TResult>>));
+            Func<TAttributed, TQuery, CancellationToken, Task<TResult>> asyncCancellableFunc = (Func<TAttributed, TQuery, CancellationToken, Task<TResult>>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TQuery, CancellationToken, Task<TResult>>));
 
-            QueryHandlerDelegate<TResult> newHandleQueryDelegate = (q, ct) =>
-            {
-                TAttributed instance = attributedObjectFactory.Invoke();
-
-                if (instance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a query handler instance for {q.GetType().Name}");
-                }
-
-                return func.Invoke(instance, (TQuery)q, ct);
-            };
-
-            return newHandleQueryDelegate;
+            return QueryHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, asyncCancellableFunc);
         }
 
-        private QueryHandlerDelegate<TResult> createNonCancellableAsyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TQuery : IQuery<TResult>
+        private QueryHandlerDelegate<TResult> createNonCancellableAsyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
+                                                      where TQuery : class, IQuery<TResult>
         {
-            Func<TAttributed, TQuery, Task<TResult>> func = (Func<TAttributed, TQuery, Task<TResult>>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TQuery, Task<TResult>>));
+            Func<TAttributed, TQuery, Task<TResult>> asyncFunc = (Func<TAttributed, TQuery, Task<TResult>>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TQuery, Task<TResult>>));
 
-            QueryHandlerDelegate<TResult> newHandleQueryDelegate = (q, ct) =>
-            {
-                TAttributed instance = attributedObjectFactory.Invoke();
-
-                if (instance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a query handler instance for {q.GetType().Name}");
-                }
-
-                return func.Invoke(instance, (TQuery)q);
-            };
-
-            return newHandleQueryDelegate;
+            return QueryHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, asyncFunc);
         }
 
         #endregion Functions

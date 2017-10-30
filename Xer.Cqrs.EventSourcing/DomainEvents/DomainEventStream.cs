@@ -23,12 +23,12 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
         /// <summary>
         /// Aggregate version of the first domain event in this stream.
         /// </summary>
-        public int FirstDomainEventVersion { get; }
+        public int StartVersion { get; }
 
         /// <summary>
-        /// Aggregate version of the latest domain event in this stream.
+        /// Aggregate version of the last domain event in this stream.
         /// </summary>
-        public int LastDomainEventVersion { get; }
+        public int EndVersion { get; }
 
         /// <summary>
         /// Get number of domain events in the stream.
@@ -55,10 +55,9 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
             
             if (DomainEventCount > 0)
             {
-                FirstDomainEventVersion = domainEvents.First().AggregateVersion;
-                LastDomainEventVersion = domainEvents.Last().AggregateVersion;
+                StartVersion = domainEvents.First().AggregateVersion;
+                EndVersion = domainEvents.Last().AggregateVersion;
             }
-
         }
 
         /// <summary>
@@ -73,7 +72,7 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
                 throw new ArgumentNullException(nameof(domainEventToAppend));
             }
 
-            if (LastDomainEventVersion >= domainEventToAppend.AggregateVersion)
+            if (EndVersion >= domainEventToAppend.AggregateVersion)
             {
                 throw new DomainEventVersionConflictException(domainEventToAppend,
                     "Domain event being appended is older than the latest event in the stream.");
@@ -84,8 +83,10 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
                 throw new InvalidOperationException("Cannot append domain event of different aggregate.");
             }
 
-            List<IDomainEvent> mergedStream = new List<IDomainEvent>(this);
-            mergedStream.Add(domainEventToAppend);
+            List<IDomainEvent> mergedStream = new List<IDomainEvent>(this)
+            {
+                domainEventToAppend
+            };
 
             return new DomainEventStream(AggregateId, mergedStream);
         }
@@ -102,7 +103,7 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
                 throw new ArgumentNullException(nameof(streamToAppend));
             }
 
-            if (LastDomainEventVersion >= streamToAppend.FirstDomainEventVersion)
+            if (EndVersion >= streamToAppend.StartVersion)
             {
                 throw new DomainEventStreamVersionConflictException(streamToAppend,
                     "Domain event stream being appended contains some entries that are older than the latest event in the stream.");
@@ -112,28 +113,32 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
             {
                 throw new InvalidOperationException("Cannot append streams of different aggregates.");
             }
-
-            IEnumerable<IDomainEvent> mergedStream = this.Concat(streamToAppend);
-
-            return new DomainEventStream(AggregateId, streamToAppend);
+            
+            return new DomainEventStream(AggregateId, this.Concat(streamToAppend));
         }
 
         /// <summary>
         /// Get enumerator.
         /// </summary>
-        /// <returns>Enumerator.</returns>
+        /// <returns>Enumerator which yields domain events until iterated upon.</returns>
         public IEnumerator<IDomainEvent> GetEnumerator()
         {
-            return _domainEvents.GetEnumerator();
+            foreach(IDomainEvent domainEvent in _domainEvents)
+            {
+                yield return domainEvent;
+            }
         }
 
         /// <summary>
         /// Get enumerator.
         /// </summary>
-        /// <returns>Enumerator.</returns>
+        /// <returns>Enumerator which yields domain events until iterated upon.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return _domainEvents.GetEnumerator();
+            foreach (IDomainEvent domainEvent in _domainEvents)
+            {
+                yield return domainEvent;
+            }
         }
     }
 }

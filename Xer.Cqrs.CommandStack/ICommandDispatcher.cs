@@ -9,6 +9,6 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <typeparam name="TCommand">Type of command to dispatch.</typeparam>
         /// <param name="command">Command to dispatch.</param>
-        void Dispatch<TCommand>(TCommand command) where TCommand : ICommand;
+        void Dispatch<TCommand>(TCommand command) where TCommand : class, ICommand;
     }
 }

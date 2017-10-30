@@ -6,21 +6,23 @@ namespace Xer.Cqrs.EventSourcing.Tests
 {
     public class EventSourcedAggregateTests
     {
+        #region Version Property
+
         public class VersionProperty
         {
             [Fact]
-            public void Initial_Aggregate_Version_Must_Be_1()
+            public void Should_Be_Version_1_Initially()
             {
                 var testAggregate = new TestAggregate(Guid.NewGuid());
 
-                Assert.Equal(testAggregate.Version, 1);
+                Assert.Equal(1, testAggregate.Version);
             }
 
             [Fact]
-            public void Aggregate_Version_Must_Increase_When_Event_Is_Applied()
+            public void Should_Increase_When_Event_Is_Applied()
             {
                 var testAggregate = new TestAggregate(Guid.NewGuid());
-                
+
                 Assert.Equal(1, testAggregate.Version);
 
                 // This should increment version by 1.
@@ -35,10 +37,14 @@ namespace Xer.Cqrs.EventSourcing.Tests
             }
         }
 
+        #endregion Version Property
+
+        #region ApplyChange Method
+
         public class ApplyChangeMethod
         {
             [Fact]
-            public void Aggregate_Data_Must_Update_When_Event_Is_Applied()
+            public void Should_Update_Aggregate_When_Event_Is_Applied()
             {
                 var testAggregate = new TestAggregate(Guid.NewGuid());
 
@@ -56,45 +62,57 @@ namespace Xer.Cqrs.EventSourcing.Tests
             }
         }
 
-        //public class GetUncommittedEventsMethod
-        //{
-        //    [Fact]
-        //    public void Aggregate_Should_Have_Uncommitted_Events()
-        //    {
-        //        var testAggregate = new TestAggregate(Guid.NewGuid());
+        #endregion ApplyChange Method
 
-        //        // This should increment version by 1.
-        //        testAggregate.ChangeAggregateData("New Data1");
-        //        // This should increment version by 1.
-        //        testAggregate.ChangeAggregateData("New Data2");
-        //        // This should increment version by 1.
-        //        testAggregate.ChangeAggregateData("New Data3");
-        //        // This should increment version by 1.
-        //        testAggregate.ChangeAggregateData("New Data4");
+        #region GetUncommittedEvents Method
 
-        //        // Should have 5 uncommitted events. Created event + Modified events.
-        //        Assert.Equal(5, testAggregate.GetUncommitedDomainEvents().DomainEventCount);
-        //    }
+        public class GetUncommittedEventsMethod
+        {
+            [Fact]
+            public void Should_Return_Uncommitted_Events()
+            {
+                // Create aggregate with 1 uncommitted event.
+                var testAggregate = new TestAggregate(Guid.NewGuid());
 
-        //    [Fact]
-        //    public void Aggregate_Should_Have_Uncommitted_Events()
-        //    {
-        //        var testAggregate = new TestAggregate(Guid.NewGuid());
+                // This should increment version by 4.
+                testAggregate.ChangeAggregateData("New Data1");
+                testAggregate.ChangeAggregateData("New Data2");
+                testAggregate.ChangeAggregateData("New Data3");
+                testAggregate.ChangeAggregateData("New Data4");
 
-        //        // This should increment version by 1.
-        //        testAggregate.ChangeAggregateData("New Data1");
-        //        // This should increment version by 1.
-        //        testAggregate.ChangeAggregateData("New Data2");
-        //        // This should increment version by 1.
-        //        testAggregate.ChangeAggregateData("New Data3");
-        //        // This should increment version by 1.
-        //        testAggregate.ChangeAggregateData("New Data4");
+                // Should have 5 uncommitted events. Created event + Update events.
+                Assert.Equal(5, testAggregate.GetUncommitedDomainEvents().DomainEventCount);
+            }
+        }
 
-        //        testAggregate.ClearUncommitedDomainEvents();
+        #endregion GetUncommittedEvents Method
 
-        //        // Should have 0 uncommitted events since it is cleared.
-        //        Assert.Equal(0, testAggregate.GetUncommitedDomainEvents().DomainEventCount);
-        //    }
-        //}
+        #region ClearUncommittedEvents Method
+
+        public class ClearUncommittedEventsMethod
+        {
+            [Fact]
+            public void Should_Clear_All_Uncommitted_Events()
+            {
+                // Create aggregate with 1 uncommitted event.
+                var testAggregate = new TestAggregate(Guid.NewGuid());
+
+                // This should increment uncommitted events by 5.
+                testAggregate.ChangeAggregateData("New Data1");
+                testAggregate.ChangeAggregateData("New Data2");
+                testAggregate.ChangeAggregateData("New Data3");
+                testAggregate.ChangeAggregateData("New Data4");
+
+                // Should have 5 uncommitted events. Created event + Update events.
+                Assert.Equal(5, testAggregate.GetUncommitedDomainEvents().DomainEventCount);
+
+                testAggregate.ClearUncommitedDomainEvents();
+
+                // Should have 0 uncommitted events since it is cleared.
+                Assert.Equal(0, testAggregate.GetUncommitedDomainEvents().DomainEventCount);
+            }
+        }
+
+        #endregion ClearUncommittedEvents Method
     }
 }

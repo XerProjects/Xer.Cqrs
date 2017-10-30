@@ -12,7 +12,7 @@ namespace Xer.Cqrs.QueryStack
         /// <typeparam name="TQuery">Type of query to be handled.</typeparam>
         /// <typeparam name="TResult">Type of query result.</typeparam>
         /// <returns>Instance of invokeable QueryAsyncHandlerDelegate.</returns>
-        QueryHandlerDelegate<TResult> ResolveQueryHandler<TQuery, TResult>() where TQuery : IQuery<TResult>;
+        QueryHandlerDelegate<TResult> ResolveQueryHandler<TQuery, TResult>() where TQuery : class, IQuery<TResult>;
     }
 
     /// <summary>

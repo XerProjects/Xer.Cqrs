@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Xer.Cqrs.Events.Resolvers
 {
@@ -12,48 +15,56 @@ namespace Xer.Cqrs.Events.Resolvers
             _containerAdapter = containerAdapter;
         }
 
-        public IEnumerable<EventHandlerDelegate> ResolveEventHandlers<TEvent>() where TEvent : IEvent
+        public IEnumerable<EventHandlerDelegate> ResolveEventHandlers<TEvent>() where TEvent : class, IEvent
         {
             return buildEventHandlerDelegates<TEvent>();
         }
 
-        private IEnumerable<EventHandlerDelegate> buildEventHandlerDelegates<TEvent>() where TEvent : IEvent
+        private IEnumerable<EventHandlerDelegate> buildEventHandlerDelegates<TEvent>() where TEvent : class, IEvent
         {
             List<EventHandlerDelegate> handlerDelegates = new List<EventHandlerDelegate>();
 
-            // Get all async handlers for the event.
-            IEnumerable<IEventAsyncHandler<TEvent>> asyncEventHandlers = _containerAdapter.ResolveMultiple<IEventAsyncHandler<TEvent>>();
-
-            if (asyncEventHandlers != null)
+            try
             {
-                // Convert to EventHandlerDelegate.
-                handlerDelegates.AddRange(asyncEventHandlers.Select(eventHandler =>
+                // Get all async handlers for the event.
+                IEnumerable<IEventAsyncHandler<TEvent>> asyncEventHandlers = _containerAdapter.ResolveMultiple<IEventAsyncHandler<TEvent>>();
+
+                if (asyncEventHandlers != null)
                 {
-                    return new EventHandlerDelegate((e, ct) =>
+                    // Convert to EventHandlerDelegate.
+                    handlerDelegates.AddRange(asyncEventHandlers.Select(eventHandler =>
                     {
-                        return eventHandler.HandleAsync((TEvent)e, ct);
-                    });
-                }));
+                        return EventHandlerDelegateBuilder.FromEventHandler(eventHandler);
+                    }));
+                }
             }
-
-            // Get all sync handlers for the event.
-            IEnumerable<IEventHandler<TEvent>> syncEventHandlers = _containerAdapter.ResolveMultiple<IEventHandler<TEvent>>();
-
-            if (syncEventHandlers != null)
+            catch(Exception)
             {
-               // Convert to EventHandlerDelegate.
-               handlerDelegates.AddRange(syncEventHandlers.Select(eventHandler =>
-               {
-                   return new EventHandlerDelegate((e, ct) =>
-                   {
-                       eventHandler.Handle((TEvent)e);
-                       return Utilities.CompletedTask;
-                   });
-               }));
+                // Do nothing.
+                // Some containers may throw exception when no instance is resolved.
             }
 
-            // Merge the two.
-            return handlerDelegates;
+            try
+            {
+                // Get all sync handlers for the event.
+                IEnumerable<IEventHandler<TEvent>> syncEventHandlers = _containerAdapter.ResolveMultiple<IEventHandler<TEvent>>();
+
+                if (syncEventHandlers != null)
+                {
+                    // Convert to EventHandlerDelegate.
+                    handlerDelegates.AddRange(syncEventHandlers.Select(eventHandler =>
+                    {
+                        return EventHandlerDelegateBuilder.FromEventHandler(eventHandler);
+                    }));
+                }
+            }
+            catch(Exception)
+            {
+                // Do nothing.
+                // Some containers may throw exception when no instance is resolved.
+            }
+            
+            return new ReadOnlyCollection<EventHandlerDelegate>(handlerDelegates);
         }
     }
 

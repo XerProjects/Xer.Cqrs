@@ -12,6 +12,6 @@ namespace Xer.Cqrs.CommandStack
         /// <param name="command">Command to dispatch.</param>
         /// <param name="cancellationToken">Optional cancellation token to support cancellation.</param>
         /// <returns>Task which can be awaited asynchronously.</returns>
-        Task DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default(CancellationToken)) where TCommand : ICommand;
+        Task DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default(CancellationToken)) where TCommand : class, ICommand;
     }
 }

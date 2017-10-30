@@ -1,9 +1,9 @@
 ﻿using System;
-using Xer.Cqrs.Events.Publishers;
-using Xer.Cqrs.Events.Registrations;
-using Xer.Cqrs.EventSourcing.DomainEvents.Stores;
+using System.Threading.Tasks;
+using Xer.Cqrs.EventSourcing.DomainEvents;
+using Xer.Cqrs.EventSourcing.Repositories;
 using Xer.Cqrs.EventSourcing.Tests.Mocks;
-using Xer.Cqrs.EventSourcing.Tests.Mocks.Repositories;
+using Xer.Cqrs.EventSourcing.Tests.Utilities;
 using Xunit;
 
 namespace Xer.Cqrs.EventSourcing.Tests
@@ -13,18 +13,68 @@ namespace Xer.Cqrs.EventSourcing.Tests
         public class SaveMethod
         {
             [Fact]
-            public void Save_Should_Append_To_Domain_Event_Store()
+            public void Should_Persist_Aggregate()
             {
-                var subscription = new EventHandlerRegistration();
+                IEventSourcedAggregateRepository<TestAggregate> repository = Factory.CreateTestAggregateRepository();
 
-                var publisher = new EventPublisher(subscription);
-                var eventStore = new PublishingDomainEventStore<TestAggregate>(new InMemoryDomainEventStore<TestAggregate>(), publisher);
-                var repository = new TestEventSourcedAggregateRepository(eventStore);
-                var id = Guid.NewGuid();
-                var aggregate = new TestAggregate(id);
+                TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
                 repository.Save(aggregate);
 
-                Assert.Equal(id, repository.GetById(id).Id);
+                TestAggregate fromRepo = repository.GetById(aggregate.Id);
+
+                Assert.NotNull(fromRepo);
+                Assert.Equal(aggregate.Id, fromRepo.Id);
+            }
+        }
+
+        public class SaveAsyncMethod
+        {
+            [Fact]
+            public async Task Should_Persist_Aggregate()
+            {
+                IEventSourcedAggregateAsyncRepository<TestAggregate> repository = Factory.CreateTestAggregateAsyncRepository();
+
+                TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
+                await repository.SaveAsync(aggregate);
+
+                TestAggregate fromRepo = await repository.GetByIdAsync(aggregate.Id);
+
+                Assert.NotNull(fromRepo);
+                Assert.Equal(aggregate.Id, fromRepo.Id);
+            }
+        }
+
+        public class GetByIdMethod
+        {
+            [Fact]
+            public void Should_Retrieve_Aggregate()
+            {
+                IEventSourcedAggregateRepository<TestAggregate> repository = Factory.CreateTestAggregateRepository();
+
+                TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
+                repository.Save(aggregate);
+
+                TestAggregate fromRepo = repository.GetById(aggregate.Id);
+
+                Assert.NotNull(fromRepo);
+                Assert.Equal(aggregate.Id, fromRepo.Id);
+            }
+        }
+
+        public class GetByIdAsyncMethod
+        {
+            [Fact]
+            public async Task Should_Retrieve_Aggregate()
+            {
+                IEventSourcedAggregateAsyncRepository<TestAggregate> repository = Factory.CreateTestAggregateAsyncRepository();
+
+                TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
+                await repository.SaveAsync(aggregate);
+
+                TestAggregate fromRepo = await repository.GetByIdAsync(aggregate.Id);
+
+                Assert.NotNull(fromRepo);
+                Assert.Equal(aggregate.Id, fromRepo.Id);
             }
         }
     }

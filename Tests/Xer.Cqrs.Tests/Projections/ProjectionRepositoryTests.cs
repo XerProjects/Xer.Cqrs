@@ -1,7 +1,4 @@
-﻿using Xer.Cqrs.QueryStack.Projections;
-using Xer.Cqrs.Tests.Mocks.Projections;
-
-namespace Xer.Cqrs.Tests.Projections
+﻿namespace Xer.Cqrs.Tests.Projections
 {
     public class ProjectionRepositoryTests
     {

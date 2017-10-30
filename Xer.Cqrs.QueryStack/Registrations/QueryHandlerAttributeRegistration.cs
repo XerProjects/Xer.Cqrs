@@ -25,10 +25,16 @@ namespace Xer.Cqrs.QueryStack.Registrations
         /// - Return a Task object whose generic argument matches the query's expected result type.
         /// </summary>
         /// <param name="attributedHandlerFactory">Object which contains methods marked with [QueryHandler].</param>
-        public void RegisterQueryHandlerAttributes<TAttributed>(Func<TAttributed> attributedHandlerFactory)
+        public void Register<TAttributed>(Func<TAttributed> attributedHandlerFactory) where TAttributed : class
         {
-            // Get all public methods marked with CommandHandler attribute.
+            if (attributedHandlerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(attributedHandlerFactory));
+            }
+
             Type attributedHandlerType = typeof(TAttributed);
+
+            // Get all public methods marked with CommandHandler attribute.
             IEnumerable<QueryHandlerAttributeMethod> queryHandlerMethods = getQueryHandlerMethods(attributedHandlerType);
 
             foreach (QueryHandlerAttributeMethod queryHandlerMethod in queryHandlerMethods)
@@ -56,7 +62,7 @@ namespace Xer.Cqrs.QueryStack.Registrations
         /// <typeparam name="TResult">Type of query result.</typeparam>
         /// <param name="queryType">Type of query to be handled.</param>
         /// <returns>Instance of invokeable QueryAsyncHandlerDelegate.</returns>
-        public QueryHandlerDelegate<TResult> ResolveQueryHandler<TQuery, TResult>() where TQuery : IQuery<TResult>
+        public QueryHandlerDelegate<TResult> ResolveQueryHandler<TQuery, TResult>() where TQuery : class, IQuery<TResult>
         {
             Type queryType = typeof(TQuery);
 
@@ -74,7 +80,8 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
         #region Functions
 
-        private void registerQueryHandlerMethod<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory, QueryHandlerAttributeMethod queryHandlerMethod) where TQuery : IQuery<TResult>
+        private void registerQueryHandlerMethod<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory, QueryHandlerAttributeMethod queryHandlerMethod) where TAttributed : class 
+                                                                                   where TQuery : class, IQuery<TResult>
         {
             Type specificQueryType = typeof(TQuery);
 
@@ -91,16 +98,17 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
         private static IEnumerable<QueryHandlerAttributeMethod> getQueryHandlerMethods(Type queryHandlerType)
         {
-            List<QueryHandlerAttributeMethod> queryHandlerMethods = new List<QueryHandlerAttributeMethod>();
+            IEnumerable<MethodInfo> methods = queryHandlerType.GetRuntimeMethods().Where(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(QueryHandlerAttribute)));
 
-            foreach (MethodInfo methodInfo in queryHandlerType.GetRuntimeMethods())
+            List<QueryHandlerAttributeMethod> queryHandlerMethods = new List<QueryHandlerAttributeMethod>(methods.Count());
+
+            foreach (MethodInfo methodInfo in methods)
             {
-                if (methodInfo.CustomAttributes.Any(a => a.AttributeType == typeof(QueryHandlerAttribute)))
-                {
-                    // Return methods marked with [QueryHandler].
-                    yield return QueryHandlerAttributeMethod.Create(methodInfo);
-                }
+                // Return methods marked with [QueryHandler].
+                queryHandlerMethods.Add(QueryHandlerAttributeMethod.Create(methodInfo));
             }
+
+            return queryHandlerMethods;
         }
 
         #endregion Functions

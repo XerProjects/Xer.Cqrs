@@ -2,9 +2,9 @@
 {
     internal static class TaskUtility
     {
-        public static readonly Task CompletedTask = Task.FromResult(0);
+        internal static readonly Task CompletedTask = Task.FromResult(true);
 
-        public static TResult Await<TResult>(this Task<TResult> task)
+        internal static TResult AwaitResult<TResult>(this Task<TResult> task)
         {
             if (task == null)
             {
@@ -12,6 +12,13 @@
             }
 
             return task.ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        internal static Task<TResult> CreateFaultedTask<TResult>(Exception ex)
+        {
+            TaskCompletionSource<TResult> completionSource = new TaskCompletionSource<TResult>();
+            completionSource.TrySetException(ex);
+            return completionSource.Task;
         }
     }
 }

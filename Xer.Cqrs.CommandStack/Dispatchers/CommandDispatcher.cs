@@ -14,10 +14,10 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
         }
 
         /// <summary>
-        /// Dispatch the command to the registered command handlers.
+        /// Dispatch the command to the registered command handler.
         /// </summary>
         /// <param name="command">Command to dispatch.</param>
-        public void Dispatch<TCommand>(TCommand command) where TCommand : ICommand
+        public void Dispatch<TCommand>(TCommand command) where TCommand : class, ICommand
         {
             // Wait Task completion.
             DispatchAsync(command).Await();
@@ -29,7 +29,7 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
         /// <param name="command">Command to dispatch.</param>
         /// <param name="cancellationToken">Optional cancellation token to support cancellation.</param>
         /// <returns>Task which can be awaited asynchronously.</returns>
-        public Task DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default(CancellationToken)) where TCommand : ICommand
+        public Task DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default(CancellationToken)) where TCommand : class, ICommand
         {
             CommandHandlerDelegate handleCommandAsyncDelegate = _resolver.ResolveCommandHandler<TCommand>();
 

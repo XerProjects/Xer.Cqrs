@@ -14,6 +14,6 @@ namespace Xer.Cqrs.QueryStack
         /// </summary>
         /// <typeparam name="TAttributed">Type of the objects which contains the attributed methods.</typeparam>
         /// <param name="attributedHandlerFactory">Factory which will create the instance of the TAttributed object.</param>
-        void RegisterQueryHandlerAttributes<TAttributed>(Func<TAttributed> attributedHandlerFactory);
+        void Register<TAttributed>(Func<TAttributed> attributedHandlerFactory) where TAttributed : class;
     }
 }

@@ -23,5 +23,5 @@ namespace Xer.Cqrs.Events
         Task PublishAsync(IEvent @event, CancellationToken cancellationToken = default(CancellationToken));
     }
 
-    public delegate void OnErrorHandler(EventHandlerDelegate eventHandler, Exception e);
+    public delegate void OnErrorHandler(IEvent @event, Exception e);
 }

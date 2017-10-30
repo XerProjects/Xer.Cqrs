@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ namespace Xer.Cqrs.Events.Publishers
     {
         #region Declarations
 
-        private static readonly MethodInfo _resolveEventHandlersOpenGenericMethodInfo = Utilities.GetOpenGenericMethodInfo<IEventHandlerResolver>(c => c.ResolveEventHandlers<IEvent>());
+        private static readonly MethodInfo _resolveEventHandlersOpenGenericMethodInfo = getOpenGenericMethodInfo<IEventHandlerResolver>(c => c.ResolveEventHandlers<IEvent>());
 
         private readonly IDictionary<Type, Func<IEnumerable<EventHandlerDelegate>>> _cachedEventHandlerDelegatesResolver = new Dictionary<Type, Func<IEnumerable<EventHandlerDelegate>>>();
 
@@ -45,29 +46,61 @@ namespace Xer.Cqrs.Events.Publishers
         /// <param name="event">Event to publish.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Asynchronous task.</returns>
-        public Task PublishAsync(IEvent @event, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task PublishAsync(IEvent @event, CancellationToken cancellationToken = default(CancellationToken))
         {
-            IEnumerable<EventHandlerDelegate> eventHandlerDelegates = resolveEventHandlerDelegatesFor(@event);
-
-            IEnumerable<Task> handleTasks = eventHandlerDelegates.Select(eventHandler =>
+            if(@event == null)
             {
-                return Task.Run(async () =>
-                {
-                    try
-                    {
-                        await eventHandler.Invoke(@event, cancellationToken).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        OnError?.Invoke(eventHandler, ex);
-                    }
-                });
-            });
+                throw new ArgumentNullException(nameof(@event));
+            }
 
-            return Task.WhenAll(handleTasks);
+            IEnumerable<EventHandlerDelegate> eventHandlerDelegates = resolveEventHandlerDelegatesFor(@event);
+            
+            ICollection<Task> handleTasks = eventHandlerDelegates.Select(eventHandler =>
+            {
+                return ExecuteEventHandlerAsync(eventHandler, @event, cancellationToken);
+            }).ToList();
+
+            while (handleTasks.Count > 0)
+            {
+                Task completedTask = await Task.WhenAny(handleTasks).ConfigureAwait(false);
+
+                try
+                {
+                    await completedTask.ConfigureAwait(false);
+                }
+                catch(OperationCanceledException)
+                {
+                    // Propagate.
+                    throw;
+                }
+                catch(Exception ex)
+                {
+                    OnError?.Invoke(@event, ex);
+                }
+                finally
+                {
+                    handleTasks.Remove(completedTask);
+                }
+            }
         }
 
         #endregion IEventPublisher Implementations
+
+        #region Methods
+
+        /// <summary>
+        /// Execute event handler.
+        /// </summary>
+        /// <param name="eventHandler">Event handler delegate.</param>
+        /// <param name="event">Event to publish.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Asynchronous task.</returns>
+        protected virtual Task ExecuteEventHandlerAsync(EventHandlerDelegate eventHandler, IEvent @event, CancellationToken cancellationToken)
+        {
+            return eventHandler.Invoke(@event, cancellationToken);
+        }
+
+        #endregion Methods
 
         #region Functions
 
@@ -95,6 +128,19 @@ namespace Xer.Cqrs.Events.Publishers
             }
 
             return eventHandlerDelegatesResolver.Invoke();
+        }
+                
+        private static MethodInfo getOpenGenericMethodInfo<T>(Expression<Action<T>> expression)
+        {
+            var methodCallExpression = expression.Body as MethodCallExpression;
+            if (methodCallExpression != null)
+            {
+                string methodName = methodCallExpression.Method.Name;
+                MethodInfo methodInfo = typeof(T).GetRuntimeMethods().FirstOrDefault(m => m.Name == methodName);
+                return methodInfo;
+            }
+
+            return null;
         }
 
         #endregion Functions

@@ -10,7 +10,7 @@ namespace Xer.Cqrs.QueryStack
         /// <typeparam name="TQuery">Type of query to be handled.</typeparam>
         /// <typeparam name="TResult">Query's expected result.</typeparam>
         /// <param name="queryHandlerFactory">Asynchronous handler which can process the query.</param>
-        void Register<TQuery, TResult>(Func<IQueryAsyncHandler<TQuery, TResult>> queryHandlerFactory) where TQuery : IQuery<TResult>;
+        void Register<TQuery, TResult>(Func<IQueryAsyncHandler<TQuery, TResult>> queryHandlerFactory) where TQuery : class, IQuery<TResult>;
 
         /// <summary>
         /// Register query handler.
@@ -18,6 +18,6 @@ namespace Xer.Cqrs.QueryStack
         /// <typeparam name="TQuery">Type of query to be handled.</typeparam>
         /// <typeparam name="TResult">Query's expected result.</typeparam>
         /// <param name="queryHandlerFactory">Synchronous handler which can process the query.</param>
-        void Register<TQuery, TResult>(Func<IQueryHandler<TQuery, TResult>> queryHandlerFactory) where TQuery : IQuery<TResult>;
+        void Register<TQuery, TResult>(Func<IQueryHandler<TQuery, TResult>> queryHandlerFactory) where TQuery : class, IQuery<TResult>;
     }
 }

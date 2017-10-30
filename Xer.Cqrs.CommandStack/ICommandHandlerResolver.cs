@@ -11,7 +11,7 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <typeparam name="TCommand">Type of command to be handled.</typeparam>
         /// <returns>Instance of invokeable CommandHandlerDelegate.</returns>
-        CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : ICommand;
+        CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : class, ICommand;
     }
 
     /// <summary>

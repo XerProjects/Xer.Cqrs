@@ -16,7 +16,7 @@ namespace Xer.Cqrs.CommandStack.Resolvers
         /// Get the registered command handler delegatefrom multiple sources to handle the command of the specified type.
         /// </summary><typeparam name="TCommand">Type of command to be handled.</typeparam>
         /// <returns>Instance of invokeable CommandHandlerDelegate.</returns>
-        public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : ICommand
+        public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : class, ICommand
         {
             foreach (ICommandHandlerResolver resolver in _resolvers)
             {

@@ -19,10 +19,10 @@ namespace Xer.Cqrs.QueryStack.Dispatchers
         /// <typeparam name="TResult">Type of expected query result.</typeparam>
         /// <param name="query">Query to send to registered the query handler.</param>
         /// <returns>Result of the dispatched query.</returns>
-        public TResult Dispatch<TQuery, TResult>(TQuery query) where TQuery : IQuery<TResult>
+        public TResult Dispatch<TQuery, TResult>(TQuery query) where TQuery : class, IQuery<TResult>
         {
             // Wait Task completion.
-            return DispatchAsync<TQuery, TResult>(query).Await();
+            return DispatchAsync<TQuery, TResult>(query).AwaitResult();
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace Xer.Cqrs.QueryStack.Dispatchers
         /// <param name="query">Query to send to registered the query handler.</param>
         /// <param name="cancellationToken">Optional cancellation token to support cancelltaion.</param>
         /// <returns>Task which contains the result of the dispatched query. This can be awaited asynchronously.</returns>
-        public Task<TResult> DispatchAsync<TQuery, TResult>(TQuery query, CancellationToken cancellationToken = default(CancellationToken)) where TQuery : IQuery<TResult>
+        public Task<TResult> DispatchAsync<TQuery, TResult>(TQuery query, CancellationToken cancellationToken = default(CancellationToken)) where TQuery : class, IQuery<TResult>
         {
             QueryHandlerDelegate<TResult> handleQueryAsyncDelegate = _resolver.ResolveQueryHandler<TQuery, TResult>();
 

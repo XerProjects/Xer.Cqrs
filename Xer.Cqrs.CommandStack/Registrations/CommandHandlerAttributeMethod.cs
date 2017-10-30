@@ -38,27 +38,24 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
         #region Methods
 
-        public CommandHandlerDelegate CreateDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) where TCommand : ICommand
+        public CommandHandlerDelegate CreateDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
+                                   where TCommand : class, ICommand
         {
-            CommandHandlerDelegate newCommandHandlerDelegate;
-
             if (IsAsync)
             {
                 if (SupportsCancellation)
                 {
-                    newCommandHandlerDelegate = createCancellableAsyncDelegate<TAttributed, TCommand>(attributedObjectFactory);
+                    return createCancellableAsyncDelegate<TAttributed, TCommand>(attributedObjectFactory);
                 }
                 else
                 {
-                    newCommandHandlerDelegate = createNonCancellableAsyncDelegate<TAttributed, TCommand>(attributedObjectFactory);
+                    return createNonCancellableAsyncDelegate<TAttributed, TCommand>(attributedObjectFactory);
                 }
             }
             else
             {
-                newCommandHandlerDelegate = createWrappedSyncDelegate<TAttributed, TCommand>(attributedObjectFactory);
+                return createWrappedSyncDelegate<TAttributed, TCommand>(attributedObjectFactory);
             }
-
-            return newCommandHandlerDelegate;
         }
 
         public static CommandHandlerAttributeMethod Create(MethodInfo methodInfo)
@@ -99,6 +96,11 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
             bool supportsCancellation = methodParameters.Any(p => p.ParameterType == typeof(CancellationToken));
 
+            if (!isAsync && supportsCancellation)
+            {
+                throw new InvalidOperationException("Cancellation token support is only available for async methods (Methods returning a Task).");
+            }
+
             return new CommandHandlerAttributeMethod(commandType, methodInfo, isAsync, supportsCancellation);
         }
 
@@ -106,63 +108,49 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
         #region Functions
 
-        private CommandHandlerDelegate createWrappedSyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory)
+        /// <summary>
+        /// Create a delegate from a synchronous action.
+        /// </summary>
+        /// <typeparam name="TAttributed">Type of object that contains methods marked with [CommandHandler].</typeparam>
+        /// <typeparam name="TCommand">Type of command that is handled by the command handler delegate.</typeparam>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
+        /// <returns>Instance of command handler delegate.</returns>
+        private CommandHandlerDelegate createWrappedSyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
+                                   where TCommand : class, ICommand
         {
             Action<TAttributed, TCommand> action = (Action<TAttributed, TCommand>)MethodInfo.CreateDelegate(typeof(Action<TAttributed, TCommand>));
 
-            CommandHandlerDelegate newHandleCommandDelegate = (c, ct) =>
-            {
-                TAttributed instance = attributedObjectFactory.Invoke();
-
-                if (instance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a command handler instance for {c.GetType().Name}.");
-                }
-
-                action.Invoke(instance, (TCommand)c);
-
-                return TaskUtility.CompletedTask;
-            };
-
-            return newHandleCommandDelegate;
+            return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, action);
         }
 
-        private CommandHandlerDelegate createCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory)
+        /// <summary>
+        /// Create a delegate from an asynchronous (cancellable) action.
+        /// </summary>
+        /// <typeparam name="TAttributed">Type of object that contains methods marked with [CommandHandler].</typeparam>
+        /// <typeparam name="TCommand">Type of command that is handled by the command handler delegate.</typeparam>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
+        /// <returns>Instance of command handler delegate.</returns>
+        private CommandHandlerDelegate createCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
+                                   where TCommand : class, ICommand
         {
-            Func<TAttributed, TCommand, CancellationToken, Task> action = (Func<TAttributed, TCommand, CancellationToken, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, CancellationToken, Task>));
+            Func<TAttributed, TCommand, CancellationToken, Task> cancellableAsyncAction = (Func<TAttributed, TCommand, CancellationToken, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, CancellationToken, Task>));
 
-            CommandHandlerDelegate newHandleCommandDelegate = (c, ct) =>
-            {
-                TAttributed instance = attributedObjectFactory.Invoke();
-
-                if (instance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a command handler instance for {c.GetType().Name}.");
-                }
-
-                return action.Invoke(instance, (TCommand)c, ct);
-            };
-
-            return newHandleCommandDelegate;
+            return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, cancellableAsyncAction);
         }
 
-        private CommandHandlerDelegate createNonCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory)
+        /// <summary>
+        /// Create a delegate from an asynchronous (non-cancellable) action.
+        /// </summary>
+        /// <typeparam name="TAttributed">Type of object that contains methods marked with [CommandHandler].</typeparam>
+        /// <typeparam name="TCommand">Type of command that is handled by the command handler delegate.</typeparam>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
+        /// <returns>Instance of command handler delegate.</returns>
+        private CommandHandlerDelegate createNonCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
+                                   where TCommand : class, ICommand
         {
-            Func<TAttributed, TCommand, Task> action = (Func<TAttributed, TCommand, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, Task>));
+            Func<TAttributed, TCommand, Task> asyncAction = (Func<TAttributed, TCommand, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, Task>));
 
-            CommandHandlerDelegate newHandleCommandDelegate = (c, ct) =>
-            {
-                TAttributed instance = attributedObjectFactory.Invoke();
-
-                if (instance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a command handler instance for {c.GetType().Name}.");
-                }
-
-                return action.Invoke(instance, (TCommand)c);
-            };
-
-            return newHandleCommandDelegate;
+            return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, asyncAction);
         }
 
         #endregion Functions

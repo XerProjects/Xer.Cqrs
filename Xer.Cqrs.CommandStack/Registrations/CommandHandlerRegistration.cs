@@ -19,8 +19,13 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// </summary>
         /// <typeparam name="TCommand">Type of command to be handled.</typeparam>
         /// <param name="commandHandlerFactory">Synchronous handler which can process the command.</param>
-        public void Register<TCommand>(Func<ICommandHandler<TCommand>> commandHandlerFactory) where TCommand : ICommand
+        public void Register<TCommand>(Func<ICommandHandler<TCommand>> commandHandlerFactory) where TCommand : class, ICommand
         {
+            if (commandHandlerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(commandHandlerFactory));
+            }
+
             Type commandType = typeof(TCommand);
 
             CommandHandlerDelegate handleCommandDelegate;
@@ -30,19 +35,8 @@ namespace Xer.Cqrs.CommandStack.Registrations
                 throw new InvalidOperationException($"Duplicate command async handler registered for {commandType.Name}.");
             }
 
-            CommandHandlerDelegate newHandleCommandDelegate = (c, ct) =>
-            {
-                ICommandHandler<TCommand> commandHandlerInstance = commandHandlerFactory.Invoke();
-
-                if (commandHandlerInstance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a command handler instance for {c.GetType().Name}");
-                }
-
-                commandHandlerInstance.Handle((TCommand)c);
-
-                return TaskUtility.CompletedTask;
-            };
+            // Create delegate.
+            CommandHandlerDelegate newHandleCommandDelegate = CommandHandlerDelegateBuilder.FromFactory(commandHandlerFactory);
 
             _commandHandlerDelegatesByCommandType.Add(commandType, newHandleCommandDelegate);
         }
@@ -51,9 +45,14 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// Register command async handler.
         /// </summary>
         /// <typeparam name="TCommand">Type of command to be handled.</typeparam>
-        /// <param name="commandAsyncHandlerFactory">Asynchronous handler which can process the command.</param>
-        public void Register<TCommand>(Func<ICommandAsyncHandler<TCommand>> commandAsyncHandlerFactory) where TCommand : ICommand
+        /// <param name="commandHandlerFactory">Asynchronous handler which can process the command.</param>
+        public void Register<TCommand>(Func<ICommandAsyncHandler<TCommand>> commandHandlerFactory) where TCommand : class, ICommand
         {
+            if(commandHandlerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(commandHandlerFactory));
+            }
+
             Type commandType = typeof(TCommand);
 
             CommandHandlerDelegate handleCommandDelegate;
@@ -63,17 +62,8 @@ namespace Xer.Cqrs.CommandStack.Registrations
                 throw new InvalidOperationException($"Duplicate command async handler registered for {commandType.Name}.");
             }
 
-            CommandHandlerDelegate newHandleCommandDelegate = (c, ct) =>
-            {
-                ICommandAsyncHandler<TCommand> commandHandlerInstance = commandAsyncHandlerFactory.Invoke();
-
-                if (commandHandlerInstance == null)
-                {
-                    throw new InvalidOperationException($"Failed to create a command handler instance for {c.GetType().Name}");
-                }
-
-                return commandHandlerInstance.HandleAsync((TCommand)c, ct);
-            };
+            // Create delegate.
+            CommandHandlerDelegate newHandleCommandDelegate = CommandHandlerDelegateBuilder.FromFactory(commandHandlerFactory);
 
             _commandHandlerDelegatesByCommandType.Add(commandType, newHandleCommandDelegate);
         }
@@ -87,7 +77,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// </summary>
         /// <param name="commandType">Type of command to be handled.</param>
         /// <returns>Instance of invokeable CommandAsyncHandlerDelegate.</returns>
-        public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : ICommand
+        public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : class, ICommand
         {
             Type commandType = typeof(TCommand);
 

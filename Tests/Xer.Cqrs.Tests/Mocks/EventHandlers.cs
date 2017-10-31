@@ -25,7 +25,7 @@ namespace Xer.Cqrs.Tests.Mocks
 
         public virtual Task HandleAsync(TestEvent @event, CancellationToken cancellationToken = default(CancellationToken))
         {
-            _testOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event.");
+            _testOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} handled {@event.GetType().Name} event.");
             _handledEvents.Add(@event);
 
             return Task.CompletedTask;
@@ -33,7 +33,7 @@ namespace Xer.Cqrs.Tests.Mocks
 
         public Task HandleAsync(TriggerLongRunningEvent @event, CancellationToken cancellationToken = default(CancellationToken))
         {
-            _testOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event.");
+            _testOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} handled {@event.GetType().Name} event.");
             _handledEvents.Add(@event);
 
             return Task.Delay(@event.Milliseconds, cancellationToken);
@@ -87,13 +87,13 @@ namespace Xer.Cqrs.Tests.Mocks
 
         public virtual void Handle(TestEvent @event)
         {
-            _testOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event.");
+            _testOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} handled {@event.GetType().Name} event.");
             _handledEvents.Add(@event);
         }
 
         public virtual void Handle(TriggerLongRunningEvent @event)
         {
-            _testOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event.");
+            _testOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} handled {@event.GetType().Name} event.");
             _handledEvents.Add(@event);
             Task.Delay(@event.Milliseconds).GetAwaiter().GetResult();
         }

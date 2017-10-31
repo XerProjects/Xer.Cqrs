@@ -26,7 +26,7 @@ namespace Xer.Cqrs.Events
         internal static EventHandlerDelegate FromEventHandler<TEvent>(IEventHandler<TEvent> eventHandler)
             where TEvent : class, IEvent
         {
-            return new EventHandlerDelegate((c, ct) =>
+            return new EventHandlerDelegate(async (c, ct) =>
             {
                 TEvent @event = c as TEvent;
                 if (@event == null)
@@ -34,15 +34,9 @@ namespace Xer.Cqrs.Events
                     throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), c.GetType());
                 }
 
-                try
-                {
-                    eventHandler.Handle(@event);
-                    return TaskUtility.CompletedTask;
-                }
-                catch (Exception ex)
-                {
-                    return TaskUtility.CreateFaultedTask(ex);
-                }
+                // Yield so the sync handler can execute asynchronously.
+                await Task.Yield();
+                eventHandler.Handle(@event);
             });
         }
 
@@ -75,7 +69,7 @@ namespace Xer.Cqrs.Events
         internal static EventHandlerDelegate FromFactory<TEvent>(Func<IEventHandler<TEvent>> eventHandlerFactory)
             where TEvent : class, IEvent
         {
-            return new EventHandlerDelegate((e, ct) =>
+            return new EventHandlerDelegate(async (e, ct) =>
             {
                 TEvent @event = e as TEvent;
                 if (@event == null)
@@ -87,18 +81,12 @@ namespace Xer.Cqrs.Events
 
                 if (!TryRetrieveInstanceFromFactory(eventHandlerFactory, out instance))
                 {
-                    return TaskUtility.CreateFaultedTask(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IEventHandler<TEvent>>());
+                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IEventHandler<TEvent>>();
                 }
 
-                try
-                {
-                    instance.Handle(@event);
-                    return TaskUtility.CompletedTask;
-                }
-                catch (Exception ex)
-                {
-                    return TaskUtility.CreateFaultedTask(ex);
-                }
+                // Yield so the sync handler can execute asynchronously.
+                await Task.Yield();
+                instance.Handle(@event);
             });
         }
 
@@ -156,7 +144,7 @@ namespace Xer.Cqrs.Events
             where TAttributed : class
             where TEvent : class, IEvent
         {
-            return new EventHandlerDelegate((e, ct) =>
+            return new EventHandlerDelegate(async (e, ct) =>
             {
                 TEvent @event = e as TEvent;
                 if (@event == null)
@@ -168,18 +156,12 @@ namespace Xer.Cqrs.Events
 
                 if (!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
                 {
-                    return TaskUtility.CreateFaultedTask(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TAttributed>());
+                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TAttributed>();
                 }
 
-                try
-                {
-                    action.Invoke(instance, @event);
-                    return TaskUtility.CompletedTask;
-                }
-                catch (Exception ex)
-                {
-                    return TaskUtility.CreateFaultedTask(ex);
-                }
+                // Yield so the sync handler can execute asynchronously.
+                await Task.Yield();
+                action.Invoke(instance, @event);
             });
         }
 

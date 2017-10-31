@@ -31,7 +31,7 @@ namespace Xer.Cqrs.CommandStack
                 TCommand command = c as TCommand;
                 if (command == null)
                 {
-                    throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType());
+                    return TaskUtility.CreateFaultedTask(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
                 }
 
                 try
@@ -80,7 +80,7 @@ namespace Xer.Cqrs.CommandStack
                 TCommand command = c as TCommand;
                 if (command == null)
                 {
-                    throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType());
+                    return TaskUtility.CreateFaultedTask(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
                 }
                 
                 ICommandHandler<TCommand> instance;
@@ -161,7 +161,7 @@ namespace Xer.Cqrs.CommandStack
                 TCommand command = c as TCommand;
                 if (command == null)
                 {
-                    throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType());
+                    return TaskUtility.CreateFaultedTask(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
                 }
 
                 TAttributed instance;

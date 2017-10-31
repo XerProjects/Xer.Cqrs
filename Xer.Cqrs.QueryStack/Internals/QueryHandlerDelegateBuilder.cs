@@ -31,7 +31,7 @@ namespace Xer.Cqrs.QueryStack
                 TQuery query = q as TQuery;
                 if (query == null)
                 {
-                    throw ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType());
+                    return TaskUtility.CreateFaultedTaskWithResult<TResult>(ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType()));
                 }
 
                 try
@@ -41,7 +41,7 @@ namespace Xer.Cqrs.QueryStack
                 }
                 catch (Exception ex)
                 {
-                    return TaskUtility.CreateFaultedTask<TResult>(ex);
+                    return TaskUtility.CreateFaultedTaskWithResult<TResult>(ex);
                 }
             });
         }
@@ -80,14 +80,14 @@ namespace Xer.Cqrs.QueryStack
                 TQuery query = q as TQuery;
                 if (query == null)
                 {
-                    throw ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType());
+                    return TaskUtility.CreateFaultedTaskWithResult<TResult>(ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType()));
                 }
                 
                 IQueryHandler<TQuery, TResult> instance;
 
                 if (!TryRetrieveInstanceFromFactory(queryHandlerFactory, out instance))
                 {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IQueryHandler<TQuery, TResult>>();
+                    return TaskUtility.CreateFaultedTaskWithResult<TResult>(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IQueryHandler<TQuery, TResult>>());
                 }
 
                 try
@@ -97,7 +97,7 @@ namespace Xer.Cqrs.QueryStack
                 }
                 catch (Exception ex)
                 {
-                    return TaskUtility.CreateFaultedTask<TResult>(ex);
+                    return TaskUtility.CreateFaultedTaskWithResult<TResult>(ex);
                 }
             });
         }
@@ -161,14 +161,14 @@ namespace Xer.Cqrs.QueryStack
                 TQuery query = q as TQuery;
                 if (query == null)
                 {
-                    throw ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType());
+                    return TaskUtility.CreateFaultedTaskWithResult<TResult>(ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType()));
                 }
 
                 TAttributed instance;
 
                 if (!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
                 {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IQueryHandler<TQuery, TResult>>();
+                    return TaskUtility.CreateFaultedTaskWithResult<TResult>(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IQueryHandler<TQuery, TResult>>());
                 }
 
                 try
@@ -178,7 +178,7 @@ namespace Xer.Cqrs.QueryStack
                 }
                 catch (Exception ex)
                 {
-                    return TaskUtility.CreateFaultedTask<TResult>(ex);
+                    return TaskUtility.CreateFaultedTaskWithResult<TResult>(ex);
                 }
             });
         }

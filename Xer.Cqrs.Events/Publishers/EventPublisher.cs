@@ -66,11 +66,12 @@ namespace Xer.Cqrs.Events.Publishers
 
                 try
                 {
-                    await completedTask.ConfigureAwait(false);
+                    // Await to handle any exceptions that might have occured.
+                    await completedTask;
                 }
                 catch(OperationCanceledException)
                 {
-                    // Propagate.
+                    // Propagate cancellation.
                     throw;
                 }
                 catch(Exception ex)

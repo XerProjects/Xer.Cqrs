@@ -85,6 +85,24 @@ namespace Xer.Cqrs.Events.Publishers
             }
         }
 
+        /// <summary>
+        /// Publish events to subscribers.
+        /// </summary>
+        /// <param name="events">Events to publish.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Asynchronous task.</returns>
+        public Task PublishAsync(IEnumerable<IEvent> events, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if(events == null)
+            {
+                throw new ArgumentNullException(nameof(events));
+            }
+
+            ICollection<Task> publishTasks = events.Select(e => PublishAsync(e, cancellationToken)).ToList();
+
+            return Task.WhenAll(publishTasks);
+        }
+
         #endregion IEventPublisher Implementations
 
         #region Methods

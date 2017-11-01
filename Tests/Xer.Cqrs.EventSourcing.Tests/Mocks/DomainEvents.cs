@@ -20,14 +20,31 @@ namespace Xer.Cqrs.EventSourcing.Tests.Mocks
 
     #region TestAggregateModified
 
-    public class TestAggregateModified : DomainEvent
+    public class TestAggregateOperationExecuted : DomainEvent
     {
-        public string ModifiedData { get; }
+        public string Operation { get; }
 
-        public TestAggregateModified(Guid testAggregateId, int aggregateVersion, string modifiedData)
+        public TestAggregateOperationExecuted(Guid testAggregateId, int aggregateVersion, string operation)
             : base(testAggregateId, aggregateVersion)
         {
-            ModifiedData = modifiedData;
+            Operation = operation;
+        }
+
+        public class Operations
+        {
+            public const string ThrowException = nameof(ThrowException);
+            public const string Delay = nameof(Delay);
+        }
+    }
+
+    public class TestAggregateOperationExecuted<TData> : TestAggregateOperationExecuted
+    {
+        public TData Data { get; }
+
+        public TestAggregateOperationExecuted(Guid testAggregateId, int aggregateVersion, string operation, TData data) 
+            : base(testAggregateId, aggregateVersion, operation)
+        {
+            Data = data;
         }
     }
 

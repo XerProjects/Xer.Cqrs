@@ -2,18 +2,28 @@
 
 namespace Xer.Cqrs.Tests.Mocks
 {
-    public class TestEvent : IEvent
+    public class TestEvent1 : IEvent
+    {
+
+    }
+
+    public class TestEvent2 : IEvent
+    {
+
+    }
+
+    public class TestEvent3 : IEvent
     {
 
     }
 
     public class TriggerLongRunningEvent : IEvent
     {
-        public int Milliseconds { get; }
+        public int DurationInMilliseconds { get; }
 
-        public TriggerLongRunningEvent(int milliseconds)
+        public TriggerLongRunningEvent(int durationInMilliseconds)
         {
-            Milliseconds = milliseconds;
+            DurationInMilliseconds = durationInMilliseconds;
         }
     }
 }

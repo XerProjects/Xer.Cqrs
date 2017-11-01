@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.CommandStack.Registrations;
 using Xer.Cqrs.Tests.Mocks;
@@ -21,7 +22,7 @@ namespace Xer.Cqrs.Tests.Commands
             }
 
             [Fact]
-            public void Should_Invoke_The_Actual_Registered_Command_Handler()
+            public async Task Should_Invoke_The_Actual_Registered_Command_Handler()
             {
                 var commandHandler = new TestCommandHandler(_testOutputHelper);
 
@@ -33,7 +34,7 @@ namespace Xer.Cqrs.Tests.Commands
                 Assert.NotNull(commandHandlerDelegate);
 
                 // Invoke.
-                commandHandlerDelegate.Invoke(new DoSomethingAsyncCommand());
+                await commandHandlerDelegate.Invoke(new DoSomethingAsyncCommand());
 
                 // Check if actual command handler instance was invoked.
                 Assert.Equal(1, commandHandler.HandledCommands.Count);
@@ -41,9 +42,9 @@ namespace Xer.Cqrs.Tests.Commands
             }
 
             [Fact]
-            public void Should_Check_The_Actual_Type_Of_Command()
+            public Task Should_Check_For_Correct_Command_Type()
             {
-                Assert.ThrowsAnyAsync<ArgumentException>(async () =>
+                return Assert.ThrowsAnyAsync<ArgumentException>(async () =>
                 {
                     var commandHandler = new TestCommandHandler(_testOutputHelper);
 
@@ -54,11 +55,16 @@ namespace Xer.Cqrs.Tests.Commands
 
                     Assert.NotNull(commandHandlerDelegate);
 
-                    // This handled DoSomethingAsyncCommand, but was passed in a DoSomethingCommand.
-                    await commandHandlerDelegate.Invoke(new DoSomethingCommand());
-
-                    Assert.Equal(1, commandHandler.HandledCommands.Count);
-                    Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingAsyncCommand);
+                    try
+                    { 
+                        // This delegate handles DoSomethingAsyncCommand, but was passed in a DoSomethingCommand.
+                        await commandHandlerDelegate.Invoke(new DoSomethingCommand());
+                    }
+                    catch (Exception ex)
+                    {
+                        _testOutputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
                 });
             }
         }

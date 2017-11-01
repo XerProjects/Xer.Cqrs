@@ -10,7 +10,9 @@ namespace Xer.Cqrs.Tests.Mocks
 {
     #region Async Event Handlers
 
-    public abstract class TestEventAsyncHandlerBase : IEventAsyncHandler<TestEvent>,
+    public abstract class TestEventAsyncHandlerBase : IEventAsyncHandler<TestEvent1>,
+                                                      IEventAsyncHandler<TestEvent2>,
+                                                      IEventAsyncHandler<TestEvent3>,
                                                       IEventAsyncHandler<TriggerLongRunningEvent>
     {
         private readonly List<IEvent> _handledEvents = new List<IEvent>();
@@ -23,20 +25,38 @@ namespace Xer.Cqrs.Tests.Mocks
             _testOutputHelper = testOutputHelper;
         }
 
-        public virtual Task HandleAsync(TestEvent @event, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual Task HandleAsync(TestEvent1 @event, CancellationToken cancellationToken = default(CancellationToken))
         {
-            _testOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} handled {@event.GetType().Name} event.");
-            _handledEvents.Add(@event);
+            handle(@event);
 
             return Task.CompletedTask;
         }
 
-        public Task HandleAsync(TriggerLongRunningEvent @event, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual Task HandleAsync(TestEvent2 @event, CancellationToken cancellationToken = default(CancellationToken))
         {
-            _testOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} handled {@event.GetType().Name} event.");
-            _handledEvents.Add(@event);
+            handle(@event);
 
-            return Task.Delay(@event.Milliseconds, cancellationToken);
+            return Task.CompletedTask;
+        }
+
+        public virtual Task HandleAsync(TestEvent3 @event, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            handle(@event);
+
+            return Task.CompletedTask;
+        }
+
+        public virtual Task HandleAsync(TriggerLongRunningEvent @event, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            handle(@event);
+
+            return Task.Delay(@event.DurationInMilliseconds, cancellationToken);
+        }
+
+        private void handle<TEvent>(TEvent @event) where TEvent : IEvent
+        {
+            _testOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} handled {@event.GetType().Name} event asynchronously.");
+            _handledEvents.Add(@event);
         }
     }
 
@@ -53,11 +73,11 @@ namespace Xer.Cqrs.Tests.Mocks
         {
         }
 
-        public override Task HandleAsync(TestEvent @event, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task HandleAsync(TestEvent1 @event, CancellationToken cancellationToken = default(CancellationToken))
         {
             base.HandleAsync(@event, cancellationToken);
 
-            throw new TestEventHandlerException($"Exception at { GetType().Name }.");
+            return Task.FromException(new TestEventHandlerException($"Exception at { GetType().Name }."));
         }
     }
 
@@ -72,7 +92,9 @@ namespace Xer.Cqrs.Tests.Mocks
 
     #region Sync Event Handlers
 
-    public abstract class TestEventHandlerBase : IEventHandler<TestEvent>,
+    public abstract class TestEventHandlerBase : IEventHandler<TestEvent1>,
+                                                 IEventHandler<TestEvent2>,
+                                                 IEventHandler<TestEvent3>,
                                                  IEventHandler<TriggerLongRunningEvent>
     {
         private readonly List<IEvent> _handledEvents = new List<IEvent>();
@@ -85,17 +107,31 @@ namespace Xer.Cqrs.Tests.Mocks
             _testOutputHelper = testOutputHelper;
         }
 
-        public virtual void Handle(TestEvent @event)
+        public virtual void Handle(TestEvent1 @event)
         {
-            _testOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} handled {@event.GetType().Name} event.");
-            _handledEvents.Add(@event);
+            handle(@event);
+        }
+
+        public void Handle(TestEvent2 @event)
+        {
+            handle(@event);
+        }
+
+        public void Handle(TestEvent3 @event)
+        {
+            handle(@event);
         }
 
         public virtual void Handle(TriggerLongRunningEvent @event)
         {
+            handle(@event);
+            Task.Delay(@event.DurationInMilliseconds).GetAwaiter().GetResult();
+        }
+
+        private void handle<TEvent>(TEvent @event) where TEvent : IEvent
+        {
             _testOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} handled {@event.GetType().Name} event.");
             _handledEvents.Add(@event);
-            Task.Delay(@event.Milliseconds).GetAwaiter().GetResult();
         }
     }
 
@@ -112,11 +148,11 @@ namespace Xer.Cqrs.Tests.Mocks
         {
         }
 
-        public override void Handle(TestEvent @event)
+        public override void Handle(TestEvent1 @event)
         {
             base.Handle(@event);
 
-            throw new TestEventHandlerException($"Exception at { GetType().Name }.");
+            throw new TestEventHandlerException($"This is a triggered post-processing exception at { GetType().Name }.");
         }
     }
 
@@ -142,6 +178,18 @@ namespace Xer.Cqrs.Tests.Mocks
         {
             TestOutputHelper = testOutputHelper;
         }
+
+        protected void Handle<TEvent>(TEvent @event) where TEvent : IEvent
+        {
+            TestOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event.");
+            InternalHandledEvents.Add(@event);
+        }
+
+        protected void HandleAsync<TEvent>(TEvent @event) where TEvent : IEvent
+        {
+            TestOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event asynchronously.");
+            InternalHandledEvents.Add(@event);
+        }
     }
 
     public class TestAttributedEventHandler1 : TestAttributedEventHandlerBase
@@ -151,19 +199,49 @@ namespace Xer.Cqrs.Tests.Mocks
         }
         
         [EventHandler]
-        public void Handle(TestEvent testEvent)
+        public void Handle(TestEvent1 @event)
         {
-            TestOutputHelper.WriteLine($"{GetType().Name} handled {testEvent.GetType().Name} event.");
-            InternalHandledEvents.Add(testEvent);
+            base.Handle(@event);
         }
 
         [EventHandler]
-        public Task Handle(TriggerLongRunningEvent @event, CancellationToken cancellationToken)
+        public void Handle(TestEvent2 @event)
         {
-            TestOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event.");
-            InternalHandledEvents.Add(@event);
+            base.Handle(@event);
+        }
 
-            return Task.Delay(@event.Milliseconds, cancellationToken);
+        [EventHandler]
+        public void Handle(TestEvent3 @event)
+        {
+            base.Handle(@event);
+        }
+
+        [EventHandler]
+        public Task HandleAsync(TestEvent1 @event)
+        {
+            base.HandleAsync(@event);
+            return Task.CompletedTask;
+        }
+
+        [EventHandler]
+        public Task HandleAsync(TestEvent2 @event)
+        {
+            base.HandleAsync(@event);
+            return Task.CompletedTask;
+        }
+
+        [EventHandler]
+        public Task HandleAsync(TestEvent3 @event)
+        {
+            base.HandleAsync(@event);
+            return Task.CompletedTask;
+        }
+
+        [EventHandler]
+        public Task HandleAsync(TriggerLongRunningEvent @event, CancellationToken cancellationToken)
+        {
+            base.HandleAsync(@event);
+            return Task.Delay(@event.DurationInMilliseconds, cancellationToken);
         }
     }
 
@@ -174,30 +252,51 @@ namespace Xer.Cqrs.Tests.Mocks
         }
 
         [EventHandler]
-        public void Handle(TestEvent @event)
+        public void HandleWithException(TestEvent1 @event)
         {
-            TestOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event.");
-            InternalHandledEvents.Add(@event);
-
-            throw new TestEventHandlerException($"Exception at { GetType().Name }.{nameof(Handle)}({nameof(TestEvent)}).");
+            base.Handle(@event);
+            throw new TestEventHandlerException($"This is a triggered post-processing exception at { GetType().Name }.{nameof(Handle)}({nameof(TestEvent1)}).");
         }
 
         [EventHandler]
-        public Task HandleAsync(TestEvent @event)
+        public void Handle(TestEvent2 @event)
         {
-            TestOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event asynchronously.");
-            InternalHandledEvents.Add(@event);
-
-            throw new TestEventHandlerException($"Exception at { GetType().Name }.{nameof(HandleAsync)}({nameof(TestEvent)}).");
+            base.Handle(@event);
         }
 
         [EventHandler]
-        public Task Handle(TriggerLongRunningEvent @event, CancellationToken cancellationToken)
+        public void Handle(TestEvent3 @event)
         {
-            TestOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event.");
-            InternalHandledEvents.Add(@event);
+            base.Handle(@event);
+        }
 
-            return Task.Delay(@event.Milliseconds, cancellationToken);
+        [EventHandler]
+        public Task HandleAsync(TestEvent1 @event)
+        {
+            base.HandleAsync(@event);
+            
+            return Task.FromException(new TestEventHandlerException($"This is a triggered post-processing exception at { GetType().Name }.{nameof(HandleAsync)}({nameof(TestEvent1)})."));
+        }
+
+        [EventHandler]
+        public Task HandleAsync(TestEvent2 @event)
+        {
+            base.HandleAsync(@event);
+            return Task.CompletedTask;
+        }
+
+        [EventHandler]
+        public Task HandleAsync(TestEvent3 @event)
+        {
+            base.HandleAsync(@event);
+            return Task.CompletedTask;
+        }
+
+        [EventHandler]
+        public Task HandleAsync(TriggerLongRunningEvent @event, CancellationToken cancellationToken)
+        {
+            base.HandleAsync(@event);
+            return Task.Delay(@event.DurationInMilliseconds, cancellationToken);
         }
     }
 
@@ -208,19 +307,49 @@ namespace Xer.Cqrs.Tests.Mocks
         }
 
         [EventHandler]
-        public void Handle(TestEvent @event)
+        public void Handle(TestEvent1 @event)
         {
-            TestOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event.");
-            InternalHandledEvents.Add(@event);
+            base.Handle(@event);
         }
 
         [EventHandler]
-        public Task Handle(TriggerLongRunningEvent @event, CancellationToken cancellationToken)
+        public void Handle(TestEvent2 @event)
         {
-            TestOutputHelper.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event.");
-            InternalHandledEvents.Add(@event);
+            base.Handle(@event);
+        }
 
-            return Task.Delay(@event.Milliseconds, cancellationToken);
+        [EventHandler]
+        public void Handle(TestEvent3 @event)
+        {
+            base.Handle(@event);
+        }
+
+        [EventHandler]
+        public Task HandleAsync(TestEvent1 @event)
+        {
+            base.HandleAsync(@event);
+            return Task.CompletedTask;
+        }
+
+        [EventHandler]
+        public Task HandleAsync(TestEvent2 @event)
+        {
+            base.HandleAsync(@event);
+            return Task.CompletedTask;
+        }
+
+        [EventHandler]
+        public Task HandleAsync(TestEvent3 @event)
+        {
+            base.HandleAsync(@event);
+            return Task.CompletedTask;
+        }
+
+        [EventHandler]
+        public Task HandleAsync(TriggerLongRunningEvent @event, CancellationToken cancellationToken)
+        {
+            base.HandleAsync(@event);
+            return Task.Delay(@event.DurationInMilliseconds, cancellationToken);
         }
     }
 
@@ -228,12 +357,7 @@ namespace Xer.Cqrs.Tests.Mocks
 
     public class TestEventHandlerException : Exception
     {
-        public TestEventHandlerException()
-        {
-        }
-
-        public TestEventHandlerException(string message) : base(message)
-        {
-        }
+        public TestEventHandlerException() { }
+        public TestEventHandlerException(string message) : base(message) { }
     }
 }

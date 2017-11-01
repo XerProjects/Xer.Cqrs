@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xer.Cqrs.Events;
 using Xer.Cqrs.Events.Registrations;
 using Xer.Cqrs.Tests.Mocks;
@@ -36,14 +32,14 @@ namespace Xer.Cqrs.Tests.Events.Registration
                 var handler3 = new TestEventHandler3(_testOutputHelper);
 
                 var registration = new EventHandlerRegistration();
-                registration.Register<TestEvent>(() => asyncHandler1);
-                registration.Register<TestEvent>(() => asyncHandler2);
-                registration.Register<TestEvent>(() => asyncHandler3);
-                registration.Register<TestEvent>(() => handler1);
-                registration.Register<TestEvent>(() => handler2);
-                registration.Register<TestEvent>(() => handler3);
+                registration.Register<TestEvent1>(() => asyncHandler1);
+                registration.Register<TestEvent1>(() => asyncHandler2);
+                registration.Register<TestEvent1>(() => asyncHandler3);
+                registration.Register<TestEvent1>(() => handler1);
+                registration.Register<TestEvent1>(() => handler2);
+                registration.Register<TestEvent1>(() => handler3);
 
-                IEnumerable<EventHandlerDelegate> eventHandlerDelegates = registration.ResolveEventHandlers<TestEvent>();
+                IEnumerable<EventHandlerDelegate> eventHandlerDelegates = registration.ResolveEventHandlers<TestEvent1>();
 
                 Assert.Equal(6, eventHandlerDelegates.Count());
             }

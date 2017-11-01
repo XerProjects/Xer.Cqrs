@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Xer.Cqrs.CommandStack;
+﻿using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.CommandStack.Registrations;
 using Xer.Cqrs.Tests.Mocks;
 using Xunit;

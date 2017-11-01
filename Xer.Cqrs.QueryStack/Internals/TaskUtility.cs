@@ -14,7 +14,7 @@
             return task.ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        internal static Task<TResult> CreateFaultedTaskWithResult<TResult>(Exception ex)
+        internal static Task<TResult> FromException<TResult>(Exception ex)
         {
             TaskCompletionSource<TResult> completionSource = new TaskCompletionSource<TResult>();
             completionSource.TrySetException(ex);

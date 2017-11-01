@@ -20,20 +20,26 @@ namespace Xer.Cqrs.EventSourcing.Tests.Mocks
         {
         }
 
-        public void ChangeAggregateData(string newData)
+        public void ExecuteSomeOperation(string newData)
         {
-            ApplyChange(new TestAggregateModified(Id, Version + 1, newData));
+            ApplyChange(new TestAggregateOperationExecuted(Id, Version + 1, newData));
         }
 
         public void ThrowExceptionOnEventHandler()
         {
-            ApplyChange(new TestAggregateModified(Id, Version + 1, "Throw"));
+            ApplyChange(new TestAggregateOperationExecuted(Id, Version + 1, TestAggregateOperationExecuted.Operations.ThrowException));
+        }
+
+        public void DelayOnEventHandler(int milliSeconds)
+        {
+            ApplyChange(new TestAggregateOperationExecuted<int>(Id, Version + 1, TestAggregateOperationExecuted.Operations.Delay, milliSeconds));
         }
 
         protected override void RegisterDomainEventAppliers(DomainEventApplierRegistration applierRegistration)
         {
-            applierRegistration.RegisterDomainEventApplier<TestAggregateCreated>(OnTestAggregateCreated);
-            applierRegistration.RegisterDomainEventApplier<TestAggregateModified>(OnTestAggregateModified);
+            applierRegistration.RegisterApplierFor<TestAggregateCreated>(OnTestAggregateCreated);
+            applierRegistration.RegisterApplierFor<TestAggregateOperationExecuted>(OnTestAggregateOperationExecuted);
+            applierRegistration.RegisterApplierFor<TestAggregateOperationExecuted<int>>(OnTestAggregateOperationExecuted);
         }
 
         private void OnTestAggregateCreated(TestAggregateCreated domainEvent)
@@ -42,9 +48,14 @@ namespace Xer.Cqrs.EventSourcing.Tests.Mocks
             AggregateData = domainEvent.Data;
         }
 
-        private void OnTestAggregateModified(TestAggregateModified domainEvent)
+        private void OnTestAggregateOperationExecuted(TestAggregateOperationExecuted domainEvent)
         {
-            AggregateData = domainEvent.ModifiedData;
+            AggregateData = domainEvent.Operation;
+        }
+
+        private void OnTestAggregateOperationExecuted(TestAggregateOperationExecuted<int> domainEvent)
+        {
+            AggregateData = domainEvent.Data.ToString();
         }
     }
 

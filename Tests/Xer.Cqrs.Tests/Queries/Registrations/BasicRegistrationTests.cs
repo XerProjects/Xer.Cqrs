@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Registrations;
 using Xer.Cqrs.Tests.Mocks;

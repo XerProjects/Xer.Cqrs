@@ -8,19 +8,29 @@ namespace Xer.Cqrs.EventSourcing
 {
     public abstract class EventSourcedAggregate : Aggregate
     {
+        #region Declarations
+
         private readonly Queue<IDomainEvent> _uncommittedDomainEvents = new Queue<IDomainEvent>();
         private readonly DomainEventApplierRegistration _domainEventApplierRegistration = new DomainEventApplierRegistration();
+
+        #endregion Declarations
+
+        #region Properties
 
         /// <summary>
         /// Current version of this aggregate.
         /// </summary>
         public int Version { get; private set; }
 
+        #endregion Properties
+
+        #region Constructors
+
         /// <summary>
         /// Construtor.
         /// </summary>
         /// <param name="aggregateId">Id of this entity.</param>
-        public EventSourcedAggregate(Guid aggregateId) 
+        public EventSourcedAggregate(Guid aggregateId)
             : base(aggregateId)
         {
             RegisterDomainEventAppliers(_domainEventApplierRegistration);
@@ -33,7 +43,7 @@ namespace Xer.Cqrs.EventSourcing
         public EventSourcedAggregate(DomainEventStream history)
             : this(Guid.Empty)
         {
-            if(history == null)
+            if (history == null)
             {
                 throw new ArgumentNullException(nameof(history));
             }
@@ -46,29 +56,37 @@ namespace Xer.Cqrs.EventSourcing
             }
         }
 
-        // <summary>
-        // Clear all internally tracked domain events.
-        // </summary>
-        public void ClearUncommitedDomainEvents()
-        {
-            _uncommittedDomainEvents.Clear();
-        }
+        #endregion Constructors
+
+        #region Internal Infrastructure Methods
 
         /// <summary>
         /// Get an event stream of all the uncommitted domain events applied to this entity.
         /// </summary>
         /// <returns>Stream of uncommitted domain events.</returns>
-        public DomainEventStream GetUncommitedDomainEvents()
+        internal DomainEventStream GetUncommitedDomainEvents()
         {
             return new DomainEventStream(Id, _uncommittedDomainEvents);
         }
+
+        // <summary>
+        // Clear all internally tracked domain events.
+        // </summary>
+        internal void ClearUncommitedDomainEvents()
+        {
+            _uncommittedDomainEvents.Clear();
+        }
+
+        #endregion Internal Infrastructure Methods
+
+        #region Protected Methods
 
         /// <summary>
         /// Register actions to apply certain domain events.
         /// </summary>
         /// <param name="applierRegistration">Domain event applier registration.</param>
         protected abstract void RegisterDomainEventAppliers(DomainEventApplierRegistration applierRegistration);
-        
+
         /// <summary>
         /// Apply domain event to this entity and mark domain event for commit.
         /// </summary>
@@ -93,11 +111,11 @@ namespace Xer.Cqrs.EventSourcing
         /// <param name="markDomainEventForCommit">True, if domain event should be marked/tracked for commit. Otherwise, false.</param>
         protected void InvokeDomainEventApplier<TDomainEvent>(TDomainEvent domainEvent, bool markDomainEventForCommit = true) where TDomainEvent : IDomainEvent
         {
-            Action<IDomainEvent> domainEventApplier = _domainEventApplierRegistration.GetDomainEventApplier(domainEvent);
+            Action<IDomainEvent> domainEventApplier = _domainEventApplierRegistration.GetApplierFor(domainEvent);
             if (domainEventApplier == null)
             {
-                throw new DomainEventNotAppliedException(domainEvent, 
-                    $"{GetType().Name} is not configured to apply domain event of type {domainEvent.GetType().Name}");
+                throw new DomainEventNotAppliedException(domainEvent,
+                    $"{GetType().Name} has no applier registered to apply domain events of type {domainEvent.GetType().Name}.");
             }
 
             try
@@ -115,7 +133,7 @@ namespace Xer.Cqrs.EventSourcing
                     MarkAppliedDomainEventForCommit(domainEvent);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new DomainEventNotAppliedException(domainEvent,
                     $"Exception occured while trying to apply domain event of type {domainEvent.GetType().Name}.",
@@ -123,6 +141,10 @@ namespace Xer.Cqrs.EventSourcing
             }
         }
 
+        #endregion Protected Methods
+
+        #region Functions
+        
         /// <summary>
         /// Add domain event to list of tracked domain events.
         /// </summary>
@@ -132,6 +154,8 @@ namespace Xer.Cqrs.EventSourcing
             _uncommittedDomainEvents.Enqueue(domainEvent);
         }
 
+        #endregion Functions
+
         #region Domain Event Handler Registrations
 
         /// <summary>
@@ -139,24 +163,53 @@ namespace Xer.Cqrs.EventSourcing
         /// </summary>
         protected class DomainEventApplierRegistration
         {
-            private readonly IDictionary<Type, Action<IDomainEvent>> _appliersByDomainEventType = new Dictionary<Type, Action<IDomainEvent>>();
+            private readonly IDictionary<Type, Action<IDomainEvent>> _applierByDomainEventType = new Dictionary<Type, Action<IDomainEvent>>();
 
-            public void RegisterDomainEventApplier<TDomainEvent>(Action<TDomainEvent> applier) where TDomainEvent : IDomainEvent
+            /// <summary>
+            /// Register action to be executed for the domain event.
+            /// </summary>
+            /// <typeparam name="TDomainEvent">Type of domain event to apply.</typeparam>
+            /// <param name="applier">Action to apply the domain event to the aggregate.</param>
+            public void RegisterApplierFor<TDomainEvent>(Action<TDomainEvent> applier) where TDomainEvent : class, IDomainEvent
             {
+                if(applier == null)
+                {
+                    throw new ArgumentNullException(nameof(applier));
+                }
+
                 Type domainEventType = typeof(TDomainEvent);
 
-                Action<IDomainEvent> domainEventApplier = (d) => applier.Invoke((TDomainEvent)d);
+                if (_applierByDomainEventType.ContainsKey(domainEventType))
+                {
+                    throw new InvalidOperationException($"Multiple actions that apply {domainEventType.Name} domain event are registered.");
+                }
+                
+                Action<IDomainEvent> domainEventApplier = (d) =>
+                {
+                    TDomainEvent domainEvent = d as TDomainEvent;
+                    if(domainEvent == null)
+                    {
+                        throw new ArgumentException($"Invalid domain event passed to the domain event applier delegate. Delegate handles a {typeof(TDomainEvent).Name} domain event but was passed in a {d.GetType().Name} domain event.");
+                    }
 
-                _appliersByDomainEventType.Add(domainEventType, domainEventApplier);
+                    applier.Invoke(domainEvent);
+                };
+
+                _applierByDomainEventType.Add(domainEventType, domainEventApplier);
             }
 
-            public Action<IDomainEvent> GetDomainEventApplier(IDomainEvent domainEvent)
+            /// <summary>
+            /// Get action to execute for the applied domain event.
+            /// </summary>
+            /// <param name="domainEvent">Domain event to apply.</param>
+            /// <returns>Action that applies the domain event to the aggregate.</returns>
+            public Action<IDomainEvent> GetApplierFor(IDomainEvent domainEvent)
             {
-                Action<IDomainEvent> domainEventApplier;
+                Action<IDomainEvent> domainEventAction;
 
-                _appliersByDomainEventType.TryGetValue(domainEvent.GetType(), out domainEventApplier);
+                _applierByDomainEventType.TryGetValue(domainEvent.GetType(), out domainEventAction);
 
-                return domainEventApplier;
+                return domainEventAction;
             }
         }
 

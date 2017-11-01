@@ -9,9 +9,40 @@ using Xunit.Abstractions;
 
 namespace Xer.Cqrs.Tests.Mocks
 {
+    #region Base Command Handler
+    
+    public abstract class TestCommandHandlerBase
+    {
+        private List<ICommand> _handledCommands = new List<ICommand>();
+
+        protected ITestOutputHelper TestOutputHelper { get; }
+
+        public IReadOnlyCollection<ICommand> HandledCommands => _handledCommands.AsReadOnly();
+
+        public TestCommandHandlerBase(ITestOutputHelper outputHelper)
+        {
+            TestOutputHelper = outputHelper;
+        }
+
+        protected void HandleAsync<TCommand>(TCommand command) where TCommand : ICommand
+        {
+            TestOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} executed command of type {command.GetType().Name} asynchronously.");
+            _handledCommands.Add(command);
+        }
+
+        protected void Handle<TCommand>(TCommand command) where TCommand : ICommand
+        {
+            TestOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} executed command of type {command.GetType().Name}.");
+            _handledCommands.Add(command);
+        }
+    }
+
+    #endregion Base Command Handler
+
     #region Command Handlers
 
-    public class TestCommandHandler : ICommandAsyncHandler<DoSomethingCommand>,
+    public class TestCommandHandler : TestCommandHandlerBase,
+                                      ICommandAsyncHandler<DoSomethingCommand>,
                                       ICommandAsyncHandler<DoSomethingAsyncCommand>,
                                       ICommandAsyncHandler<DoSomethingAsyncWithCancellationCommand>,
                                       ICommandAsyncHandler<DoSomethingAsyncForSpecifiedDurationCommand>,
@@ -22,82 +53,65 @@ namespace Xer.Cqrs.Tests.Mocks
                                       ICommandHandler<DoSomethingAsyncForSpecifiedDurationCommand>,
                                       ICommandHandler<ThrowExceptionCommand>
     {
-        private readonly ITestOutputHelper _outputHelper;
-        private List<ICommand> _handledCommands = new List<ICommand>();
-
         public TestCommandHandler(ITestOutputHelper outputHelper)
+            : base(outputHelper)
         {
-            _outputHelper = outputHelper;
         }
-
-        public IReadOnlyCollection<ICommand> HandledCommands => _handledCommands.AsReadOnly();
-
+        
         public void Handle(DoSomethingCommand command)
         {
-            handle(command);
+            base.Handle(command);
         }
 
         public void Handle(DoSomethingAsyncCommand command)
         {
-            handle(command);
+            base.Handle(command);
         }
 
         public void Handle(DoSomethingAsyncWithCancellationCommand command)
         {
-            handle(command);
+            base.Handle(command);
         }
 
         public void Handle(DoSomethingAsyncForSpecifiedDurationCommand command)
         {
-            handle(command);
+            base.Handle(command);
         }
 
         public void Handle(ThrowExceptionCommand command)
         {
-            handle(command);
-
-            throw new NotImplementedException("This will fail.");
+            base.Handle(command);
+            throw new TestCommandHandlerException("This is a triggered post-processing exception.");
         }
 
         public Task HandleAsync(DoSomethingCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
-            handle(command);
-
+            base.HandleAsync(command);
             return Task.CompletedTask;
         }
 
         public Task HandleAsync(DoSomethingAsyncCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
-            handle(command);
-
+            base.HandleAsync(command);
             return Task.CompletedTask;
         }
 
         public Task HandleAsync(DoSomethingAsyncWithCancellationCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
-            handle(command);
-
+            base.HandleAsync(command);
             return Task.CompletedTask;
         }
 
         public Task HandleAsync(DoSomethingAsyncForSpecifiedDurationCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
-            handle(command);
-
+            base.HandleAsync(command);
             return Task.CompletedTask;
         }
 
         public Task HandleAsync(ThrowExceptionCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
-            handle(command);
-
-            throw new NotImplementedException("This will fail.");
-        }
-
-        private void handle<TCommand>(TCommand command) where TCommand : ICommand
-        {
-            _outputHelper.WriteLine($"{GetType().Name} executed command of type {command.GetType().Name} on {DateTime.Now}.");
-            _handledCommands.Add(command);
+            base.HandleAsync(command);
+            return Task.FromException(new TestCommandHandlerException("This is a triggered post-processing exception."));
         }
     }
 
@@ -105,42 +119,43 @@ namespace Xer.Cqrs.Tests.Mocks
 
     #region Attributed Command Handlers
 
-    public class TestAttributedCommandHandler
+    public class TestAttributedCommandHandler : TestCommandHandlerBase
     {
-        private readonly ITestOutputHelper _output;
 
         public TestAttributedCommandHandler(ITestOutputHelper output)
+            : base(output)
         {
-            _output = output;
         }
 
         [CommandHandler]
         public void DoSomething(DoSomethingCommand command)
         {
-            _output.WriteLine($"Handled {command.GetType().Name}~");
+            base.Handle(command);
         }
 
         [CommandHandler]
         public void DoSomethingWithException(ThrowExceptionCommand command)
         {
-            _output.WriteLine($"Handled {command.GetType().Name}~");
-
-            throw new NotImplementedException("This will fail.");
+            base.Handle(command);
+            throw new TestCommandHandlerException("This is a triggered post-processing exception.");
         }
 
         [CommandHandler]
         public Task DoSomethingAsync(DoSomethingAsyncCommand command)
         {
-            _output.WriteLine($"Handled {command.GetType().Name}~");
-
+            base.HandleAsync(command);
             return Task.CompletedTask;
         }
 
         [CommandHandler]
         public Task DoSomethingAsync(DoSomethingAsyncWithCancellationCommand command, CancellationToken ctx)
         {
-            _output.WriteLine($"Handled {command.GetType().Name}~");
+            if(ctx == null)
+            {
+                return Task.FromException(new TestCommandHandlerException("Cancellation token is null. Please check attribute registration."));
+            }
 
+            base.HandleAsync(command);
             return Task.CompletedTask;
         }
 
@@ -149,45 +164,45 @@ namespace Xer.Cqrs.Tests.Mocks
         {
             await Task.Delay(command.DurationInMilliSeconds, ctx);
 
-            ctx.ThrowIfCancellationRequested();
-
-            _output.WriteLine($"Handled {command.GetType().Name}~");
+            base.Handle(command);
         }
     }
 
-    public class TestAttributedCommandHandlerWithAsyncVoid
+    public class TestAttributedCommandHandlerWithAsyncVoid : TestCommandHandlerBase
     {
-        private readonly ITestOutputHelper _output;
-
         public TestAttributedCommandHandlerWithAsyncVoid(ITestOutputHelper output)
+            : base(output)
         {
-            _output = output;
         }
 
         [CommandHandler]
         public async void DoAsyncVoidHandlerCommand(DoAsyncVoidHandlerCommand command)
         {
-            _output.WriteLine($"Handled {command.GetType().Name}~");
+            HandleAsync(command);
 
             await Task.Yield();
         }
     }
 
-    public class TestAttributedSyncCommandHandlerWithCancellationToken
+    public class TestAttributedSyncCommandHandlerWithCancellationToken : TestCommandHandlerBase
     {
-        private readonly ITestOutputHelper _output;
-
         public TestAttributedSyncCommandHandlerWithCancellationToken(ITestOutputHelper output)
+            : base(output)
         {
-            _output = output;
         }
 
         [CommandHandler]
         public void Handle(DoSomethingCommand command, CancellationToken cancellationToken)
         {
-            _output.WriteLine($"Handled {command.GetType().Name}~");
+            base.Handle(command);
         }
     }
 
     #endregion Attributed Command Handlers
+    
+    public class TestCommandHandlerException : Exception
+    {
+        public TestCommandHandlerException() { }
+        public TestCommandHandlerException(string message) : base(message) { }
+    }
 }

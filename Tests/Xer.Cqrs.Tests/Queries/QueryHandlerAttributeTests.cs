@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
+using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Dispatchers;
 using Xer.Cqrs.QueryStack.Registrations;
 using Xer.Cqrs.Tests.Mocks;
@@ -28,9 +30,12 @@ namespace Xer.Cqrs.Tests.Queries
                 registration.Register(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result = await dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomethingAsync("Test async message."));
 
-                Assert.Equal("Test async message.", result);
+                const string data = nameof(Should_Invoke_Registered_Query_Handler);
+
+                var result = await dispatcher.DispatchAsync<QuerySomethingAsync, string>(new QuerySomethingAsync(data));
+
+                Assert.Equal(data, result);
             }
 
             [Fact]
@@ -40,9 +45,13 @@ namespace Xer.Cqrs.Tests.Queries
                 registration.Register(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result = await dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomethingAsyncWithDelay("Test async message with cancellation token.", 10000));
 
-                Assert.Equal("Test async message with cancellation token.", result);
+                var cancellationToken = new CancellationTokenSource();
+                const string data = nameof(Should_Invoke_Registered_Query_Handler_With_Cancellation_Token);
+
+                var result = await dispatcher.DispatchAsync<QuerySomethingAsyncWithDelay, string>(new QuerySomethingAsyncWithDelay(data, 500), cancellationToken.Token);
+
+                Assert.Equal(data, result);
             }
 
             [Fact]
@@ -52,21 +61,27 @@ namespace Xer.Cqrs.Tests.Queries
                 registration.Register(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result1 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething("Test message 1."));
-                var result2 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething("Test message 2."));
-                var result3 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething("Test message 3."));
+
+                const string data = nameof(Should_Invoke_Registered_Query_Handler_When_Dispatched_Multiple_Times);
+                const string data1 = data + "1";
+                const string data2 = data + "2";
+                const string data3 = data + "3";
+
+                var result1 = dispatcher.DispatchAsync<QuerySomethingAsync, string>(new QuerySomethingAsync(data1));
+                var result2 = dispatcher.DispatchAsync<QuerySomethingAsync, string>(new QuerySomethingAsync(data2));
+                var result3 = dispatcher.DispatchAsync<QuerySomethingAsync, string>(new QuerySomethingAsync(data3));
 
                 await Task.WhenAll(result1, result2, result3);
 
-                Assert.Equal("Test message 1.", await result1);
-                Assert.Equal("Test message 2.", await result2);
-                Assert.Equal("Test message 3.", await result3);
+                Assert.Equal(data1, await result1);
+                Assert.Equal(data2, await result2);
+                Assert.Equal(data3, await result3);
             }
 
             [Fact]
-            public void Should_Propagate_Exception_From_Query_Handler()
+            public Task Should_Propagate_Exception_From_Query_Handler()
             {
-                Assert.ThrowsAnyAsync<Exception>(async () =>
+                return Assert.ThrowsAnyAsync<Exception>(async () =>
                 {
                     try
                     {
@@ -78,6 +93,57 @@ namespace Xer.Cqrs.Tests.Queries
                         await dispatcher.DispatchAsync<QuerySomethingWithException, string>(new QuerySomethingWithException("This will cause an exception."));
                     }
                     catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            [Fact]
+            public Task Should_Throw_When_Cancelled()
+            {
+                return Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                {
+                    var registration = new QueryHandlerAttributeRegistration();
+                    registration.Register(() => new TestAttributedQueryHandler(_outputHelper));
+
+                    var dispatcher = new QueryDispatcher(registration);
+
+                    var cts = new CancellationTokenSource();
+                    const string data = nameof(Should_Throw_When_Cancelled);
+
+                    Task<string> queryTask = dispatcher.DispatchAsync<QuerySomethingAsyncWithDelay, string>(new QuerySomethingAsyncWithDelay(data, 3000), cts.Token);
+
+                    cts.Cancel();
+
+                    try
+                    {
+                        await queryTask;
+                    }
+                    catch(Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+            
+            [Fact]
+            public Task Should_Throw_When_No_Registered_Query_Handler_Is_Found()
+            {
+                return Assert.ThrowsAsync<QueryNotHandledException>(async () =>
+                {
+                    var registration = new QueryHandlerAttributeRegistration();
+                    var dispatcher = new QueryDispatcher(registration);
+                    
+                    const string data = nameof(Should_Throw_When_No_Registered_Query_Handler_Is_Found);
+
+                    try
+                    {
+                        var result = await dispatcher.DispatchAsync<QuerySomethingAsync, string>(new QuerySomethingAsync(data));
+                    }
+                    catch(Exception ex)
                     {
                         _outputHelper.WriteLine(ex.ToString());
                         throw;
@@ -106,21 +172,12 @@ namespace Xer.Cqrs.Tests.Queries
                 registration.Register(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomethingAsync("Test async message."));
 
-                Assert.Equal("Test async message.", result);
-            }
+                const string data = nameof(Should_Invoke_Registered_Query_Handler);
 
-            [Fact]
-            public void Should_Invoke_Registered_Query_Handler_With_Cancellation_Token()
-            {
-                var registration = new QueryHandlerAttributeRegistration();
-                registration.Register(() => new TestAttributedQueryHandler(_outputHelper));
+                var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomethingAsync(data));
 
-                var dispatcher = new QueryDispatcher(registration);
-                var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomethingAsyncWithDelay("Test async message with cancellation token.", 10000));
-
-                Assert.Equal("Test async message with cancellation token.", result);
+                Assert.Equal(data, result);
             }
 
             [Fact]
@@ -130,9 +187,19 @@ namespace Xer.Cqrs.Tests.Queries
                 registration.Register(() => new TestAttributedQueryHandler(_outputHelper));
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result1 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething("Test message 1."));
-                var result2 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething("Test message 2."));
-                var result3 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething("Test message 3."));
+
+                const string data = nameof(Should_Invoke_Registered_Query_Handler_When_Dispatched_Multiple_Times);
+                const string data1 = data + "1";
+                const string data2 = data + "2";
+                const string data3 = data + "3";
+
+                var result1 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data1));
+                var result2 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data2));
+                var result3 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data3));
+
+                Assert.Equal(data1, result1);
+                Assert.Equal(data2, result2);
+                Assert.Equal(data3, result3);
             }
 
             [Fact]
@@ -140,16 +207,37 @@ namespace Xer.Cqrs.Tests.Queries
             {
                 Assert.ThrowsAny<Exception>(() =>
                 {
+                    var registration = new QueryHandlerAttributeRegistration();
+                    registration.Register(() => new TestAttributedQueryHandler(_outputHelper));
+                    var dispatcher = new QueryDispatcher(registration);
+
                     try
                     {
-                        var registration = new QueryHandlerAttributeRegistration();
-                        registration.Register(() => new TestAttributedQueryHandler(_outputHelper));
-
-                        var dispatcher = new QueryDispatcher(registration);
-
                         dispatcher.Dispatch<QuerySomethingWithException, string>(new QuerySomethingWithException("This will cause an exception."));
                     }
                     catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            [Fact]
+            public void Should_Throw_When_No_Registered_Query_Handler_Is_Found()
+            {
+                Assert.Throws<QueryNotHandledException>(() =>
+                {
+                    var registration = new QueryHandlerAttributeRegistration();
+                    var dispatcher = new QueryDispatcher(registration);
+
+                    const string data = nameof(Should_Throw_When_No_Registered_Query_Handler_Is_Found);
+
+                    try
+                    {
+                        var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data));
+                    }
+                    catch(Exception ex)
                     {
                         _outputHelper.WriteLine(ex.ToString());
                         throw;

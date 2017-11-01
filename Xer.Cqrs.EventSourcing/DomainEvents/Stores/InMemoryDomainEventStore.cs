@@ -87,9 +87,15 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
         /// <returns>All domain events for the aggregate.</returns>
         public virtual Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggreggateId, CancellationToken cancellationToken = default(CancellationToken))
         {
-            DomainEventStream stream = GetDomainEventStream(aggreggateId);
-
-            return Task.FromResult(stream);
+            try
+            {
+                DomainEventStream stream = GetDomainEventStream(aggreggateId);
+                return Task.FromResult(stream);
+            }
+            catch (Exception ex)
+            {
+                return TaskUtility.FromException<DomainEventStream>(ex);
+            }
         }
 
         /// <summary>
@@ -101,9 +107,15 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
         /// <returns>All domain events for the aggregate.</returns>
         public virtual Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggreggateId, int version, CancellationToken cancellationToken = default(CancellationToken))
         {
-            DomainEventStream stream = GetDomainEventStream(aggreggateId, version);
-
-            return Task.FromResult(stream);
+            try
+            {
+                DomainEventStream stream = GetDomainEventStream(aggreggateId, version);
+                return Task.FromResult(stream);
+            }
+            catch (Exception ex)
+            {
+                return TaskUtility.FromException<DomainEventStream>(ex);
+            }
         }
 
         /// <summary>
@@ -114,9 +126,15 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
         /// <returns>Task which can be awaited asynchronously.</returns>
         public Task SaveAsync(TAggregate aggregateRoot, CancellationToken cancellationToken = default(CancellationToken))
         {
-            Save(aggregateRoot);
-
-            return TaskUtility.CompletedTask;
+            try
+            {
+                Save(aggregateRoot);
+                return TaskUtility.CompletedTask;
+            }
+            catch(Exception ex)
+            {
+                return TaskUtility.FromException(ex);
+            }
         }
 
         #endregion IDomainEventAsyncStore Implementation

@@ -10,7 +10,7 @@ namespace Xer.Cqrs.Events
     {
         internal static readonly Task CompletedTask = Task.FromResult(true);
 
-        internal static Task CreateFaultedTask(Exception ex)
+        internal static Task FromException(Exception ex)
         {
             TaskCompletionSource<bool> completionSource = new TaskCompletionSource<bool>();
             completionSource.TrySetException(ex);

@@ -1,9 +1,7 @@
 ﻿using SimpleInjector;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using Xer.Cqrs.Events;
 using Xer.Cqrs.Events.Resolvers;
 using Xer.Cqrs.Tests.Mocks;
@@ -28,7 +26,7 @@ namespace Xer.Cqrs.Tests.Events.Registration
             [Fact]
             public void Should_Resolve_All_Event_Handlers()
             {
-                Assembly assembly = typeof(TestEvent).Assembly;
+                Assembly assembly = typeof(TestEvent1).Assembly;
 
                 var container = new Container();
                 container.RegisterCollection(typeof(IEventAsyncHandler<>), assembly);
@@ -38,7 +36,7 @@ namespace Xer.Cqrs.Tests.Events.Registration
                 var adapter = new SimpleInjectorContainerAdapter(container);
                 var eventHandlerResolver = new ContainerEventHandlerResolver(adapter);
 
-                IEnumerable<EventHandlerDelegate> eventHandlerDelegates = eventHandlerResolver.ResolveEventHandlers<TestEvent>();
+                IEnumerable<EventHandlerDelegate> eventHandlerDelegates = eventHandlerResolver.ResolveEventHandlers<TestEvent1>();
 
                 // Get all handlers in assembly.
                 int asyncHandlerCount = assembly.DefinedTypes.Count(t =>

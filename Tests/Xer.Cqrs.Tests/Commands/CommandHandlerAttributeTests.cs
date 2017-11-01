@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.CommandStack.Dispatchers;
 using Xer.Cqrs.CommandStack.Registrations;
 using Xer.Cqrs.Tests.Mocks;
@@ -23,17 +24,17 @@ namespace Xer.Cqrs.Tests.Commands
             }
 
             [Fact]
-            public void Should_Invoke_Registered_Attributed_Command_Handler()
+            public async Task Should_Invoke_Registered_Attributed_Command_Handler()
             {
                 var registration = new CommandHandlerAttributeRegistration();
                 registration.Register(() => new TestAttributedCommandHandler(_outputHelper));
 
                 var dispatcher = new CommandDispatcher(registration);
-                dispatcher.DispatchAsync(new DoSomethingAsyncCommand());
+                await dispatcher.DispatchAsync(new DoSomethingAsyncCommand());
             }
 
             [Fact]
-            public void Should_Invoke_Registered_Attributed_Command_Handler_With_Cancellation()
+            public async Task Should_Invoke_Registered_Attributed_Command_Handler_With_Cancellation()
             {
                 var registration = new CommandHandlerAttributeRegistration();
                 registration.Register(() => new TestAttributedCommandHandler(_outputHelper));
@@ -41,7 +42,7 @@ namespace Xer.Cqrs.Tests.Commands
                 var cts = new CancellationTokenSource();
 
                 var dispatcher = new CommandDispatcher(registration);
-                dispatcher.DispatchAsync(new DoSomethingAsyncWithCancellationCommand(), cts.Token);
+                await dispatcher.DispatchAsync(new DoSomethingAsyncWithCancellationCommand(), cts.Token);
             }
 
             [Fact]
@@ -55,7 +56,8 @@ namespace Xer.Cqrs.Tests.Commands
                     var cts = new CancellationTokenSource();
 
                     var dispatcher = new CommandDispatcher(registration);
-                    Task task = dispatcher.DispatchAsync(new DoSomethingAsyncForSpecifiedDurationCommand(1000), cts.Token);
+
+                    Task task = dispatcher.DispatchAsync(new DoSomethingAsyncForSpecifiedDurationCommand(2000), cts.Token);
 
                     cts.Cancel();
 
@@ -66,7 +68,7 @@ namespace Xer.Cqrs.Tests.Commands
             [Fact]
             public Task Should_Propagate_Exceptions_From_Comand_Handler()
             {
-                return Assert.ThrowsAnyAsync<Exception>(async () =>
+                return Assert.ThrowsAsync<TestCommandHandlerException>(async () =>
                 {
                     try
                     {
@@ -81,6 +83,18 @@ namespace Xer.Cqrs.Tests.Commands
                         _outputHelper.WriteLine(ex.ToString());
                         throw;
                     }
+                });
+            }
+
+            [Fact]
+            public Task Should_Throw_When_No_Registered_Command_Handler_Is_Found()
+            {
+                return Assert.ThrowsAsync<CommandNotHandledException>(async () =>
+                {
+                    var registration = new CommandHandlerAttributeRegistration();
+                    var dispatcher = new CommandDispatcher(registration);
+
+                    await dispatcher.DispatchAsync(new DoSomethingAsyncCommand());
                 });
             }
         }
@@ -126,6 +140,18 @@ namespace Xer.Cqrs.Tests.Commands
                         _outputHelper.WriteLine(ex.ToString());
                         throw;
                     }
+                });
+            }
+            
+            [Fact]
+            public void Should_Throw_When_No_Registered_Command_Handler_Is_Found()
+            {
+                Assert.Throws<CommandNotHandledException>(() =>
+                {
+                    var registration = new CommandHandlerAttributeRegistration();
+                    var dispatcher = new CommandDispatcher(registration);
+                    
+                    dispatcher.Dispatch(new DoSomethingCommand());
                 });
             }
         }

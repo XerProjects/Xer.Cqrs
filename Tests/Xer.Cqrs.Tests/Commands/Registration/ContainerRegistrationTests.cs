@@ -1,7 +1,4 @@
 ﻿using SimpleInjector;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.CommandStack.Resolvers;
 using Xer.Cqrs.Tests.Mocks;

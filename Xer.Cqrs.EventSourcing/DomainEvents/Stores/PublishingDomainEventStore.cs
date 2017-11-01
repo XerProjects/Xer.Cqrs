@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Xer.Cqrs.Events;
 
@@ -20,6 +18,12 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
         {
             _domainEventStore = domainEventStore;
             _publisher = publisher;
+
+            // Subscribe to any errors in publishing.
+            _publisher.OnError += (e, ex) =>
+            {
+                OnPublishError((IDomainEvent)e, ex);
+            };
         }
 
         /// <summary>
@@ -54,14 +58,9 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
 
             _domainEventStore.Save(aggregateRoot);
 
-            try
-            {
-                PublishDomainEventsAsync(domainEventStreamToSave);
-            }
-            catch (Exception ex)
-            {
-                OnPublishError(ex);
-            }
+            // No need to await. Any publish errors will be communicated through OnError event.
+            // Not passing cancellation token since event notification should not be cancelled.
+            Task publishTask = PublishDomainEventsAsync(domainEventStreamToSave);
         }
 
         /// <summary>
@@ -69,24 +68,20 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
         /// Default implementation publishes domain events in background.
         /// </summary>
         /// <param name="eventStream">Domain events to publish.</param>
-        protected virtual void PublishDomainEventsAsync(DomainEventStream eventStream)
+        /// <returns>Asynchronous task.</returns>
+        protected virtual Task PublishDomainEventsAsync(DomainEventStream eventStream)
         {
-            IEnumerable<Task> publishTasks = eventStream.Select(e => _publisher.PublishAsync(e));
-
-            Task.WhenAll(publishTasks)
-            .HandleAnyExceptions(ex =>
-            {
-                OnPublishError(ex);
-            });
+            return _publisher.PublishAsync(eventStream);
         }
 
         /// <summary>
         /// Provide child class to handle exceptions that occur while publishing.
         /// </summary>
+        /// <param name="domainEvent">Domain event.</param>
         /// <param name="ex">Exception that occured while publishing domain events.</param>
-        protected virtual void OnPublishError(Exception ex)
+        protected virtual void OnPublishError(IDomainEvent domainEvent, Exception ex)
         {
-            throw ex;
+            // Do not throw exceptions from this method.
         }
     }
 }

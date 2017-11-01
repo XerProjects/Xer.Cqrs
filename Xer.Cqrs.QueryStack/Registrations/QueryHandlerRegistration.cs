@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Xer.Cqrs.QueryStack.Registrations
 {
-    public partial class QueryHandlerRegistration : IQueryHandlerResolver, IQueryHandlerRegistration
+    public class QueryHandlerRegistration : IQueryHandlerResolver, IQueryHandlerRegistration
     {
         #region Declarations
 

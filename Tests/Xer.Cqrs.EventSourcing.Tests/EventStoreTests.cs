@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Xer.Cqrs.Events;
 using Xer.Cqrs.EventSourcing.DomainEvents;
 using Xer.Cqrs.EventSourcing.Repositories;
 using Xer.Cqrs.EventSourcing.Tests.Mocks;
+using Xer.Cqrs.EventSourcing.Tests.Mocks.DomainEventHandlers;
 using Xer.Cqrs.EventSourcing.Tests.Utilities;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Xer.Cqrs.EventSourcing.Tests
 {
@@ -37,6 +41,13 @@ namespace Xer.Cqrs.EventSourcing.Tests
 
         public class SaveAsyncMethod
         {
+            private readonly ITestOutputHelper _testOutputHelper;
+
+            public SaveAsyncMethod(ITestOutputHelper testOutputHelper)
+            {
+                _testOutputHelper = testOutputHelper;
+            }
+
             [Fact]
             public async Task Should_Append_To_Domain_Event_Store()
             {
@@ -63,7 +74,7 @@ namespace Xer.Cqrs.EventSourcing.Tests
 
                 // Create and modify aggregate.
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
-                aggregate.ChangeAggregateData("I was modified!~");
+                aggregate.ExecuteSomeOperation("I was modified!~");
                 eventStore.Save(aggregate);
 
                 DomainEventStream stream = eventStore.GetDomainEventStream(aggregate.Id);
@@ -89,7 +100,7 @@ namespace Xer.Cqrs.EventSourcing.Tests
 
                 // Create and modify aggregate.
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
-                aggregate.ChangeAggregateData("I was modified!~");
+                aggregate.ExecuteSomeOperation("I was modified!~");
                 await eventStore.SaveAsync(aggregate);
 
                 DomainEventStream stream = await eventStore.GetDomainEventStreamAsync(aggregate.Id);

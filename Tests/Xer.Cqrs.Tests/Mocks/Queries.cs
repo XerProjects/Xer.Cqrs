@@ -18,9 +18,7 @@ namespace Xer.Cqrs.Tests.Mocks
         {
         }
     }
-
-
-
+    
     public class QuerySomethingWithException : QuerySomething<string>
     {
         public QuerySomethingWithException(string input) : base(input)

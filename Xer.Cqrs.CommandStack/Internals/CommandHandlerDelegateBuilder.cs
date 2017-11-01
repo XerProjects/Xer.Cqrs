@@ -31,7 +31,7 @@ namespace Xer.Cqrs.CommandStack
                 TCommand command = c as TCommand;
                 if (command == null)
                 {
-                    return TaskUtility.CreateFaultedTask(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
+                    return TaskUtility.FromException(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
                 }
 
                 try
@@ -41,7 +41,7 @@ namespace Xer.Cqrs.CommandStack
                 }
                 catch (Exception ex)
                 {
-                    return TaskUtility.CreateFaultedTask(ex);
+                    return TaskUtility.FromException(ex);
                 }
             });
         }
@@ -80,14 +80,14 @@ namespace Xer.Cqrs.CommandStack
                 TCommand command = c as TCommand;
                 if (command == null)
                 {
-                    return TaskUtility.CreateFaultedTask(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
+                    return TaskUtility.FromException(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
                 }
                 
                 ICommandHandler<TCommand> instance;
 
                 if (!TryRetrieveInstanceFromFactory(commandHandlerFactory, out instance))
                 {
-                    return TaskUtility.CreateFaultedTask(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<ICommandHandler<TCommand>>());
+                    return TaskUtility.FromException(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<ICommandHandler<TCommand>>());
                 }
 
                 try
@@ -97,7 +97,7 @@ namespace Xer.Cqrs.CommandStack
                 }
                 catch (Exception ex)
                 {
-                    return TaskUtility.CreateFaultedTask(ex);
+                    return TaskUtility.FromException(ex);
                 }
             });
         }
@@ -161,14 +161,14 @@ namespace Xer.Cqrs.CommandStack
                 TCommand command = c as TCommand;
                 if (command == null)
                 {
-                    return TaskUtility.CreateFaultedTask(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
+                    return TaskUtility.FromException(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
                 }
 
                 TAttributed instance;
                 
                 if(!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
                 {
-                    return TaskUtility.CreateFaultedTask(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TAttributed>());
+                    return TaskUtility.FromException(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TAttributed>());
                 }
 
                 try
@@ -178,7 +178,7 @@ namespace Xer.Cqrs.CommandStack
                 }
                 catch (Exception ex)
                 {
-                    return TaskUtility.CreateFaultedTask(ex);
+                    return TaskUtility.FromException(ex);
                 }
             });
         }

@@ -65,7 +65,7 @@
             task.ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        public static TResult Await<TResult>(this Task<TResult> task)
+        public static TResult AwaitResult<TResult>(this Task<TResult> task)
         {
             if (task == null)
             {
@@ -73,6 +73,20 @@
             }
 
             return task.ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        internal static Task FromException(Exception ex)
+        {
+            TaskCompletionSource<bool> taskCompletionSource = new TaskCompletionSource<bool>();
+            taskCompletionSource.TrySetException(ex);
+            return taskCompletionSource.Task;
+        }
+
+        internal static Task<TResult> FromException<TResult>(Exception ex)
+        {
+            TaskCompletionSource<TResult> taskCompletionSource = new TaskCompletionSource<TResult>();
+            taskCompletionSource.TrySetException(ex);
+            return taskCompletionSource.Task;
         }
     }
 }

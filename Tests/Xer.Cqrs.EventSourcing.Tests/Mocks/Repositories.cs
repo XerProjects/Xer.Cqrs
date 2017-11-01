@@ -65,7 +65,7 @@ namespace Xer.Cqrs.EventSourcing.Tests.Mocks
 
         public override Task SaveAsync(TestAggregate aggregate, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return DomainEventStore.SaveAsync(aggregate);
+            return DomainEventStore.SaveAsync(aggregate, cancellationToken);
         }
     }
 

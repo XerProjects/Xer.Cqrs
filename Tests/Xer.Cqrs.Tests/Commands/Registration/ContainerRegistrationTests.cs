@@ -24,21 +24,21 @@ namespace Xer.Cqrs.Tests.Commands.Registration
             public void Should_Resolve_All_Command_Handlers()
             {
                 var container = new Container();
-                container.Register<ICommandHandler<DoSomethingAsyncCommand>>(() => new TestCommandHandler(_testOutputHelper), Lifestyle.Singleton);
+                container.Register<ICommandHandler<DoSomethingCommand>>(() => new TestCommandHandler(_testOutputHelper), Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
                 var resolver = new ContainerCommandHandlerResolver(containerAdapter);
 
-                CommandHandlerDelegate commandHandlerDelegate = resolver.ResolveCommandHandler<DoSomethingAsyncCommand>();
+                CommandHandlerDelegate commandHandlerDelegate = resolver.ResolveCommandHandler<DoSomethingCommand>();
                 
                 // Delegate should invoke the actual command handler - TestCommandHandler.
-                commandHandlerDelegate.Invoke(new DoSomethingAsyncCommand());
+                commandHandlerDelegate.Invoke(new DoSomethingCommand());
 
                 // Get instance from container to see if it was invoked.
-                var registeredCommandHandler = (TestCommandHandler)container.GetInstance<ICommandHandler<DoSomethingAsyncCommand>>();
+                var registeredCommandHandler = (TestCommandHandler)container.GetInstance<ICommandHandler<DoSomethingCommand>>();
 
                 Assert.Equal(1, registeredCommandHandler.HandledCommands.Count);
-                Assert.Contains(registeredCommandHandler.HandledCommands, c => c is DoSomethingAsyncCommand);
+                Assert.Contains(registeredCommandHandler.HandledCommands, c => c is DoSomethingCommand);
             }
         }
 

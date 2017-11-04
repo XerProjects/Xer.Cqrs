@@ -12,26 +12,16 @@ namespace Xer.Cqrs.Tests.Mocks
 
     }
 
-    public class DoAsyncVoidHandlerCommand : Command
+    public class DoSomethingWithCancellationCommand : Command
     {
 
     }
 
-    public class DoSomethingAsyncCommand : Command
-    {
-
-    }
-
-    public class DoSomethingAsyncWithCancellationCommand : Command
-    {
-
-    }
-
-    public class DoSomethingAsyncForSpecifiedDurationCommand : Command
+    public class DoSomethingForSpecifiedDurationCommand : Command
     {
         public int DurationInMilliSeconds { get; }
 
-        public DoSomethingAsyncForSpecifiedDurationCommand(int milliSeconds)
+        public DoSomethingForSpecifiedDurationCommand(int milliSeconds)
         {
             DurationInMilliSeconds = milliSeconds;
         }

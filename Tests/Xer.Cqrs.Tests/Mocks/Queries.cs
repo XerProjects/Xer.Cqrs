@@ -26,27 +26,20 @@ namespace Xer.Cqrs.Tests.Mocks
         }
     }
 
-    public class QuerySomethingAsync : QuerySomething
-    {
-        public QuerySomethingAsync(string input) : base(input)
-        {
-        }
-    }
-
-    public class QuerySomethingAsyncWithDelay : QuerySomething
+    public class QuerySomethingWithDelay : QuerySomething
     {
         public int DelayInMilliseconds { get; }
 
-        public QuerySomethingAsyncWithDelay(string input, int delayInMilliseconds)
+        public QuerySomethingWithDelay(string input, int delayInMilliseconds)
             : base(input)
         {
             DelayInMilliseconds = delayInMilliseconds;
         }
     }
 
-    public class QuerySomethingNonReferenceType : QuerySomething<int>
+    public class QuerySomethingWithNonReferenceTypeResult : QuerySomething<int>
     {
-        public QuerySomethingNonReferenceType(int input) : base(input)
+        public QuerySomethingWithNonReferenceTypeResult(int input) : base(input)
         {
         }
     }

@@ -25,17 +25,17 @@ namespace Xer.Cqrs.Tests.Commands.Registration
                 var commandHandler = new TestCommandHandler(_testOutputHelper);
 
                 var registration = new CommandHandlerRegistration();
-                registration.Register(() => (ICommandHandler<DoSomethingAsyncCommand>)commandHandler);
+                registration.Register(() => (ICommandHandler<DoSomethingCommand>)commandHandler);
 
-                CommandHandlerDelegate commandHandlerDelegate = registration.ResolveCommandHandler<DoSomethingAsyncCommand>();
+                CommandHandlerDelegate commandHandlerDelegate = registration.ResolveCommandHandler<DoSomethingCommand>();
 
                 Assert.NotNull(commandHandlerDelegate);
 
                 // Delegate should invoke the actual command handler - TestCommandHandler.
-                commandHandlerDelegate.Invoke(new DoSomethingAsyncCommand());
+                commandHandlerDelegate.Invoke(new DoSomethingCommand());
 
                 Assert.Equal(1, commandHandler.HandledCommands.Count);
-                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingAsyncCommand);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
             }
         }
 

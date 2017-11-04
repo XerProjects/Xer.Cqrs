@@ -40,7 +40,7 @@ namespace Xer.Cqrs.Tests.Commands.Registration
             }
 
             [Fact]
-            public void Should_Not_Sync_Methods_With_Cancellation_Token()
+            public void Should_Not_Allow_Sync_Methods_With_Cancellation_Token()
             {
                 Assert.Throws<InvalidOperationException>(() =>
                 {

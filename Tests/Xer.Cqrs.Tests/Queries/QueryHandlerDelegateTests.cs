@@ -49,11 +49,10 @@ namespace Xer.Cqrs.Tests.Queries
                 return Assert.ThrowsAnyAsync<ArgumentException>(async () =>
                 {
                     var queryHandler = new TestQueryHandler(_testOutputHelper);
-
                     var registration = new QueryHandlerRegistration();
-                    registration.Register(() => (IQueryHandler<QuerySomethingAsync, string>)queryHandler);
+                    registration.Register(() => (IQueryHandler<QuerySomethingWithDelay, string>)queryHandler);
 
-                    QueryHandlerDelegate<string> queryHandlerDelegate = registration.ResolveQueryHandler<QuerySomethingAsync, string>();
+                    QueryHandlerDelegate<string> queryHandlerDelegate = registration.ResolveQueryHandler<QuerySomethingWithDelay, string>();
 
                     Assert.NotNull(queryHandlerDelegate);
 

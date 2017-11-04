@@ -24,57 +24,193 @@ namespace Xer.Cqrs.Tests.Commands
             {
                 _outputHelper = output;
             }
-            
+
+            #region Basic Registration
+
             [Fact]
             public async Task Should_Invoke_Registered_Command_Handler()
             {
+                var commandHandler = new TestCommandHandler(_outputHelper);
                 var registration = new CommandHandlerRegistration();
-                registration.Register(() => (ICommandAsyncHandler<DoSomethingAsyncCommand>)new TestCommandHandler(_outputHelper));
+                registration.Register(() => (ICommandAsyncHandler<DoSomethingCommand>)commandHandler);
 
                 var dispatcher = new CommandDispatcher(registration);
-                await dispatcher.DispatchAsync(new DoSomethingAsyncCommand());
+                await dispatcher.DispatchAsync(new DoSomethingCommand());
+
+                Assert.Equal(1, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
             }
 
             [Fact]
             public async Task Should_Invoke_Registered_Command_Handler_With_CancellationToken()
             {
+                var commandHandler = new TestCommandHandler(_outputHelper);
                 var registration = new CommandHandlerRegistration();
-                registration.Register(() => (ICommandAsyncHandler<DoSomethingAsyncCommand>)new TestCommandHandler(_outputHelper));
+                registration.Register(() => (ICommandAsyncHandler<DoSomethingCommand>)commandHandler);
+
+                var dispatcher = new CommandDispatcher(registration);
+
+                var cts = new CancellationTokenSource();
+                await dispatcher.DispatchAsync(new DoSomethingCommand(), cts.Token);
+
+                Assert.Equal(1, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
+            }
+
+            [Fact]
+            public Task Should_Throw_When_No_Registered_Command_Handler_Is_Found()
+            {
+                return Assert.ThrowsAsync<CommandNotHandledException>(async () =>
+                {
+                    var registration = new CommandHandlerRegistration();
+                    var dispatcher = new CommandDispatcher(registration);
+
+                    try
+                    {
+                        await dispatcher.DispatchAsync(new DoSomethingCommand());
+                    }
+                    catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Basic Registration
+
+            #region Attribute Registration
+
+            [Fact]
+            public async Task Should_Invoke_Registered_Attributed_Command_Handler()
+            {
+                var commandHandler = new TestAttributedCommandHandler(_outputHelper);
+                var registration = new CommandHandlerAttributeRegistration();
+                registration.Register(() => commandHandler);
+
+                var dispatcher = new CommandDispatcher(registration);
+                await dispatcher.DispatchAsync(new DoSomethingCommand());
+
+                Assert.Equal(1, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
+            }
+
+            [Fact]
+            public async Task Should_Invoke_Registered_Attributed_Command_Handler_With_Cancellation()
+            {
+                var registration = new CommandHandlerAttributeRegistration();
+                registration.Register(() => new TestAttributedCommandHandler(_outputHelper));
 
                 var cts = new CancellationTokenSource();
 
                 var dispatcher = new CommandDispatcher(registration);
-                await dispatcher.DispatchAsync(new DoSomethingAsyncCommand(), cts.Token);
+                await dispatcher.DispatchAsync(new DoSomethingWithCancellationCommand(), cts.Token);
             }
+
+            [Fact]
+            public Task Should_Throw_When_No_Registered_Attribute_Command_Handler_Is_Found()
+            {
+                return Assert.ThrowsAsync<CommandNotHandledException>(async () =>
+                {
+                    var registration = new CommandHandlerAttributeRegistration();
+                    var dispatcher = new CommandDispatcher(registration);
+
+                    try
+                    {
+                        await dispatcher.DispatchAsync(new DoSomethingCommand());
+                    }
+                    catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Attribute Registration
+
+            #region Container Registration
 
             [Fact]
             public async Task Should_Invoke_Registered_Command_Handler_In_Container()
             {
+                var commandHandler = new TestCommandHandler(_outputHelper);
                 var container = new Container();
-                container.Register<ICommandAsyncHandler<DoSomethingAsyncCommand>>(() => new TestCommandHandler(_outputHelper));
+                container.Register<ICommandAsyncHandler<DoSomethingCommand>>(() => commandHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
-
                 var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter));
-                await dispatcher.DispatchAsync(new DoSomethingAsyncCommand());
+
+                await dispatcher.DispatchAsync(new DoSomethingCommand());
+
+                Assert.Equal(1, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
             }
+
+            [Fact]
+            public async Task Should_Invoke_Registered_Command_Handler_In_Container_With_Cancellation()
+            {
+                var commandHandler = new TestCommandHandler(_outputHelper);
+                var container = new Container();
+                container.Register<ICommandAsyncHandler<DoSomethingWithCancellationCommand>>(() => commandHandler, Lifestyle.Singleton);
+
+                var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter));
+
+                var cts = new CancellationTokenSource();
+
+                await dispatcher.DispatchAsync(new DoSomethingWithCancellationCommand(), cts.Token);
+            }
+
+            [Fact]
+            public Task Should_Throw_When_No_Registered_Command_Handler_In_Container_Is_Found()
+            {
+                return Assert.ThrowsAsync<CommandNotHandledException>(async () =>
+                {
+                    var commandHandler = new TestCommandHandler(_outputHelper);
+                    var container = new Container();
+                    var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                    var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter));
+
+                    try
+                    {
+                        await dispatcher.DispatchAsync(new DoSomethingCommand());
+                    }
+                    catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Container Registration
 
             [Fact]
             public Task Should_Throw_When_Cancelled()
             {
                 return Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                 {
-                    var registration = new CommandHandlerAttributeRegistration();
-                    registration.Register(() => new TestAttributedCommandHandler(_outputHelper));
+                    var commandHandler = new TestCommandHandler(_outputHelper);
+                    var registration = new CommandHandlerRegistration();
+                    registration.Register(() => (ICommandAsyncHandler<DoSomethingForSpecifiedDurationCommand>)commandHandler);
 
                     var cts = new CancellationTokenSource();
 
                     var dispatcher = new CommandDispatcher(registration);
-                    Task task = dispatcher.DispatchAsync(new DoSomethingAsyncForSpecifiedDurationCommand(1000), cts.Token);
+                    Task task = dispatcher.DispatchAsync(new DoSomethingForSpecifiedDurationCommand(2000), cts.Token);
 
                     cts.Cancel();
 
-                    await task;
+                    try
+                    {
+                        await task;
+                    }
+                    catch(Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
                 });
             }
 
@@ -83,12 +219,14 @@ namespace Xer.Cqrs.Tests.Commands
             {
                 return Assert.ThrowsAnyAsync<Exception>(async () =>
                 {
+                    var commandHandler = new TestCommandHandler(_outputHelper);
+                    var registration = new CommandHandlerRegistration();
+                    registration.Register(() => (ICommandAsyncHandler<ThrowExceptionCommand>)commandHandler);
+
+                    var dispatcher = new CommandDispatcher(registration);
+
                     try
                     {
-                        var registration = new CommandHandlerRegistration();
-                        registration.Register(() => (ICommandAsyncHandler<ThrowExceptionCommand>)new TestCommandHandler(_outputHelper));
-
-                        var dispatcher = new CommandDispatcher(registration);
                         await dispatcher.DispatchAsync(new ThrowExceptionCommand());
                     }
                     catch (Exception ex)
@@ -112,40 +250,137 @@ namespace Xer.Cqrs.Tests.Commands
             {
                 _outputHelper = output;
             }
+            
+            #region Basic Registration
 
             [Fact]
             public void Should_Invoke_Registered_Command_Handler()
             {
+                var commandHandler = new TestCommandHandler(_outputHelper);
                 var registration = new CommandHandlerRegistration();
-                registration.Register(() => (ICommandHandler<DoSomethingAsyncCommand>)new TestCommandHandler(_outputHelper));
+                registration.Register(() => (ICommandHandler<DoSomethingCommand>)commandHandler);
 
                 var dispatcher = new CommandDispatcher(registration);
-                dispatcher.Dispatch(new DoSomethingAsyncCommand());
+                dispatcher.Dispatch(new DoSomethingCommand());
+
+                Assert.Equal(1, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
             }
+            
+            [Fact]
+            public void Should_Throw_When_No_Registered_Command_Handler_Is_Found()
+            {
+                Assert.Throws<CommandNotHandledException>(() =>
+                {
+                    var registration = new CommandHandlerRegistration();
+                    var dispatcher = new CommandDispatcher(registration);
+
+                    try
+                    {
+                        dispatcher.Dispatch(new DoSomethingCommand());
+                    }
+                    catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Basic Registration
+
+            #region Attribute Registration
+
+            [Fact]
+            public void Should_Invoke_Registered_Attributed_Command_Handler()
+            {
+                var commandHandler = new TestAttributedCommandHandler(_outputHelper);
+                var registration = new CommandHandlerAttributeRegistration();
+                registration.Register(() => commandHandler);
+
+                var dispatcher = new CommandDispatcher(registration);
+                dispatcher.Dispatch(new DoSomethingCommand());
+
+                Assert.Equal(1, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
+            }
+
+            [Fact]
+            public void Should_Throw_When_No_Registered_Attribute_Command_Handler_Is_Found()
+            {
+                Assert.Throws<CommandNotHandledException>(() =>
+                {
+                    var registration = new CommandHandlerAttributeRegistration();
+                    var dispatcher = new CommandDispatcher(registration);
+
+                    try
+                    {
+                        dispatcher.Dispatch(new DoSomethingCommand());
+                    }
+                    catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Attribute Registration
+
+            #region Container Registration
 
             [Fact]
             public void Should_Invoke_Registered_Command_Handler_In_Container()
             {
+                var commandHandler = new TestCommandHandler(_outputHelper);
                 var container = new Container();
-                container.Register<ICommandHandler<DoSomethingAsyncCommand>>(() => new TestCommandHandler(_outputHelper));
+                container.Register<ICommandHandler<DoSomethingCommand>>(() => commandHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
 
                 var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter));
-                dispatcher.Dispatch(new DoSomethingAsyncCommand());
+                dispatcher.Dispatch(new DoSomethingCommand());
+
+                Assert.Equal(1, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
             }
+
+            [Fact]
+            public void Should_Throw_When_No_Registered_Command_Handler_In_Container_Is_Found()
+            {
+                Assert.Throws<CommandNotHandledException>(() =>
+                {
+                    var commandHandler = new TestCommandHandler(_outputHelper);
+                    var container = new Container();
+                    var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                    var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter));
+
+                    try
+                    {
+                        dispatcher.Dispatch(new DoSomethingCommand());
+                    }
+                    catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Container Registration
 
             [Fact]
             public void Should_Propagate_Exception_From_Command_Handler()
             {
                 Assert.ThrowsAny<Exception>(() =>
                 {
+                    var registration = new CommandHandlerRegistration();
+                    registration.Register(() => (ICommandHandler<ThrowExceptionCommand>)new TestCommandHandler(_outputHelper));
+
+                    var dispatcher = new CommandDispatcher(registration);
+
                     try
                     {
-                        var registration = new CommandHandlerRegistration();
-                        registration.Register(() => (ICommandHandler<ThrowExceptionCommand>)new TestCommandHandler(_outputHelper));
-
-                        var dispatcher = new CommandDispatcher(registration);
                         dispatcher.Dispatch(new ThrowExceptionCommand());
                     }
                     catch (Exception ex)

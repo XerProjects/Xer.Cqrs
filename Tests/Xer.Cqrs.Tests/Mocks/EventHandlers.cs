@@ -77,7 +77,7 @@ namespace Xer.Cqrs.Tests.Mocks
         {
             base.HandleAsync(@event, cancellationToken);
 
-            return Task.FromException(new TestEventHandlerException($"Exception at { GetType().Name }."));
+            return Task.FromException(new TestEventHandlerException($"This is a triggered post-processing exception at { GetType().Name }."));
         }
     }
 

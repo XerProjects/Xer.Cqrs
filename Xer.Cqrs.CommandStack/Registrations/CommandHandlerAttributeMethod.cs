@@ -85,7 +85,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
                 if(methodInfo.CustomAttributes.Any(p => p.AttributeType == typeof(AsyncStateMachineAttribute)))
                 {
-                    throw new InvalidOperationException($"Methods marked with async void are not allowed. Exceptions from async void methods may crash the application: {methodInfo.Name}");
+                    throw new InvalidOperationException($"Methods with async void signatures are not allowed. A Task may be used as return type instead of void. Check method: {methodInfo.ToString()}.");
                 }
             }
             else

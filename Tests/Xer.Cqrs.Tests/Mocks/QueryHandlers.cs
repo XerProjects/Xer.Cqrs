@@ -40,13 +40,12 @@ namespace Xer.Cqrs.Tests.Mocks
 
     public class TestQueryHandler : TestQueryHandlerBase,
                                     IQueryHandler<QuerySomething, string>,
-                                    IQueryHandler<QuerySomethingNonReferenceType, int>,
-                                    IQueryHandler<QuerySomethingAsync, string>,
+                                    IQueryHandler<QuerySomethingWithNonReferenceTypeResult, int>,
+                                    IQueryHandler<QuerySomethingWithDelay, string>,
                                     IQueryHandler<QuerySomethingWithException, string>,
                                     IQueryAsyncHandler<QuerySomething, string>,
-                                    IQueryAsyncHandler<QuerySomethingNonReferenceType, int>,
-                                    IQueryAsyncHandler<QuerySomethingAsync, string>,
-                                    IQueryAsyncHandler<QuerySomethingAsyncWithDelay, string>,
+                                    IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>,
+                                    IQueryAsyncHandler<QuerySomethingWithDelay, string>,
                                     IQueryAsyncHandler<QuerySomethingWithException, string>
     {
         public TestQueryHandler(ITestOutputHelper output)
@@ -63,18 +62,19 @@ namespace Xer.Cqrs.Tests.Mocks
             return query.Data;
         }
 
-        public int Handle(QuerySomethingNonReferenceType query)
+        public string Handle(QuerySomethingWithDelay query)
         {
-            base.Handle<QuerySomethingNonReferenceType, int>(query);
-
-            TestOutputHelper.WriteLine($"Query result: {query.Data}.");
-
-            return query.Data;
+            return Task.Delay(query.DelayInMilliseconds).ContinueWith(t =>
+            {
+                base.HandleAsync<QuerySomethingWithDelay, string>(query);
+                TestOutputHelper.WriteLine($"Query result: {query.Data}.");
+                return query.Data;
+            }).GetAwaiter().GetResult();
         }
 
-        public string Handle(QuerySomethingAsync query)
+        public int Handle(QuerySomethingWithNonReferenceTypeResult query)
         {
-            base.Handle<QuerySomethingAsync, string>(query);
+            base.Handle<QuerySomethingWithNonReferenceTypeResult, int>(query);
 
             TestOutputHelper.WriteLine($"Query result: {query.Data}.");
 
@@ -99,27 +99,18 @@ namespace Xer.Cqrs.Tests.Mocks
             return Task.FromResult(query.Data);
         }
 
-        public Task<int> HandleAsync(QuerySomethingNonReferenceType query, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<int> HandleAsync(QuerySomethingWithNonReferenceTypeResult query, CancellationToken cancellationToken = default(CancellationToken))
         {
-            base.HandleAsync<QuerySomethingNonReferenceType, int>(query);
+            base.HandleAsync<QuerySomethingWithNonReferenceTypeResult, int>(query);
 
             TestOutputHelper.WriteLine($"Query result: {query.Data}.");
 
             return Task.FromResult(query.Data);
         }
 
-        public Task<string> HandleAsync(QuerySomethingAsync query, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<string> HandleAsync(QuerySomethingWithDelay query, CancellationToken cancellationToken = default(CancellationToken))
         {
-            base.HandleAsync<QuerySomethingAsync, string>(query);
-
-            TestOutputHelper.WriteLine($"Query result: {query.Data}.");
-
-            return Task.FromResult(query.Data);
-        }
-
-        public async Task<string> HandleAsync(QuerySomethingAsyncWithDelay query, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            base.HandleAsync<QuerySomethingAsyncWithDelay, string>(query);
+            base.HandleAsync<QuerySomethingWithDelay, string>(query);
 
             await Task.Delay(query.DelayInMilliseconds, cancellationToken);
 
@@ -177,9 +168,9 @@ namespace Xer.Cqrs.Tests.Mocks
         }
 
         [QueryHandler]
-        public int QuerySomething(QuerySomethingNonReferenceType query)
+        public int QuerySomething(QuerySomethingWithNonReferenceTypeResult query)
         {
-            base.Handle<QuerySomethingNonReferenceType, int>(query);
+            base.Handle<QuerySomethingWithNonReferenceTypeResult, int>(query);
 
             TestOutputHelper.WriteLine($"Query result: {query.Data}.");
 
@@ -189,21 +180,9 @@ namespace Xer.Cqrs.Tests.Mocks
         }
 
         [QueryHandler]
-        public Task<string> QuerySomethingAsync(QuerySomethingAsync query)
+        public async Task<string> QuerySomethingAsync(QuerySomethingWithDelay query, CancellationToken cancellationToken)
         {
-            base.HandleAsync<QuerySomethingAsync, string>(query);
-
-            TestOutputHelper.WriteLine($"Query result: {query.Data}.");
-
-            TestOutputHelper.WriteLine($"Instance #{_instanceCounter}.");
-
-            return Task.FromResult(query.Data);
-        }
-
-        [QueryHandler]
-        public async Task<string> QuerySomethingAsync(QuerySomethingAsyncWithDelay query, CancellationToken cancellationToken)
-        {
-            base.HandleAsync<QuerySomethingAsyncWithDelay, string>(query);
+            base.HandleAsync<QuerySomethingWithDelay, string>(query);
 
             TestOutputHelper.WriteLine($"Query result: {query.Data}.");
 

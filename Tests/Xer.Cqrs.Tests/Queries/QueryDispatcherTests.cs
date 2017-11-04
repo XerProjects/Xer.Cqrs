@@ -25,16 +25,18 @@ namespace Xer.Cqrs.Tests.Queries
                 _testOutputHelper = testOutputHelper;
             }
 
+            #region Basic Registration
+
             [Fact]
             public async Task Should_Invoke_Registered_Query_Handler()
             {
                 var registration = new QueryHandlerRegistration();
-                registration.Register(() => (IQueryAsyncHandler<QuerySomethingAsync, string>)new TestQueryHandler(_testOutputHelper));
+                registration.Register(() => (IQueryAsyncHandler<QuerySomething, string>)new TestQueryHandler(_testOutputHelper));
 
                 const string data = nameof(Should_Invoke_Registered_Query_Handler);
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result = await dispatcher.DispatchAsync<QuerySomethingAsync, string>(new QuerySomethingAsync(data));
+                var result = await dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething(data));
 
                 Assert.Equal(result, data);
             }
@@ -42,18 +44,19 @@ namespace Xer.Cqrs.Tests.Queries
             [Fact]
             public async Task Should_Invoke_Registered_Query_Handler_When_Dispatched_Multiple_Times()
             {
+                var queryHandler = new TestQueryHandler(_testOutputHelper);
                 var registration = new QueryHandlerRegistration();
-                registration.Register(() => (IQueryAsyncHandler<QuerySomethingAsync, string>)new TestQueryHandler(_testOutputHelper));
-                registration.Register(() => (IQueryAsyncHandler<QuerySomethingNonReferenceType, int>)new TestQueryHandler(_testOutputHelper));
+                registration.Register(() => (IQueryAsyncHandler<QuerySomething, string>)queryHandler);
+                registration.Register(() => (IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>)new TestQueryHandler(_testOutputHelper));
 
                 const string data1 = "Test message 1.";
                 const string data2 = "Test message 2.";
                 const int data3 = 1;
 
                 var dispatcher = new QueryDispatcher(registration);
-                var result1 = dispatcher.DispatchAsync<QuerySomethingAsync, string>(new QuerySomethingAsync(data1));
-                var result2 = dispatcher.DispatchAsync<QuerySomethingAsync, string>(new QuerySomethingAsync(data2));
-                var result3 = dispatcher.DispatchAsync<QuerySomethingNonReferenceType, int>(new QuerySomethingNonReferenceType(data3));
+                var result1 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething(data1));
+                var result2 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething(data2));
+                var result3 = dispatcher.DispatchAsync<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(data3));
 
                 await Task.WhenAll(result1, result2, result3);
 
@@ -65,8 +68,9 @@ namespace Xer.Cqrs.Tests.Queries
             [Fact]
             public async Task Should_Invoke_Registered_Query_Handler_With_Cancellation_Token()
             {
+                var queryHandler = new TestQueryHandler(_testOutputHelper);
                 var registration = new QueryHandlerRegistration();
-                registration.Register(() => (IQueryAsyncHandler<QuerySomethingAsyncWithDelay, string>)new TestQueryHandler(_testOutputHelper));
+                registration.Register(() => (IQueryAsyncHandler<QuerySomethingWithDelay, string>)queryHandler);
 
                 var cts = new CancellationTokenSource();
 
@@ -74,18 +78,149 @@ namespace Xer.Cqrs.Tests.Queries
 
                 const string data = nameof(Should_Invoke_Registered_Query_Handler_With_Cancellation_Token);
 
-                var result = await dispatcher.DispatchAsync<QuerySomethingAsyncWithDelay, string>(new QuerySomethingAsyncWithDelay(data, 500), cts.Token);
+                var result = await dispatcher.DispatchAsync<QuerySomethingWithDelay, string>(new QuerySomethingWithDelay(data, 500), cts.Token);
 
                 Assert.Equal(data, result);
             }
-            
+
+            [Fact]
+            public async Task Should_Allow_Registered_Query_Handlers_With_Non_Reference_Type_Query_Results()
+            {
+                var queryHandler = new TestQueryHandler(_testOutputHelper);
+                var registration = new QueryHandlerRegistration();
+                registration.Register(() => (IQueryHandler<QuerySomethingWithNonReferenceTypeResult, int>)queryHandler);
+
+                var dispatcher = new QueryDispatcher(registration);
+                var result = await dispatcher.DispatchAsync<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(1973));
+
+                Assert.Equal(1973, result);
+            }
+
+            [Fact]
+            public Task Should_Throw_When_No_Registered_Query_Handler_Is_Found()
+            {
+                return Assert.ThrowsAsync<QueryNotHandledException>(async () =>
+                {
+                    var registration = new QueryHandlerRegistration();
+                    var dispatcher = new QueryDispatcher(registration);
+
+                    const string data = nameof(Should_Throw_When_No_Registered_Query_Handler_Is_Found);
+
+                    try
+                    {
+                        var result = await dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething((string)data));
+                    }
+                    catch (Exception ex)
+                    {
+                        _testOutputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Basic Registration
+
+            #region Attribute Registration
+
+            [Fact]
+            public async Task Should_Invoke_Registered_Attribute_Query_Handler()
+            {
+                var queryHandler = new TestAttributedQueryHandler(_testOutputHelper);
+                var registration = new QueryHandlerAttributeRegistration();
+                registration.Register(() => queryHandler);
+
+                const string data = nameof(Should_Invoke_Registered_Attribute_Query_Handler);
+
+                var dispatcher = new QueryDispatcher(registration);
+                var result = await dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething(data));
+
+                Assert.Equal(result, data);
+            }
+
+            [Fact]
+            public async Task Should_Invoke_Registered_Attribute_Query_Handler_When_Dispatched_Multiple_Times()
+            {
+                var queryHandler = new TestAttributedQueryHandler(_testOutputHelper);
+                var registration = new QueryHandlerAttributeRegistration();
+                registration.Register(() => queryHandler);
+
+                const string data1 = "Test message 1.";
+                const string data2 = "Test message 2.";
+                const int data3 = 1;
+
+                var dispatcher = new QueryDispatcher(registration);
+                var result1 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething(data1));
+                var result2 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething(data2));
+                var result3 = dispatcher.DispatchAsync<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(data3));
+
+                await Task.WhenAll(result1, result2, result3);
+
+                Assert.Equal(data1, await result1);
+                Assert.Equal(data2, await result2);
+                Assert.Equal(data3, await result3);
+            }
+
+            [Fact]
+            public async Task Should_Invoke_Registered_Attribute_Query_Handler_With_Cancellation_Token()
+            {
+                var queryHandler = new TestAttributedQueryHandler(_testOutputHelper);
+                var registration = new QueryHandlerAttributeRegistration();
+                registration.Register(() => queryHandler);
+                var dispatcher = new QueryDispatcher(registration);
+
+                var cts = new CancellationTokenSource();
+                const string data = nameof(Should_Invoke_Registered_Attribute_Query_Handler_With_Cancellation_Token);
+                
+                var result = await dispatcher.DispatchAsync<QuerySomethingWithDelay, string>(new QuerySomethingWithDelay(data, 500), cts.Token);
+
+                Assert.Equal(data, result);
+            }
+
+            [Fact]
+            public async Task Should_Allow_Attribute_Query_Handlers_With_Non_Reference_Type_Query_Results()
+            {
+                var queryHandler = new TestAttributedQueryHandler(_testOutputHelper);
+                var registration = new QueryHandlerAttributeRegistration();
+                registration.Register(() => queryHandler);
+
+                var dispatcher = new QueryDispatcher(registration);
+                var result = await dispatcher.DispatchAsync<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(1973));
+
+                Assert.Equal(1973, result);
+            }
+
+            [Fact]
+            public Task Should_Throw_When_No_Registered_Attribute_Query_Handler_Is_Found()
+            {
+                return Assert.ThrowsAsync<QueryNotHandledException>(async () =>
+                {
+                    var registration = new QueryHandlerAttributeRegistration();
+                    var dispatcher = new QueryDispatcher(registration);
+
+                    const string data = nameof(Should_Throw_When_No_Registered_Attribute_Query_Handler_Is_Found);
+
+                    try
+                    {
+                        var result = await dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething((string)data));
+                    }
+                    catch (Exception ex)
+                    {
+                        _testOutputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Attribute Registration
+
+            #region Container Registration
+
             [Fact]
             public async Task Should_Invoke_Registered_Query_Handler_In_Container()
             {
                 var queryHandler = new TestQueryHandler(_testOutputHelper);
-
                 var container = new Container();
-                container.Register<IQueryAsyncHandler<QuerySomethingAsync, string>>(() => queryHandler, Lifestyle.Singleton);
+                container.Register<IQueryAsyncHandler<QuerySomething, string>>(() => queryHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
                 var resolver = new ContainerQueryHandlerResolver(containerAdapter);
@@ -93,30 +228,107 @@ namespace Xer.Cqrs.Tests.Queries
                 const string data = nameof(Should_Invoke_Registered_Query_Handler_In_Container);
 
                 var dispatcher = new QueryDispatcher(resolver);
-                var result = await dispatcher.DispatchAsync<QuerySomethingAsync, string>(new QuerySomethingAsync(data));
+                var result = await dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething(data));
 
                 Assert.Equal(data, result);
             }
 
             [Fact]
-            public async Task Should_Allow_Non_Reference_Type_Return_Types()
+            public async Task Should_Invoke_Registered_Query_Handler_In_Container_When_Dispatched_Multiple_Times()
             {
-                var registration = new QueryHandlerRegistration();
-                registration.Register(() => (IQueryHandler<QuerySomethingNonReferenceType, int>)new TestQueryHandler(_testOutputHelper));
+                var queryHandler = new TestQueryHandler(_testOutputHelper);
+                var container = new Container();
+                container.Register<IQueryAsyncHandler<QuerySomething, string>>(() => queryHandler, Lifestyle.Singleton);
+                container.Register<IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>>(() => queryHandler, Lifestyle.Singleton);
 
-                var dispatcher = new QueryDispatcher(registration);
-                var result = await dispatcher.DispatchAsync<QuerySomethingNonReferenceType, int>(new QuerySomethingNonReferenceType(1973));
+                var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+
+                const string data1 = "Test message 1.";
+                const string data2 = "Test message 2.";
+                const int data3 = 1;
+
+                var dispatcher = new QueryDispatcher(resolver);
+                var result1 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething(data1));
+                var result2 = dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething(data2));
+                var result3 = dispatcher.DispatchAsync<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(data3));
+
+                await Task.WhenAll(result1, result2, result3);
+
+                Assert.Equal(data1, await result1);
+                Assert.Equal(data2, await result2);
+                Assert.Equal(data3, await result3);
+            }
+
+            [Fact]
+            public async Task Should_Invoke_Registered_Query_Handler_In_Container_With_Cancellation_Token()
+            {
+                var queryHandler = new TestQueryHandler(_testOutputHelper);
+                var container = new Container();
+                container.Register<IQueryAsyncHandler<QuerySomethingWithDelay, string>>(() => queryHandler, Lifestyle.Singleton);
+
+                var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                var dispatcher = new QueryDispatcher(resolver);
+
+                var cts = new CancellationTokenSource();
+                const string data = nameof(Should_Invoke_Registered_Attribute_Query_Handler_With_Cancellation_Token);
+
+                var result = await dispatcher.DispatchAsync<QuerySomethingWithDelay, string>(new QuerySomethingWithDelay(data, 500), cts.Token);
+
+                Assert.Equal(data, result);
+            }
+
+            [Fact]
+            public async Task Should_Allow_Registered_Query_Handlers_In_Container_With_Non_Reference_Type_Query_Results()
+            {
+                var queryHandler = new TestQueryHandler(_testOutputHelper);
+                var container = new Container();
+                container.Register<IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>>(() => queryHandler, Lifestyle.Singleton);
+
+                var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                var dispatcher = new QueryDispatcher(resolver);
+
+                var result = await dispatcher.DispatchAsync<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(1973));
 
                 Assert.Equal(1973, result);
             }
+
+            [Fact]
+            public Task Should_Throw_When_No_Registered_Query_Handler_In_Container_Is_Found()
+            {
+                return Assert.ThrowsAsync<QueryNotHandledException>(async () =>
+                {
+                    var container = new Container();
+                    var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                    var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                    var dispatcher = new QueryDispatcher(resolver);
+                    
+                    const string data = nameof(Should_Throw_When_No_Registered_Attribute_Query_Handler_Is_Found);
+
+                    try
+                    {
+                        var result = await dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething((string)data));
+                    }
+                    catch (Exception ex)
+                    {
+                        _testOutputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Container Registration
 
             [Fact]
             public Task Should_Propagate_Exception_From_Query_Handler()
             {
                 return Assert.ThrowsAnyAsync<TestQueryHandlerException>(async () =>
                 {
+                    var queryHandler = new TestQueryHandler(_testOutputHelper);
                     var registration = new QueryHandlerRegistration();
-                    registration.Register(() => (IQueryAsyncHandler<QuerySomethingWithException, string>)new TestQueryHandler(_testOutputHelper));
+                    registration.Register(() => (IQueryAsyncHandler<QuerySomethingWithException, string>)queryHandler);
 
                     var dispatcher = new QueryDispatcher(registration);
 
@@ -137,13 +349,14 @@ namespace Xer.Cqrs.Tests.Queries
             {
                 return Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                 {
+                    var queryHandler = new TestQueryHandler(_testOutputHelper);
                     var registration = new QueryHandlerRegistration();
-                    registration.Register(() => (IQueryAsyncHandler<QuerySomethingAsyncWithDelay, string>)new TestQueryHandler(_testOutputHelper));
+                    registration.Register(() => (IQueryAsyncHandler<QuerySomethingWithDelay, string>)queryHandler);
 
                     var cts = new CancellationTokenSource();
 
                     var dispatcher = new QueryDispatcher(registration);
-                    Task task = dispatcher.DispatchAsync<QuerySomethingAsyncWithDelay, string>(new QuerySomethingAsyncWithDelay("This will be cancelled", 3000), cts.Token);
+                    Task task = dispatcher.DispatchAsync<QuerySomethingWithDelay, string>(new QuerySomethingWithDelay("This will be cancelled", 3000), cts.Token);
 
                     cts.Cancel();
 
@@ -152,28 +365,6 @@ namespace Xer.Cqrs.Tests.Queries
                         await task;
                     }
                     catch(Exception ex)
-                    {
-                        _testOutputHelper.WriteLine(ex.ToString());
-                        throw;
-                    }
-                });
-            }
-            
-            [Fact]
-            public Task Should_Throw_When_No_Registered_Query_Handler_Is_Found()
-            {
-                return Assert.ThrowsAsync<QueryNotHandledException>(async () =>
-                {
-                    var registration = new QueryHandlerRegistration();
-                    var dispatcher = new QueryDispatcher(registration);
-
-                    const string data = nameof(Should_Throw_When_No_Registered_Query_Handler_Is_Found);
-                    
-                    try
-                    {
-                        var result = await dispatcher.DispatchAsync<QuerySomethingAsync, string>(new QuerySomethingAsync(data));
-                    }
-                    catch (Exception ex)
                     {
                         _testOutputHelper.WriteLine(ex.ToString());
                         throw;
@@ -195,26 +386,30 @@ namespace Xer.Cqrs.Tests.Queries
                 _testOutputHelper = testOutputHelper;
             }
 
+            #region Basic Registration
+
             [Fact]
             public void Should_Invoke_Registered_Query_Handler()
             {
+                var queryHandler = new TestQueryHandler(_testOutputHelper);
                 var registration = new QueryHandlerRegistration();
-                registration.Register(() => (IQueryHandler<QuerySomething, string>)new TestQueryHandler(_testOutputHelper));
+                registration.Register(() => (IQueryAsyncHandler<QuerySomething, string>)queryHandler);
 
                 const string data = nameof(Should_Invoke_Registered_Query_Handler);
 
                 var dispatcher = new QueryDispatcher(registration);
                 var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data));
 
-                Assert.Equal(data, result);
+                Assert.Equal(result, data);
             }
 
             [Fact]
             public void Should_Invoke_Registered_Query_Handler_When_Dispatched_Multiple_Times()
             {
+                var queryHandler = new TestQueryHandler(_testOutputHelper);
                 var registration = new QueryHandlerRegistration();
-                registration.Register(() => (IQueryHandler<QuerySomething, string>)new TestQueryHandler(_testOutputHelper));
-                registration.Register(() => (IQueryHandler<QuerySomethingNonReferenceType, int>)new TestQueryHandler(_testOutputHelper));
+                registration.Register(() => (IQueryAsyncHandler<QuerySomething, string>)queryHandler);
+                registration.Register(() => (IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>)new TestQueryHandler(_testOutputHelper));
 
                 const string data1 = "Test message 1.";
                 const string data2 = "Test message 2.";
@@ -223,20 +418,133 @@ namespace Xer.Cqrs.Tests.Queries
                 var dispatcher = new QueryDispatcher(registration);
                 var result1 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data1));
                 var result2 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data2));
-                var result3 = dispatcher.Dispatch<QuerySomethingNonReferenceType, int>(new QuerySomethingNonReferenceType(data3));
+                var result3 = dispatcher.Dispatch<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(data3));
 
+                Assert.Equal(data1, result1);
+                Assert.Equal(data2, result2);
+                Assert.Equal(data3, result3);
+            }
+            
+            [Fact]
+            public void Should_Allow_Registered_Query_Handlers_With_Non_Reference_Type_Query_Results()
+            {
+                var queryHandler = new TestQueryHandler(_testOutputHelper);
+                var registration = new QueryHandlerRegistration();
+                registration.Register(() => (IQueryHandler<QuerySomethingWithNonReferenceTypeResult, int>)queryHandler);
+
+                var dispatcher = new QueryDispatcher(registration);
+                var result = dispatcher.Dispatch<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(1973));
+
+                Assert.Equal(1973, result);
+            }
+
+            [Fact]
+            public void Should_Throw_When_No_Registered_Query_Handler_Is_Found()
+            {
+                Assert.Throws<QueryNotHandledException>(() =>
+                {
+                    var registration = new QueryHandlerRegistration();
+                    var dispatcher = new QueryDispatcher(registration);
+
+                    const string data = nameof(Should_Throw_When_No_Registered_Query_Handler_Is_Found);
+
+                    try
+                    {
+                        var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data));
+                    }
+                    catch (Exception ex)
+                    {
+                        _testOutputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Basic Registration
+
+            #region Attribute Registration
+
+            [Fact]
+            public void Should_Invoke_Registered_Attribute_Query_Handler()
+            {
+                var queryHandler = new TestAttributedQueryHandler(_testOutputHelper);
+                var registration = new QueryHandlerAttributeRegistration();
+                registration.Register(() => queryHandler);
+
+                const string data = nameof(Should_Invoke_Registered_Attribute_Query_Handler);
+
+                var dispatcher = new QueryDispatcher(registration);
+                var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data));
+
+                Assert.Equal(result, data);
+            }
+
+            [Fact]
+            public void Should_Invoke_Registered_Attribute_Query_Handler_When_Dispatched_Multiple_Times()
+            {
+                var queryHandler = new TestAttributedQueryHandler(_testOutputHelper);
+                var registration = new QueryHandlerAttributeRegistration();
+                registration.Register(() => queryHandler);
+
+                const string data1 = "Test message 1.";
+                const string data2 = "Test message 2.";
+                const int data3 = 1;
+
+                var dispatcher = new QueryDispatcher(registration);
+                var result1 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data1));
+                var result2 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data2));
+                var result3 = dispatcher.Dispatch<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(data3));
+                
                 Assert.Equal(data1, result1);
                 Assert.Equal(data2, result2);
                 Assert.Equal(data3, result3);
             }
 
             [Fact]
+            public void Should_Allow_Attribute_Query_Handlers_With_Non_Reference_Type_Query_Results()
+            {
+                var queryHandler = new TestAttributedQueryHandler(_testOutputHelper);
+                var registration = new QueryHandlerAttributeRegistration();
+                registration.Register(() => queryHandler);
+
+                var dispatcher = new QueryDispatcher(registration);
+                var result = dispatcher.Dispatch<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(1973));
+
+                Assert.Equal(1973, result);
+            }
+
+            [Fact]
+            public void Should_Throw_When_No_Registered_Attribute_Query_Handler_Is_Found()
+            {
+                Assert.Throws<QueryNotHandledException>(() =>
+                {
+                    var registration = new QueryHandlerAttributeRegistration();
+                    var dispatcher = new QueryDispatcher(registration);
+
+                    const string data = nameof(Should_Throw_When_No_Registered_Attribute_Query_Handler_Is_Found);
+
+                    try
+                    {
+                        var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data));
+                    }
+                    catch (Exception ex)
+                    {
+                        _testOutputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Attribute Registration
+
+            #region Container Registration
+
+            [Fact]
             public void Should_Invoke_Registered_Query_Handler_In_Container()
             {
                 var queryHandler = new TestQueryHandler(_testOutputHelper);
-
                 var container = new Container();
-                container.Register<IQueryHandler<QuerySomething, string>>(() => queryHandler, Lifestyle.Singleton);
+                container.Register<IQueryAsyncHandler<QuerySomething, string>>(() => queryHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
                 var resolver = new ContainerQueryHandlerResolver(containerAdapter);
@@ -250,21 +558,77 @@ namespace Xer.Cqrs.Tests.Queries
             }
 
             [Fact]
-            public void Should_Allow_Non_Reference_Type_Return_Types()
+            public void Should_Invoke_Registered_Query_Handler_In_Container_When_Dispatched_Multiple_Times()
             {
-                var registration = new QueryHandlerRegistration();
-                registration.Register(() => (IQueryHandler<QuerySomethingNonReferenceType, int>)new TestQueryHandler(_testOutputHelper));
+                var queryHandler = new TestQueryHandler(_testOutputHelper);
+                var container = new Container();
+                container.Register<IQueryAsyncHandler<QuerySomething, string>>(() => queryHandler, Lifestyle.Singleton);
+                container.Register<IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>>(() => queryHandler, Lifestyle.Singleton);
 
-                var dispatcher = new QueryDispatcher(registration);
-                var result = dispatcher.Dispatch<QuerySomethingNonReferenceType, int>(new QuerySomethingNonReferenceType(1973));
+                var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+
+                const string data1 = "Test message 1.";
+                const string data2 = "Test message 2.";
+                const int data3 = 1;
+
+                var dispatcher = new QueryDispatcher(resolver);
+                var result1 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data1));
+                var result2 = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data2));
+                var result3 = dispatcher.Dispatch<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(data3));
+                
+                Assert.Equal(data1, result1);
+                Assert.Equal(data2, result2);
+                Assert.Equal(data3, result3);
+            }
+
+            [Fact]
+            public void Should_Allow_Registered_Query_Handlers_In_Container_With_Non_Reference_Type_Query_Results()
+            {
+                var queryHandler = new TestQueryHandler(_testOutputHelper);
+                var container = new Container();
+                container.Register<IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>>(() => queryHandler, Lifestyle.Singleton);
+
+                var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                var dispatcher = new QueryDispatcher(resolver);
+
+                var result = dispatcher.Dispatch<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(1973));
 
                 Assert.Equal(1973, result);
             }
 
             [Fact]
+            public void Should_Throw_When_No_Registered_Query_Handler_In_Container_Is_Found()
+            {
+                Assert.Throws<QueryNotHandledException>(() =>
+                {
+                    var queryHandler = new TestQueryHandler(_testOutputHelper);
+                    var container = new Container();
+                    var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                    var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                    var dispatcher = new QueryDispatcher(resolver);
+
+                    const string data = nameof(Should_Throw_When_No_Registered_Attribute_Query_Handler_Is_Found);
+
+                    try
+                    {
+                        var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data));
+                    }
+                    catch (Exception ex)
+                    {
+                        _testOutputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            #endregion Container Registration
+
+            [Fact]
             public void Should_Propagate_Exception_From_Query_Handler()
             {
-                Assert.ThrowsAny<TestQueryHandlerException>(() =>
+                Assert.Throws<TestQueryHandlerException>(() =>
                 {
                     var registration = new QueryHandlerRegistration();
                     registration.Register(() => (IQueryHandler<QuerySomethingWithException, string>)new TestQueryHandler(_testOutputHelper));
@@ -274,28 +638,6 @@ namespace Xer.Cqrs.Tests.Queries
                     try
                     {
                         dispatcher.Dispatch<QuerySomethingWithException, string>(new QuerySomethingWithException("This will cause an exception."));
-                    }
-                    catch (Exception ex)
-                    {
-                        _testOutputHelper.WriteLine(ex.ToString());
-                        throw;
-                    }
-                });
-            }
-            
-            [Fact]
-            public void Should_Throw_When_No_Registered_Query_Handler_Is_Found()
-            {
-                Assert.Throws<QueryNotHandledException>(() =>
-                {
-                    var registration = new QueryHandlerRegistration();
-                    var dispatcher = new QueryDispatcher(registration);
-
-                    const string data = nameof(Should_Throw_When_No_Registered_Query_Handler_Is_Found);
-
-                    try
-                    { 
-                        var result = dispatcher.Dispatch<QuerySomething, string>(new QuerySomething(data));
                     }
                     catch (Exception ex)
                     {

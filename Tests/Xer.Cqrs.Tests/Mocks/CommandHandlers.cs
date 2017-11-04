@@ -43,14 +43,11 @@ namespace Xer.Cqrs.Tests.Mocks
 
     public class TestCommandHandler : TestCommandHandlerBase,
                                       ICommandAsyncHandler<DoSomethingCommand>,
-                                      ICommandAsyncHandler<DoSomethingAsyncCommand>,
-                                      ICommandAsyncHandler<DoSomethingAsyncWithCancellationCommand>,
-                                      ICommandAsyncHandler<DoSomethingAsyncForSpecifiedDurationCommand>,
+                                      ICommandAsyncHandler<DoSomethingWithCancellationCommand>,
+                                      ICommandAsyncHandler<DoSomethingForSpecifiedDurationCommand>,
                                       ICommandAsyncHandler<ThrowExceptionCommand>,
                                       ICommandHandler<DoSomethingCommand>,
-                                      ICommandHandler<DoSomethingAsyncCommand>,
-                                      ICommandHandler<DoSomethingAsyncWithCancellationCommand>,
-                                      ICommandHandler<DoSomethingAsyncForSpecifiedDurationCommand>,
+                                      ICommandHandler<DoSomethingForSpecifiedDurationCommand>,
                                       ICommandHandler<ThrowExceptionCommand>
     {
         public TestCommandHandler(ITestOutputHelper outputHelper)
@@ -63,19 +60,12 @@ namespace Xer.Cqrs.Tests.Mocks
             base.Handle(command);
         }
 
-        public void Handle(DoSomethingAsyncCommand command)
+        public void Handle(DoSomethingForSpecifiedDurationCommand command)
         {
-            base.Handle(command);
-        }
-
-        public void Handle(DoSomethingAsyncWithCancellationCommand command)
-        {
-            base.Handle(command);
-        }
-
-        public void Handle(DoSomethingAsyncForSpecifiedDurationCommand command)
-        {
-            base.Handle(command);
+            Task.Delay(command.DurationInMilliSeconds).ContinueWith(t =>
+            {
+                base.Handle(command);
+            });
         }
 
         public void Handle(ThrowExceptionCommand command)
@@ -90,22 +80,21 @@ namespace Xer.Cqrs.Tests.Mocks
             return Task.CompletedTask;
         }
 
-        public Task HandleAsync(DoSomethingAsyncCommand command, CancellationToken cancellationToken = default(CancellationToken))
+        public Task HandleAsync(DoSomethingWithCancellationCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if(cancellationToken == null)
+            {
+                throw new TestCommandHandlerException("Cancellation token is null. Please check registration.");
+            }
+
             base.HandleAsync(command);
             return Task.CompletedTask;
         }
 
-        public Task HandleAsync(DoSomethingAsyncWithCancellationCommand command, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task HandleAsync(DoSomethingForSpecifiedDurationCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
+            await Task.Delay(command.DurationInMilliSeconds, cancellationToken);
             base.HandleAsync(command);
-            return Task.CompletedTask;
-        }
-
-        public Task HandleAsync(DoSomethingAsyncForSpecifiedDurationCommand command, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            base.HandleAsync(command);
-            return Task.CompletedTask;
         }
 
         public Task HandleAsync(ThrowExceptionCommand command, CancellationToken cancellationToken = default(CancellationToken))
@@ -141,14 +130,7 @@ namespace Xer.Cqrs.Tests.Mocks
         }
 
         [CommandHandler]
-        public Task DoSomethingAsync(DoSomethingAsyncCommand command)
-        {
-            base.HandleAsync(command);
-            return Task.CompletedTask;
-        }
-
-        [CommandHandler]
-        public Task DoSomethingAsync(DoSomethingAsyncWithCancellationCommand command, CancellationToken ctx)
+        public Task DoSomethingAsync(DoSomethingWithCancellationCommand command, CancellationToken ctx)
         {
             if(ctx == null)
             {
@@ -160,7 +142,7 @@ namespace Xer.Cqrs.Tests.Mocks
         }
 
         [CommandHandler]
-        public async Task DoSomethingAsync(DoSomethingAsyncForSpecifiedDurationCommand command, CancellationToken ctx)
+        public async Task DoSomethingAsync(DoSomethingForSpecifiedDurationCommand command, CancellationToken ctx)
         {
             await Task.Delay(command.DurationInMilliSeconds, ctx);
 
@@ -176,11 +158,10 @@ namespace Xer.Cqrs.Tests.Mocks
         }
 
         [CommandHandler]
-        public async void DoAsyncVoidHandlerCommand(DoAsyncVoidHandlerCommand command)
+        public async void DoSomething(DoSomethingCommand command)
         {
-            HandleAsync(command);
-
-            await Task.Yield();
+            // Method signature is not allowed.
+            await Task.Delay(1);
         }
     }
 

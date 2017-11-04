@@ -27,20 +27,20 @@ namespace Xer.Cqrs.Tests.Queries.Registrations
                 var queryHandler = new TestQueryHandler(_testOutputHelper);
 
                 var container = new Container();
-                container.Register<IQueryAsyncHandler<QuerySomethingAsync, string>>(() => queryHandler, Lifestyle.Singleton);
+                container.Register<IQueryAsyncHandler<QuerySomething, string>>(() => queryHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
                 var resolver = new ContainerQueryHandlerResolver(containerAdapter);
 
                 const string data = nameof(Should_Store_Registered_Query_Handler_In_Container);
 
-                QueryHandlerDelegate<string> queryHandlerDelegate = resolver.ResolveQueryHandler<QuerySomethingAsync, string>();
+                QueryHandlerDelegate<string> queryHandlerDelegate = resolver.ResolveQueryHandler<QuerySomething, string>();
 
                 Assert.NotNull(queryHandlerDelegate);
 
-                var registeredQueryHandler = container.GetInstance<IQueryAsyncHandler<QuerySomethingAsync, string>>();
+                var registeredQueryHandler = container.GetInstance<IQueryAsyncHandler<QuerySomething, string>>();
 
-                var query = new QuerySomethingAsync(data);
+                var query = new QuerySomething(data);
 
                 var result1 = await queryHandlerDelegate.Invoke(query);
                 var result2 = await registeredQueryHandler.HandleAsync(query);

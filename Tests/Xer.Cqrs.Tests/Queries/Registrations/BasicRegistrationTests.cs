@@ -25,11 +25,11 @@ namespace Xer.Cqrs.Tests.Queries.Registrations
             {
                 var queryHandler = new TestQueryHandler(_testOutputHelper);
                 var registration = new QueryHandlerRegistration();
-                registration.Register(() => (IQueryAsyncHandler<QuerySomethingAsync, string>)queryHandler);
+                registration.Register(() => (IQueryAsyncHandler<QuerySomething, string>)queryHandler);
 
-                QueryHandlerDelegate<string> queryHandlerDelegate = registration.ResolveQueryHandler<QuerySomethingAsync, string>();
+                QueryHandlerDelegate<string> queryHandlerDelegate = registration.ResolveQueryHandler<QuerySomething, string>();
 
-                var query = new QuerySomethingAsync(nameof(Should_Store_All_Query_Handlers));
+                var query = new QuerySomething(nameof(Should_Store_All_Query_Handlers));
 
                 var result1 = await queryHandler.HandleAsync(query);
 

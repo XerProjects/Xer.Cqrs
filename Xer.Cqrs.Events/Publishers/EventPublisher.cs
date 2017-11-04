@@ -54,33 +54,28 @@ namespace Xer.Cqrs.Events.Publishers
             }
 
             IEnumerable<EventHandlerDelegate> eventHandlerDelegates = resolveEventHandlerDelegatesFor(@event);
-            
-            ICollection<Task> handleTasks = eventHandlerDelegates.Select(eventHandler =>
+
+            IEnumerable<Task> handleTasks = eventHandlerDelegates.Select(eventHandler =>
             {
                 return ExecuteEventHandlerAsync(eventHandler, @event, cancellationToken);
-            }).ToList();
+            });
 
-            while (handleTasks.Count > 0)
+            // Execute all tasks and return an enumerable which contains tasks ordered by their completion.
+            foreach(Task completedTask in TaskUtility.OrderByCompletion(handleTasks))
             {
-                Task completedTask = await Task.WhenAny(handleTasks).ConfigureAwait(false);
-
                 try
                 {
                     // Await to handle any exceptions that might have occured.
                     await completedTask;
                 }
-                catch(OperationCanceledException)
+                catch (OperationCanceledException)
                 {
                     // Propagate cancellation.
                     throw;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     OnError?.Invoke(@event, ex);
-                }
-                finally
-                {
-                    handleTasks.Remove(completedTask);
                 }
             }
         }
@@ -98,9 +93,12 @@ namespace Xer.Cqrs.Events.Publishers
                 throw new ArgumentNullException(nameof(events));
             }
 
-            ICollection<Task> publishTasks = events.Select(e => PublishAsync(e, cancellationToken)).ToList();
+            IEnumerable<Task> publishTasks = events.Select(e => PublishAsync(e, cancellationToken));
+            
+            // Execute all tasks and return an enumerable which contains tasks ordered by their completion.
+            IEnumerable<Task> interleavingTasks = TaskUtility.OrderByCompletion(publishTasks);
 
-            return Task.WhenAll(publishTasks);
+            return Task.WhenAll(interleavingTasks);
         }
 
         #endregion IEventPublisher Implementations

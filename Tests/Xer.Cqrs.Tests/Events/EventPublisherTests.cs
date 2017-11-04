@@ -39,12 +39,12 @@ namespace Xer.Cqrs.Tests.Events
                 var handler3 = new TestEventHandler3(_testOutputHelper);
 
                 var registration = new EventHandlerRegistration();
-                registration.Register<TestEvent1>(() => asyncHandler1);
-                registration.Register<TestEvent1>(() => asyncHandler2);
-                registration.Register<TestEvent1>(() => asyncHandler3);
                 registration.Register<TestEvent1>(() => handler1);
                 registration.Register<TestEvent1>(() => handler2);
                 registration.Register<TestEvent1>(() => handler3);
+                registration.Register<TestEvent1>(() => asyncHandler1);
+                registration.Register<TestEvent1>(() => asyncHandler2);
+                registration.Register<TestEvent1>(() => asyncHandler3);
 
                 var publisher = new EventPublisher(registration);
 

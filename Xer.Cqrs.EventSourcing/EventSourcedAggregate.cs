@@ -144,17 +144,6 @@ namespace Xer.Cqrs.EventSourcing
             }
         }
 
-        /// <summary>
-        /// Update current aggregate version to the next expected version and update the updated timestamp.
-        /// </summary>
-        private void UpdateToNextVersion()
-        {
-            Version = NextExpectedVersion;
-
-            // Updated.
-            Updated = DateTime.Now;
-        }
-
         #endregion Protected Methods
 
         #region Functions
@@ -166,6 +155,17 @@ namespace Xer.Cqrs.EventSourcing
         private void MarkAppliedDomainEventForCommit(IDomainEvent domainEvent)
         {
             _uncommittedDomainEvents.Enqueue(domainEvent);
+        }
+
+        /// <summary>
+        /// Update current aggregate version to the next expected version and update the updated timestamp.
+        /// </summary>
+        private void UpdateToNextVersion()
+        {
+            Version = NextExpectedVersion;
+
+            // Updated.
+            Updated = DateTime.Now;
         }
 
         #endregion Functions

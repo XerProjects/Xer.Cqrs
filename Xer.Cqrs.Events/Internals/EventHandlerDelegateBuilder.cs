@@ -34,7 +34,8 @@ namespace Xer.Cqrs.Events
                     throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), c.GetType());
                 }
 
-                // Yield so the sync handler can execute asynchronously.
+                // Yield so the sync handler will be scheduled to execute asynchronously.
+                // This will allow other handlers to start execution.
                 await Task.Yield();
                 eventHandler.Handle(@event);
             });
@@ -55,13 +56,8 @@ namespace Xer.Cqrs.Events
                     throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), e.GetType());
                 }
 
-                IEventAsyncHandler<TEvent> instance;
-
-                if (!TryRetrieveInstanceFromFactory(eventHandlerFactory, out instance))
-                {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IEventAsyncHandler<TEvent>>();
-                }
-
+                IEventAsyncHandler<TEvent> instance = EnsureInstanceFromFactory(eventHandlerFactory);
+                
                 await instance.HandleAsync(@event, ct).ConfigureAwait(false);
             });
         }
@@ -77,14 +73,10 @@ namespace Xer.Cqrs.Events
                     throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), e.GetType());
                 }
 
-                IEventHandler<TEvent> instance;
+                IEventHandler<TEvent> instance = EnsureInstanceFromFactory(eventHandlerFactory);
 
-                if (!TryRetrieveInstanceFromFactory(eventHandlerFactory, out instance))
-                {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IEventHandler<TEvent>>();
-                }
-
-                // Yield so the sync handler can execute asynchronously.
+                // Yield so the sync handler will be scheduled to execute asynchronously.
+                // This will allow other handlers to start execution.
                 await Task.Yield();
                 instance.Handle(@event);
             });
@@ -106,13 +98,8 @@ namespace Xer.Cqrs.Events
                     throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), e.GetType());
                 }
 
-                TAttributed instance;
-
-                if (!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
-                {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TAttributed>();
-                }
-
+                TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
+                
                 await asyncAction.Invoke(instance, @event).ConfigureAwait(false);
             });
         }
@@ -129,13 +116,8 @@ namespace Xer.Cqrs.Events
                     throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), e.GetType());
                 }
 
-                TAttributed instance;
-
-                if (!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
-                {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TAttributed>();
-                }
-
+                TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
+                
                 await cancellableAsyncAction.Invoke(instance, @event, ct).ConfigureAwait(false);
             });
         }
@@ -152,14 +134,10 @@ namespace Xer.Cqrs.Events
                     throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), e.GetType());
                 }
 
-                TAttributed instance;
+                TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
 
-                if (!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
-                {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TAttributed>();
-                }
-
-                // Yield so the sync handler can execute asynchronously.
+                // Yield so the sync handler will be scheduled to execute asynchronously.
+                // This will allow other handlers to start execution.
                 await Task.Yield();
                 action.Invoke(instance, @event);
             });
@@ -169,25 +147,23 @@ namespace Xer.Cqrs.Events
 
         #region Functions
 
-        private static bool TryRetrieveInstanceFromFactory<TInstance>(Func<TInstance> factory, out TInstance instance)
+        private static TInstance EnsureInstanceFromFactory<TInstance>(Func<TInstance> factory)
         {
-            instance = default(TInstance);
-
             try
             {
-                instance = factory.Invoke();
+                TInstance instance = factory.Invoke();
 
                 if (instance == null)
                 {
-                    return false;
+                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>();
                 }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
 
-            return true;
+                return instance;
+            }
+            catch (Exception ex)
+            {
+                throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(ex);
+            }
         }
 
         #endregion Functions

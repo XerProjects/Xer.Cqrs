@@ -61,13 +61,8 @@ namespace Xer.Cqrs.QueryStack
                     throw ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType());
                 }
 
-                IQueryAsyncHandler<TQuery, TResult> instance;
-
-                if (!TryRetrieveInstanceFromFactory(queryHandlerFactory, out instance))
-                {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IQueryAsyncHandler<TQuery, TResult>>();
-                }
-
+                IQueryAsyncHandler<TQuery, TResult> instance = EnsureInstanceFromFactory(queryHandlerFactory);
+                
                 return await instance.HandleAsync(query, ct).ConfigureAwait(false);
             });
         }
@@ -85,9 +80,13 @@ namespace Xer.Cqrs.QueryStack
                 
                 IQueryHandler<TQuery, TResult> instance;
 
-                if (!TryRetrieveInstanceFromFactory(queryHandlerFactory, out instance))
+                try
                 {
-                    return TaskUtility.FromException<TResult>(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IQueryHandler<TQuery, TResult>>());
+                    instance = EnsureInstanceFromFactory(queryHandlerFactory);
+                }
+                catch (Exception ex)
+                {
+                    return TaskUtility.FromException<TResult>(ex);
                 }
 
                 try
@@ -118,13 +117,8 @@ namespace Xer.Cqrs.QueryStack
                     throw ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType());
                 }
 
-                TAttributed instance;
-
-                if (!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
-                {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IQueryHandler<TQuery, TResult>>();
-                }
-
+                TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
+                
                 return await asyncFunc.Invoke(instance, query).ConfigureAwait(false);
             });
         }
@@ -141,13 +135,8 @@ namespace Xer.Cqrs.QueryStack
                     throw ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType());
                 }
 
-                TAttributed instance;
-
-                if (!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
-                {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IQueryHandler<TQuery, TResult>>();
-                }
-
+                TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
+                
                 return await asyncCancellableFunc.Invoke(instance, query, ct).ConfigureAwait(false);
             });
         }
@@ -166,9 +155,13 @@ namespace Xer.Cqrs.QueryStack
 
                 TAttributed instance;
 
-                if (!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
+                try
                 {
-                    return TaskUtility.FromException<TResult>(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<IQueryHandler<TQuery, TResult>>());
+                    instance = EnsureInstanceFromFactory(attributedObjectFactory);
+                }
+                catch(Exception ex)
+                {
+                    return TaskUtility.FromException<TResult>(ex);
                 }
 
                 try
@@ -187,25 +180,23 @@ namespace Xer.Cqrs.QueryStack
 
         #region Functions
 
-        private static bool TryRetrieveInstanceFromFactory<TInstance>(Func<TInstance> factory, out TInstance instance)
+        private static TInstance EnsureInstanceFromFactory<TInstance>(Func<TInstance> factory)
         {
-            instance = default(TInstance);
-
             try
             {
-                instance = factory.Invoke();
+                TInstance instance = factory.Invoke();
 
                 if (instance == null)
                 {
-                    return false;
+                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>();
                 }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
 
-            return true;
+                return instance;
+            }
+            catch (Exception ex)
+            {
+                throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(ex);
+            }
         }
 
         #endregion Functions

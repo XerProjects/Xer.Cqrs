@@ -61,13 +61,8 @@ namespace Xer.Cqrs.CommandStack
                     throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType());
                 }
 
-                ICommandAsyncHandler<TCommand> instance;
-
-                if (!TryRetrieveInstanceFromFactory(commandHandlerFactory, out instance))
-                {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<ICommandAsyncHandler<TCommand>>();
-                }
-
+                ICommandAsyncHandler<TCommand> instance = EnsureInstanceFromFactory(commandHandlerFactory);
+                
                 await instance.HandleAsync(command, ct).ConfigureAwait(false);
             });
         }
@@ -85,9 +80,13 @@ namespace Xer.Cqrs.CommandStack
                 
                 ICommandHandler<TCommand> instance;
 
-                if (!TryRetrieveInstanceFromFactory(commandHandlerFactory, out instance))
+                try
                 {
-                    return TaskUtility.FromException(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<ICommandHandler<TCommand>>());
+                    instance = EnsureInstanceFromFactory(commandHandlerFactory);
+                }
+                catch (Exception ex)
+                {
+                    return TaskUtility.FromException(ex);
                 }
 
                 try
@@ -118,13 +117,8 @@ namespace Xer.Cqrs.CommandStack
                     throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType());
                 }
 
-                TAttributed instance;
-
-                if (!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
-                {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TAttributed>();
-                }
-
+                TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
+                
                 await asyncAction.Invoke(instance, command).ConfigureAwait(false);
             });
         }
@@ -141,12 +135,7 @@ namespace Xer.Cqrs.CommandStack
                     throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType());
                 }
 
-                TAttributed instance;
-
-                if (!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
-                {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TAttributed>();
-                }
+                TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
 
                 await cancellableAsyncAction.Invoke(instance, command, ct).ConfigureAwait(false);
             });
@@ -165,10 +154,14 @@ namespace Xer.Cqrs.CommandStack
                 }
 
                 TAttributed instance;
-                
-                if(!TryRetrieveInstanceFromFactory(attributedObjectFactory, out instance))
+
+                try
                 {
-                    return TaskUtility.FromException(ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TAttributed>());
+                    instance = EnsureInstanceFromFactory(attributedObjectFactory);
+                }
+                catch(Exception ex)
+                {
+                    return TaskUtility.FromException(ex);
                 }
 
                 try
@@ -187,25 +180,23 @@ namespace Xer.Cqrs.CommandStack
 
         #region Functions
 
-        private static bool TryRetrieveInstanceFromFactory<TInstance>(Func<TInstance> factory, out TInstance instance)
+        private static TInstance EnsureInstanceFromFactory<TInstance>(Func<TInstance> factory)
         {
-            instance = default(TInstance);
-
             try
             {
-                instance = factory.Invoke();
+                TInstance instance = factory.Invoke();
 
                 if (instance == null)
                 {
-                    return false;
+                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>();
                 }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
 
-            return true;
+                return instance;
+            }
+            catch (Exception ex)
+            {
+                throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(ex);
+            }
         }
 
         #endregion Functions

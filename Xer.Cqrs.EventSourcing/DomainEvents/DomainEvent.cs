@@ -5,12 +5,12 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
     public abstract class DomainEvent : IDomainEvent
     {
         /// <summary>
-        /// Aggregate Id.
+        /// Id of the aggregate.
         /// </summary>
         public Guid AggregateId { get; }
 
         /// <summary>
-        /// Aggregate version after this event has been successfully applied.
+        /// Expected version of the aggregate after this event has been successfully applied.
         /// </summary>
         public int AggregateVersion { get; }
 

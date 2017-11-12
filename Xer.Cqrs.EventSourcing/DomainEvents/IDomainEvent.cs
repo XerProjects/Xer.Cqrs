@@ -9,14 +9,14 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
         /// Id of the aggregate.
         /// </summary>
         Guid AggregateId { get; }
-
+        
         /// <summary>
-        /// Version of the aggregate.
+        /// Expected version of the aggregate after this event has been successfully applied.
         /// </summary>
         int AggregateVersion { get; }
 
         /// <summary>
-        /// Time stamp.
+        /// Timestamp.
         /// </summary>
         DateTime TimeStamp { get; }
     }

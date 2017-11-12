@@ -22,6 +22,12 @@ namespace Xer.Cqrs.EventSourcing
         /// </summary>
         public int Version { get; private set; }
 
+
+        /// <summary>
+        /// Next expected version of this aggregate.
+        /// </summary>
+        protected virtual int NextExpectedVersion => Version + 1;
+
         #endregion Properties
 
         #region Constructors
@@ -123,11 +129,8 @@ namespace Xer.Cqrs.EventSourcing
                 domainEventApplier.Invoke(domainEvent);
 
                 // Bump up version.
-                Version++;
-
-                // Updated.
-                Updated = DateTime.Now;
-
+                UpdateToNextVersion();
+                
                 if (markDomainEventForCommit)
                 {
                     MarkAppliedDomainEventForCommit(domainEvent);
@@ -139,6 +142,17 @@ namespace Xer.Cqrs.EventSourcing
                     $"Exception occured while trying to apply domain event of type {domainEvent.GetType().Name}.",
                     ex);
             }
+        }
+
+        /// <summary>
+        /// Update current aggregate version to the next expected version and update the updated timestamp.
+        /// </summary>
+        private void UpdateToNextVersion()
+        {
+            Version = NextExpectedVersion;
+
+            // Updated.
+            Updated = DateTime.Now;
         }
 
         #endregion Protected Methods

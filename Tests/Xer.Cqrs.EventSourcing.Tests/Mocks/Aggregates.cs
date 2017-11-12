@@ -22,17 +22,17 @@ namespace Xer.Cqrs.EventSourcing.Tests.Mocks
 
         public void ExecuteSomeOperation(string newData)
         {
-            ApplyChange(new TestAggregateOperationExecuted(Id, Version + 1, newData));
+            ApplyChange(new TestAggregateOperationExecuted(Id, NextExpectedVersion, newData));
         }
 
         public void ThrowExceptionOnEventHandler()
         {
-            ApplyChange(new TestAggregateOperationExecuted(Id, Version + 1, TestAggregateOperationExecuted.Operations.ThrowException));
+            ApplyChange(new TestAggregateOperationExecuted(Id, NextExpectedVersion, TestAggregateOperationExecuted.Operations.ThrowException));
         }
 
         public void DelayOnEventHandler(int milliSeconds)
         {
-            ApplyChange(new TestAggregateOperationExecuted<int>(Id, Version + 1, TestAggregateOperationExecuted.Operations.Delay, milliSeconds));
+            ApplyChange(new TestAggregateOperationExecuted<int>(Id, NextExpectedVersion, TestAggregateOperationExecuted.Operations.Delay, milliSeconds));
         }
 
         protected override void RegisterDomainEventAppliers(DomainEventApplierRegistration applierRegistration)

@@ -34,6 +34,11 @@ namespace Xer.Cqrs.QueryStack.Dispatchers
         /// <returns>Task which contains the result of the dispatched query. This can be awaited asynchronously.</returns>
         public Task<TResult> DispatchAsync<TQuery, TResult>(TQuery query, CancellationToken cancellationToken = default(CancellationToken)) where TQuery : class, IQuery<TResult>
         {
+            if (query == null)
+            {
+                throw new ArgumentNullException(nameof(query));
+            }
+
             QueryHandlerDelegate<TResult> handleQueryAsyncDelegate = _resolver.ResolveQueryHandler<TQuery, TResult>();
 
             if (handleQueryAsyncDelegate == null)

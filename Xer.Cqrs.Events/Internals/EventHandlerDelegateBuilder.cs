@@ -11,14 +11,9 @@ namespace Xer.Cqrs.Events
         internal static EventHandlerDelegate FromEventHandler<TEvent>(IEventAsyncHandler<TEvent> eventAsyncHandler)
             where TEvent : class, IEvent
         {
-            return new EventHandlerDelegate(async (e, ct) =>
+            return new EventHandlerDelegate(async (inputEvent, ct) =>
             {
-                TEvent @event = e as TEvent;
-                if (@event == null)
-                {
-                    throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), e.GetType());
-                }
-
+                TEvent @event = EnsureValidEvent<TEvent>(inputEvent);
                 await eventAsyncHandler.HandleAsync(@event, ct).ConfigureAwait(false);
             });
         }
@@ -26,13 +21,9 @@ namespace Xer.Cqrs.Events
         internal static EventHandlerDelegate FromEventHandler<TEvent>(IEventHandler<TEvent> eventHandler)
             where TEvent : class, IEvent
         {
-            return new EventHandlerDelegate(async (c, ct) =>
+            return new EventHandlerDelegate(async (inputEvent, ct) =>
             {
-                TEvent @event = c as TEvent;
-                if (@event == null)
-                {
-                    throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), c.GetType());
-                }
+                TEvent @event = EnsureValidEvent<TEvent>(inputEvent);
 
                 // Yield so the sync handler will be scheduled to execute asynchronously.
                 // This will allow other handlers to start execution.
@@ -48,14 +39,9 @@ namespace Xer.Cqrs.Events
         internal static EventHandlerDelegate FromFactory<TEvent>(Func<IEventAsyncHandler<TEvent>> eventHandlerFactory)
             where TEvent : class, IEvent
         {
-            return new EventHandlerDelegate(async (e, ct) =>
+            return new EventHandlerDelegate(async (inputEvent, ct) =>
             {
-                TEvent @event = e as TEvent;
-                if (@event == null)
-                {
-                    throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), e.GetType());
-                }
-
+                TEvent @event = EnsureValidEvent<TEvent>(inputEvent);
                 IEventAsyncHandler<TEvent> instance = EnsureInstanceFromFactory(eventHandlerFactory);
                 
                 await instance.HandleAsync(@event, ct).ConfigureAwait(false);
@@ -65,14 +51,9 @@ namespace Xer.Cqrs.Events
         internal static EventHandlerDelegate FromFactory<TEvent>(Func<IEventHandler<TEvent>> eventHandlerFactory)
             where TEvent : class, IEvent
         {
-            return new EventHandlerDelegate(async (e, ct) =>
+            return new EventHandlerDelegate(async (inputEvent, ct) =>
             {
-                TEvent @event = e as TEvent;
-                if (@event == null)
-                {
-                    throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), e.GetType());
-                }
-
+                TEvent @event = EnsureValidEvent<TEvent>(inputEvent);
                 IEventHandler<TEvent> instance = EnsureInstanceFromFactory(eventHandlerFactory);
 
                 // Yield so the sync handler will be scheduled to execute asynchronously.
@@ -90,14 +71,9 @@ namespace Xer.Cqrs.Events
             where TAttributed : class
             where TEvent : class, IEvent
         {
-            return new EventHandlerDelegate(async (e, ct) =>
+            return new EventHandlerDelegate(async (inputEvent, ct) =>
             {
-                TEvent @event = e as TEvent;
-                if (@event == null)
-                {
-                    throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), e.GetType());
-                }
-
+                TEvent @event = EnsureValidEvent<TEvent>(inputEvent);
                 TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
                 
                 await asyncAction.Invoke(instance, @event).ConfigureAwait(false);
@@ -108,14 +84,9 @@ namespace Xer.Cqrs.Events
             where TAttributed : class
             where TEvent : class, IEvent
         {
-            return new EventHandlerDelegate(async (e, ct) =>
+            return new EventHandlerDelegate(async (inputEvent, ct) =>
             {
-                TEvent @event = e as TEvent;
-                if (@event == null)
-                {
-                    throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), e.GetType());
-                }
-
+                TEvent @event = EnsureValidEvent<TEvent>(inputEvent);
                 TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
                 
                 await cancellableAsyncAction.Invoke(instance, @event, ct).ConfigureAwait(false);
@@ -126,14 +97,9 @@ namespace Xer.Cqrs.Events
             where TAttributed : class
             where TEvent : class, IEvent
         {
-            return new EventHandlerDelegate(async (e, ct) =>
+            return new EventHandlerDelegate(async (inputEvent, ct) =>
             {
-                TEvent @event = e as TEvent;
-                if (@event == null)
-                {
-                    throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), e.GetType());
-                }
-
+                TEvent @event = EnsureValidEvent<TEvent>(inputEvent);
                 TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
 
                 // Yield so the sync handler will be scheduled to execute asynchronously.
@@ -164,6 +130,22 @@ namespace Xer.Cqrs.Events
             {
                 throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(ex);
             }
+        }
+        
+        private static TEvent EnsureValidEvent<TEvent>(IEvent inputEvent) where TEvent : class
+        {
+            if (inputEvent == null)
+            {
+                throw new ArgumentNullException(nameof(inputEvent));
+            }
+
+            TEvent @event = inputEvent as TEvent;
+            if (@event == null)
+            {
+                throw ExceptionBuilder.InvalidEventTypeArgumentException(typeof(TEvent), inputEvent.GetType());
+            }
+
+            return @event;
         }
 
         #endregion Functions

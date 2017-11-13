@@ -96,9 +96,7 @@ namespace Xer.Cqrs.Events.Publishers
             IEnumerable<Task> publishTasks = events.Select(e => PublishAsync(e, cancellationToken));
             
             // Execute all tasks and return an enumerable which contains tasks ordered by their completion.
-            IEnumerable<Task> interleavingTasks = TaskUtility.OrderByCompletion(publishTasks);
-
-            return Task.WhenAll(interleavingTasks);
+            return Task.WhenAll(TaskUtility.OrderByCompletion(publishTasks));
         }
 
         #endregion IEventPublisher Implementations

@@ -11,14 +11,9 @@ namespace Xer.Cqrs.CommandStack
         internal static CommandHandlerDelegate FromCommandHandler<TCommand>(ICommandAsyncHandler<TCommand> commandAsyncHandler)
             where TCommand : class, ICommand
         {
-            return new CommandHandlerDelegate(async (c, ct) =>
+            return new CommandHandlerDelegate(async (inputCommand, ct) =>
             {
-                TCommand command = c as TCommand;
-                if (command == null)
-                {
-                    throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType());
-                }
-
+                TCommand command = EnsureValidCommand<TCommand>(inputCommand);
                 await commandAsyncHandler.HandleAsync(command, ct).ConfigureAwait(false);
             });
         }
@@ -26,12 +21,16 @@ namespace Xer.Cqrs.CommandStack
         internal static CommandHandlerDelegate FromCommandHandler<TCommand>(ICommandHandler<TCommand> commandHandler)
             where TCommand : class, ICommand
         {
-            return new CommandHandlerDelegate((c, ct) =>
+            return new CommandHandlerDelegate((inputCommand, ct) =>
             {
-                TCommand command = c as TCommand;
-                if (command == null)
+                TCommand command;
+                try
                 {
-                    return TaskUtility.FromException(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
+                    command = EnsureValidCommand<TCommand>(inputCommand);
+                }
+                catch (Exception ex)
+                {
+                    return TaskUtility.FromException(ex);
                 }
 
                 try
@@ -53,14 +52,9 @@ namespace Xer.Cqrs.CommandStack
         internal static CommandHandlerDelegate FromFactory<TCommand>(Func<ICommandAsyncHandler<TCommand>> commandHandlerFactory)
             where TCommand : class, ICommand
         {
-            return new CommandHandlerDelegate(async (c, ct) =>
+            return new CommandHandlerDelegate(async (inputCommand, ct) =>
             {
-                TCommand command = c as TCommand;
-                if (command == null)
-                {
-                    throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType());
-                }
-
+                TCommand command = EnsureValidCommand<TCommand>(inputCommand);
                 ICommandAsyncHandler<TCommand> instance = EnsureInstanceFromFactory(commandHandlerFactory);
                 
                 await instance.HandleAsync(command, ct).ConfigureAwait(false);
@@ -70,16 +64,19 @@ namespace Xer.Cqrs.CommandStack
         internal static CommandHandlerDelegate FromFactory<TCommand>(Func<ICommandHandler<TCommand>> commandHandlerFactory)
             where TCommand : class, ICommand
         {
-            return new CommandHandlerDelegate((c, ct) =>
+            return new CommandHandlerDelegate((inputCommand, ct) =>
             {
-                TCommand command = c as TCommand;
-                if (command == null)
+                TCommand command;
+                try
                 {
-                    return TaskUtility.FromException(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
+                    command = EnsureValidCommand<TCommand>(inputCommand);
+                }
+                catch(Exception ex)
+                {
+                    return TaskUtility.FromException(ex);
                 }
                 
                 ICommandHandler<TCommand> instance;
-
                 try
                 {
                     instance = EnsureInstanceFromFactory(commandHandlerFactory);
@@ -109,14 +106,9 @@ namespace Xer.Cqrs.CommandStack
             where TAttributed : class
             where TCommand : class, ICommand
         {
-            return new CommandHandlerDelegate(async (c, ct) =>
+            return new CommandHandlerDelegate(async (inputCommand, ct) =>
             {
-                TCommand command = c as TCommand;
-                if (command == null)
-                {
-                    throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType());
-                }
-
+                TCommand command = EnsureValidCommand<TCommand>(inputCommand);
                 TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
                 
                 await asyncAction.Invoke(instance, command).ConfigureAwait(false);
@@ -127,14 +119,9 @@ namespace Xer.Cqrs.CommandStack
             where TAttributed : class
             where TCommand : class, ICommand
         {
-            return new CommandHandlerDelegate(async (c, ct) =>
+            return new CommandHandlerDelegate(async (inputCommand, ct) =>
             {
-                TCommand command = c as TCommand;
-                if (command == null)
-                {
-                    throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType());
-                }
-
+                TCommand command = EnsureValidCommand<TCommand>(inputCommand);
                 TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
 
                 await cancellableAsyncAction.Invoke(instance, command, ct).ConfigureAwait(false);
@@ -145,16 +132,19 @@ namespace Xer.Cqrs.CommandStack
             where TAttributed : class
             where TCommand : class, ICommand
         {
-            return new CommandHandlerDelegate((c, ct) =>
+            return new CommandHandlerDelegate((inputCommand, ct) =>
             {
-                TCommand command = c as TCommand;
-                if (command == null)
+                TCommand command;
+                try
                 {
-                    return TaskUtility.FromException(ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), c.GetType()));
+                    command = EnsureValidCommand<TCommand>(inputCommand);
+                }
+                catch(Exception ex)
+                {
+                    return TaskUtility.FromException(ex);
                 }
 
                 TAttributed instance;
-
                 try
                 {
                     instance = EnsureInstanceFromFactory(attributedObjectFactory);
@@ -197,6 +187,22 @@ namespace Xer.Cqrs.CommandStack
             {
                 throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(ex);
             }
+        }
+
+        private static TCommand EnsureValidCommand<TCommand>(ICommand inputCommand) where TCommand : class
+        {
+            if (inputCommand == null)
+            {
+                throw new ArgumentNullException(nameof(inputCommand));
+            }
+
+            TCommand command = inputCommand as TCommand;
+            if (command == null)
+            {
+                throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), inputCommand.GetType());
+            }
+
+            return command;
         }
 
         #endregion Functions

@@ -11,14 +11,9 @@ namespace Xer.Cqrs.QueryStack
         internal static QueryHandlerDelegate<TResult> FromQueryHandler<TQuery, TResult>(IQueryAsyncHandler<TQuery, TResult> queryAsyncHandler)
             where TQuery : class, IQuery<TResult>
         {
-            return new QueryHandlerDelegate<TResult>(async (q, ct) =>
+            return new QueryHandlerDelegate<TResult>(async (inputQuery, ct) =>
             {
-                TQuery query = q as TQuery;
-                if (query == null)
-                {
-                    throw ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType());
-                }
-
+                TQuery query = EnsureValidQuery<TQuery, TResult>(inputQuery);
                 return await queryAsyncHandler.HandleAsync(query, ct).ConfigureAwait(false);
             });
         }
@@ -26,12 +21,16 @@ namespace Xer.Cqrs.QueryStack
         internal static QueryHandlerDelegate<TResult> FromQueryHandler<TQuery, TResult>(IQueryHandler<TQuery, TResult> queryHandler)
             where TQuery : class, IQuery<TResult>
         {
-            return new QueryHandlerDelegate<TResult>((q, ct) =>
+            return new QueryHandlerDelegate<TResult>((inputQuery, ct) =>
             {
-                TQuery query = q as TQuery;
-                if (query == null)
+                TQuery query;
+                try
                 {
-                    return TaskUtility.FromException<TResult>(ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType()));
+                    query = EnsureValidQuery<TQuery, TResult>(inputQuery);
+                }
+                catch (Exception ex)
+                {
+                    return TaskUtility.FromException<TResult>(ex);
                 }
 
                 try
@@ -53,16 +52,11 @@ namespace Xer.Cqrs.QueryStack
         internal static QueryHandlerDelegate<TResult> FromFactory<TQuery, TResult>(Func<IQueryAsyncHandler<TQuery, TResult>> queryHandlerFactory)
             where TQuery : class, IQuery<TResult>
         {
-            return new QueryHandlerDelegate<TResult>(async (q, ct) =>
+            return new QueryHandlerDelegate<TResult>(async (inputQuery, ct) =>
             {
-                TQuery query = q as TQuery;
-                if (query == null)
-                {
-                    throw ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType());
-                }
-
+                TQuery query = EnsureValidQuery<TQuery, TResult>(inputQuery);
                 IQueryAsyncHandler<TQuery, TResult> instance = EnsureInstanceFromFactory(queryHandlerFactory);
-                
+
                 return await instance.HandleAsync(query, ct).ConfigureAwait(false);
             });
         }
@@ -70,16 +64,19 @@ namespace Xer.Cqrs.QueryStack
         internal static QueryHandlerDelegate<TResult> FromFactory<TQuery, TResult>(Func<IQueryHandler<TQuery, TResult>> queryHandlerFactory)
             where TQuery : class, IQuery<TResult>
         {
-            return new QueryHandlerDelegate<TResult>((q, ct) =>
+            return new QueryHandlerDelegate<TResult>((inputQuery, ct) =>
             {
-                TQuery query = q as TQuery;
-                if (query == null)
+                TQuery query;
+                try
                 {
-                    return TaskUtility.FromException<TResult>(ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType()));
+                    query = EnsureValidQuery<TQuery, TResult>(inputQuery);
                 }
-                
-                IQueryHandler<TQuery, TResult> instance;
+                catch (Exception ex)
+                {
+                    return TaskUtility.FromException<TResult>(ex);
+                }
 
+                IQueryHandler<TQuery, TResult> instance;
                 try
                 {
                     instance = EnsureInstanceFromFactory(queryHandlerFactory);
@@ -109,14 +106,9 @@ namespace Xer.Cqrs.QueryStack
             where TAttributed : class
             where TQuery : class, IQuery<TResult>
         {
-            return new QueryHandlerDelegate<TResult>(async (q, ct) =>
+            return new QueryHandlerDelegate<TResult>(async (inputQuery, ct) =>
             {
-                TQuery query = q as TQuery;
-                if (query == null)
-                {
-                    throw ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType());
-                }
-
+                TQuery query = EnsureValidQuery<TQuery, TResult>(inputQuery);
                 TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
                 
                 return await asyncFunc.Invoke(instance, query).ConfigureAwait(false);
@@ -127,14 +119,9 @@ namespace Xer.Cqrs.QueryStack
             where TAttributed : class
             where TQuery : class, IQuery<TResult>
         {
-            return new QueryHandlerDelegate<TResult>(async (q, ct) =>
+            return new QueryHandlerDelegate<TResult>(async (inputQuery, ct) =>
             {
-                TQuery query = q as TQuery;
-                if (query == null)
-                {
-                    throw ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType());
-                }
-
+                TQuery query = EnsureValidQuery<TQuery, TResult>(inputQuery);
                 TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
                 
                 return await asyncCancellableFunc.Invoke(instance, query, ct).ConfigureAwait(false);
@@ -145,16 +132,19 @@ namespace Xer.Cqrs.QueryStack
             where TAttributed : class
             where TQuery : class, IQuery<TResult>
         {
-            return new QueryHandlerDelegate<TResult>((q, ct) =>
+            return new QueryHandlerDelegate<TResult>((inputQuery, ct) =>
             {
-                TQuery query = q as TQuery;
-                if (query == null)
+                TQuery query;
+                try
                 {
-                    return TaskUtility.FromException<TResult>(ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), q.GetType()));
+                    query = EnsureValidQuery<TQuery, TResult>(inputQuery);
+                }
+                catch(Exception ex)
+                {
+                    return TaskUtility.FromException<TResult>(ex);
                 }
 
                 TAttributed instance;
-
                 try
                 {
                     instance = EnsureInstanceFromFactory(attributedObjectFactory);
@@ -197,6 +187,22 @@ namespace Xer.Cqrs.QueryStack
             {
                 throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(ex);
             }
+        }
+
+        private static TQuery EnsureValidQuery<TQuery, TResult>(IQuery<TResult> inputQuery) where TQuery : class, IQuery<TResult>
+        {
+            if (inputQuery == null)
+            {
+                throw new ArgumentNullException(nameof(inputQuery));
+            }
+
+            TQuery query = inputQuery as TQuery;
+            if (query == null)
+            {
+                throw ExceptionBuilder.InvalidQueryTypeArgumentException(typeof(TQuery), inputQuery.GetType());
+            }
+
+            return query;
         }
 
         #endregion Functions

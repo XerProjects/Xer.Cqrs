@@ -31,6 +31,11 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
         /// <returns>Task which can be awaited asynchronously.</returns>
         public Task DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken = default(CancellationToken)) where TCommand : class, ICommand
         {
+            if(command == null)
+            {
+                throw new ArgumentNullException(nameof(command));
+            }
+
             CommandHandlerDelegate handleCommandAsyncDelegate = _resolver.ResolveCommandHandler<TCommand>();
 
             if(handleCommandAsyncDelegate == null)

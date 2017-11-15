@@ -4,7 +4,7 @@ using Xer.Cqrs.Events;
 
 namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
 {
-    public class PublishingDomainEventStore<TAggregate> : IDomainEventStore<TAggregate> where TAggregate : EventSourcedAggregate
+    public class PublishingDomainEventStore<TAggregate> : IDomainEventStore<TAggregate> where TAggregate : IEventSourcedAggregate
     {
         private readonly IDomainEventStore<TAggregate> _domainEventStore;
         private readonly IEventPublisher _publisher;

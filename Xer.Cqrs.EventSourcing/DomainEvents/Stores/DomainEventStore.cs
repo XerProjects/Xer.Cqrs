@@ -6,7 +6,7 @@ using Xer.Cqrs.Events;
 
 namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
 {
-    public abstract class DomainEventStore<TAggregate> : IDomainEventStore<TAggregate> where TAggregate : EventSourcedAggregate
+    public abstract class DomainEventStore<TAggregate> : IDomainEventStore<TAggregate> where TAggregate : IEventSourcedAggregate
     {
         /// <summary>
         /// Get all domain events of aggregate.

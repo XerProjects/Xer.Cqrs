@@ -2,7 +2,7 @@
 
 namespace Xer.Cqrs.EventSourcing.DomainEvents
 {
-    public interface IDomainEventStore<TAggregate> where TAggregate : EventSourcedAggregate
+    public interface IDomainEventStore<TAggregate> where TAggregate : IEventSourcedAggregate
     {
         /// <summary>
         /// Persist aggregate to the event store.

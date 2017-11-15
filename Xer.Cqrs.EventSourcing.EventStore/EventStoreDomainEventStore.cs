@@ -13,7 +13,7 @@ using Xer.Cqrs.EventSourcing.DomainEvents.Stores;
 
 namespace Xer.Cqrs.EventSourcing.EventStore
 {
-    public class EventStoreDomainEventStore<TAggregate> : DomainEventAsyncStore<TAggregate> where TAggregate : EventSourcedAggregate
+    public class EventStoreDomainEventStore<TAggregate> : DomainEventAsyncStore<TAggregate> where TAggregate : IEventSourcedAggregate
     {
         private readonly EventStoreConfiguration _configuration;
 

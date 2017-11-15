@@ -7,7 +7,7 @@ using Xer.Cqrs.Events;
 
 namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
 {
-    public class InMemoryDomainEventStore<TAggregate> : IDomainEventStore<TAggregate>, IDomainEventAsyncStore<TAggregate> where TAggregate : EventSourcedAggregate
+    public class InMemoryDomainEventStore<TAggregate> : IDomainEventStore<TAggregate>, IDomainEventAsyncStore<TAggregate> where TAggregate : IEventSourcedAggregate
     {
         #region Declarations
 

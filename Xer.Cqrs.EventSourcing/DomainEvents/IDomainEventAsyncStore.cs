@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Xer.Cqrs.EventSourcing.DomainEvents
 {
-    public interface IDomainEventAsyncStore<TAggregate> where TAggregate : EventSourcedAggregate
+    public interface IDomainEventAsyncStore<TAggregate> where TAggregate : IEventSourcedAggregate
     {
         /// <summary>
         /// Persist aggregate to the event store asynchronously.

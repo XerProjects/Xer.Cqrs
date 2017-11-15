@@ -6,7 +6,7 @@ using Xer.DomainDriven;
 
 namespace Xer.Cqrs.EventSourcing
 {
-    public abstract class EventSourcedAggregate : Aggregate
+    public abstract class EventSourcedAggregate : Aggregate, IEventSourcedAggregate
     {
         #region Declarations
 
@@ -64,13 +64,15 @@ namespace Xer.Cqrs.EventSourcing
 
         #endregion Constructors
 
-        #region Internal Infrastructure Methods
+        #region IEventSourcedAggregate explicit implementations
+
+        // Note: These methods have been implemented explicitly to avoid cluttering public API.
 
         /// <summary>
-        /// Get an event stream of all the uncommitted domain events applied to this entity.
+        /// Get an event stream of all the uncommitted domain events applied to the aggregate.
         /// </summary>
         /// <returns>Stream of uncommitted domain events.</returns>
-        internal DomainEventStream GetUncommitedDomainEvents()
+        DomainEventStream IEventSourcedAggregate.GetUncommitedDomainEvents()
         {
             return new DomainEventStream(Id, _uncommittedDomainEvents);
         }
@@ -78,12 +80,12 @@ namespace Xer.Cqrs.EventSourcing
         // <summary>
         // Clear all internally tracked domain events.
         // </summary>
-        internal void ClearUncommitedDomainEvents()
+        void IEventSourcedAggregate.ClearUncommitedDomainEvents()
         {
             _uncommittedDomainEvents.Clear();
         }
 
-        #endregion Internal Infrastructure Methods
+        #endregion IEventSourcedAggregate explicit implementations
 
         #region Protected Methods
 

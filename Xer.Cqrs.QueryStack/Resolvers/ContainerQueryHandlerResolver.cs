@@ -12,6 +12,13 @@ namespace Xer.Cqrs.QueryStack.Resolvers
             _containerAdapter = containerAdapter;
         }
 
+        /// <summary>
+        /// <para>Resolves an instance of IQueryAsyncHandler<TQuery, TResult> of IQueryHandler<TQuery, TResult> which handles the given query type</para>
+        /// <para>from the container and convert to a query handler delegate which invokes the query handler.</para>
+        /// </summary>
+        /// <typeparamref name="TQuery">Type of query which is handled by the query handler to resolve.</typeparamref>
+        /// <typeparamref name="TResult">Type of query result.</typeparamref>
+        /// <returns>A query handler delegate which invokes the query handler and returns the result.</returns>
         public QueryHandlerDelegate<TResult> ResolveQueryHandler<TQuery, TResult>() where TQuery : class, IQuery<TResult>
         {
             try

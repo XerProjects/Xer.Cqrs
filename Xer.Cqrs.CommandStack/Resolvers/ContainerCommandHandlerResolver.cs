@@ -12,6 +12,12 @@ namespace Xer.Cqrs.CommandStack.Resolvers
             _containerAdapter = containerAdapter;
         }
 
+        /// <summary>
+        /// <para>Resolves an instance of ICommandAsyncHandler<TCommand> or ICommandHandler<TCommand> which handles the given command type</para>
+        /// <para>from the container and convert to a command handler delegate which invokes the command handler.</para>
+        /// </summary>
+        /// <typeparamref name="TCommand">Type of command which is handled by the command handler to resolve.</typeparamref>
+        /// <returns>A command handler delegate which invokes the command handler.</returns>
         public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : class, ICommand
         {
             try
@@ -47,7 +53,7 @@ namespace Xer.Cqrs.CommandStack.Resolvers
             }
 
             // No handlers are resolved. Throw exception.
-            throw new CommandNotHandledException($"Unable to resolve a command handler from the container to handle command of type: { typeof(Command).Name }.");
+            throw new CommandNotHandledException($"Unable to resolve a command handler from the container to handle command of type: { typeof(TCommand).Name }.");
         }
     }
 

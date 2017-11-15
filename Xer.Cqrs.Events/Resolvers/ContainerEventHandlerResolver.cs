@@ -15,6 +15,11 @@ namespace Xer.Cqrs.Events.Resolvers
             _containerAdapter = containerAdapter;
         }
 
+        /// <summary>
+        /// <para>Resolve instances of IEventAsyncHandler<TEvent> and IEventHandler<TEvent> which handles the given event type</para>
+        /// <para>from the container and convert to a list of event handler delegates which invokes event handlers.</para>
+        /// </summary>
+        /// <returns>List of event handler delegates which invokes event handlers.</returns>
         public IEnumerable<EventHandlerDelegate> ResolveEventHandlers<TEvent>() where TEvent : class, IEvent
         {
             return buildEventHandlerDelegates<TEvent>();

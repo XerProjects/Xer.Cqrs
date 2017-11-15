@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Xer.Cqrs.EventSourcing.DomainEvents
+namespace Xer.Cqrs.EventSourcing
 {
     public abstract class DomainEvent : IDomainEvent
     {
@@ -15,9 +15,9 @@ namespace Xer.Cqrs.EventSourcing.DomainEvents
         public int AggregateVersion { get; }
 
         /// <summary>
-        /// Timestamp.
+        /// Timestamp. By default, this is set to current local time.
         /// </summary>
-        public DateTime TimeStamp { get; } = DateTime.Now;
+        public virtual DateTime TimeStamp { get; } = DateTime.Now;
 
         /// <summary>
         /// Initializes an initial domain event (Version 1).

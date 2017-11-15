@@ -2,8 +2,7 @@
 using Xer.Cqrs.Events;
 using Xer.Cqrs.Events.Publishers;
 using Xer.Cqrs.Events.Registrations;
-using Xer.Cqrs.EventSourcing.DomainEvents;
-using Xer.Cqrs.EventSourcing.DomainEvents.Stores;
+using Xer.Cqrs.EventSourcing.Stores;
 using Xer.Cqrs.EventSourcing.Repositories;
 using Xer.Cqrs.EventSourcing.Tests.Mocks;
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using Xer.Cqrs.EventSourcing.DomainEvents;
 
 namespace Xer.Cqrs.EventSourcing.Exceptions
 {

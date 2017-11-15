@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Xer.Cqrs.EventSourcing.DomainEvents;
 using Xunit.Abstractions;
 using static Xer.Cqrs.EventSourcing.Tests.Mocks.TestAggregateOperationExecuted;
 

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Xer.Cqrs.EventSourcing.DomainEvents
+namespace Xer.Cqrs.EventSourcing
 {
     public interface IDomainEventStore<TAggregate> where TAggregate : IEventSourcedAggregate
     {

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Xer.Cqrs.EventSourcing.DomainEvents;
 using Xer.Cqrs.EventSourcing.Exceptions;
 using Xer.DomainDriven;
 

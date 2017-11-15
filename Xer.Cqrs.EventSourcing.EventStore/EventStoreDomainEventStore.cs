@@ -8,8 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.Events;
-using Xer.Cqrs.EventSourcing.DomainEvents;
-using Xer.Cqrs.EventSourcing.DomainEvents.Stores;
+using Xer.Cqrs.EventSourcing.Stores;
 
 namespace Xer.Cqrs.EventSourcing.EventStore
 {

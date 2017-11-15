@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Xer.Cqrs.EventSourcing.DomainEvents
+namespace Xer.Cqrs.EventSourcing
 {
     public interface IDomainEventAsyncStore<TAggregate> where TAggregate : IEventSourcedAggregate
     {

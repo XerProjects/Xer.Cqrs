@@ -5,7 +5,7 @@ using Xer.DomainDriven.Repositories;
 
 namespace Xer.Cqrs.EventSourcing.Repositories
 {
-    public interface IEventSourcedAggregateAsyncRepository<TAggregate> : IAggregateAsyncRepository<TAggregate> where TAggregate : EventSourcedAggregate
+    public interface IEventSourcedAggregateAsyncRepository<TAggregate> : IAggregateAsyncRepository<TAggregate> where TAggregate : IEventSourcedAggregate
     {
         Task<TAggregate> GetByIdAsync(Guid aggregateId, int version, CancellationToken cancellationToken = default(CancellationToken));
     }

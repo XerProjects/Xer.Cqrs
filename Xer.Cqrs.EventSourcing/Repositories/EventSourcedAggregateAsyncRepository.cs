@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Xer.Cqrs.EventSourcing.DomainEvents;
 
 namespace Xer.Cqrs.EventSourcing.Repositories
 {
-    public abstract class EventSourcedAggregateAsyncRepository<TAggregate> : IEventSourcedAggregateAsyncRepository<TAggregate> where TAggregate : EventSourcedAggregate
+    public abstract class EventSourcedAggregateAsyncRepository<TAggregate> : IEventSourcedAggregateAsyncRepository<TAggregate> where TAggregate : IEventSourcedAggregate
     {
         protected abstract IDomainEventAsyncStore<TAggregate> DomainEventStore { get; }
         

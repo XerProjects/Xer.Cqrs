@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Xer.Cqrs.EventSourcing.DomainEvents;
 using Xer.Cqrs.EventSourcing.Repositories;
 
 namespace Xer.Cqrs.EventSourcing.Tests.Mocks

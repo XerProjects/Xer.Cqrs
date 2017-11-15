@@ -1,8 +1,8 @@
-using Xer.Cqrs.EventSourcing.DomainEvents;
+using Xer.DomainDriven;
 
 namespace Xer.Cqrs.EventSourcing
 {
-    public interface IEventSourcedAggregate
+    public interface IEventSourcedAggregate : IAggregate
     {
         /// <summary>
         /// Current version of this aggregate.

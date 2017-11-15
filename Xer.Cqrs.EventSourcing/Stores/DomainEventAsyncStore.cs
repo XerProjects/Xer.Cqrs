@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.Events;
 
-namespace Xer.Cqrs.EventSourcing.DomainEvents.Stores
+namespace Xer.Cqrs.EventSourcing.Stores
 {
     public abstract class DomainEventAsyncStore<TAggregate> : IDomainEventAsyncStore<TAggregate> where TAggregate : IEventSourcedAggregate
     {

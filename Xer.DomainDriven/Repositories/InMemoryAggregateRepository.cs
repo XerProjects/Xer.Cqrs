@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Xer.DomainDriven.Repositories
 {
-    public class InMemoryAggregateRepository<TAggregate> : IAggregateRepository<TAggregate>, IAggregateAsyncRepository<TAggregate> where TAggregate : Aggregate
+    public class InMemoryAggregateRepository<TAggregate> : IAggregateRepository<TAggregate>, IAggregateAsyncRepository<TAggregate> where TAggregate : IAggregate
     {
         #region Declarations
 

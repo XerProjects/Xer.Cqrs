@@ -1,7 +1,7 @@
 ﻿using System;
 using Xer.Cqrs.Events;
 
-namespace Xer.Cqrs.EventSourcing.DomainEvents
+namespace Xer.Cqrs.EventSourcing
 {
     public interface IDomainEvent : IEvent
     {

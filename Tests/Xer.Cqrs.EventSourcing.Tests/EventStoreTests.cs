@@ -4,7 +4,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.Events;
-using Xer.Cqrs.EventSourcing.DomainEvents;
 using Xer.Cqrs.EventSourcing.Repositories;
 using Xer.Cqrs.EventSourcing.Tests.Mocks;
 using Xer.Cqrs.EventSourcing.Tests.Mocks.DomainEventHandlers;

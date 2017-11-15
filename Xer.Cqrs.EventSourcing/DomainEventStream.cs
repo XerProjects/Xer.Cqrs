@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xer.Cqrs.EventSourcing.Exceptions;
 
-namespace Xer.Cqrs.EventSourcing.DomainEvents
+namespace Xer.Cqrs.EventSourcing
 {
     public sealed class DomainEventStream : IEnumerable<IDomainEvent>
     {

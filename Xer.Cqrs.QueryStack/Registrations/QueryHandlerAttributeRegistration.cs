@@ -17,14 +17,15 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
         #region IQueryHandlerAttributeRegistration Implementation
 
-        /// <summary>
-        /// Register all methods of the instance that are marked with [QueryHandler].
-        /// In order to be registered successfully, method should:
-        /// - Request for the specific query to be handled as a parameter.
-        /// - (Optional) Request for a CancellationToken as a parameter to listen for cancellation from Dispatcher.
-        /// - Return a Task object whose generic argument matches the query's expected result type.
+       /// <summary>
+        /// Register methods marked with the [QueryHandler] attribute as query handlers.
+        /// <para>Supported signatures for methods marked with [QueryHandler] are: (Methods can be named differently)</para>
+        /// <para>TResult HandleQuery(TQuery query);</para>
+        /// <para>Task&lt;TResult&gt; HandleQueryAsync(TQuery query);</para>
+        /// <para>Task&lt;TResult&gt; HandleQueryAsync(TQuery query, CancellationToken cancellationToken);</para>
         /// </summary>
-        /// <param name="attributedHandlerFactory">Object which contains methods marked with [QueryHandler].</param>
+        /// <typeparam name="TAttributed">Type of the object which contains the methods marked with the [QueryHandler] attribute.</typeparam>
+        /// <param name="attributedHandlerFactory">Factory which will provide an instance of the specified <typeparamref name="TAttributed"/> type.</param>
         public void Register<TAttributed>(Func<TAttributed> attributedHandlerFactory) where TAttributed : class
         {
             if (attributedHandlerFactory == null)
@@ -56,12 +57,11 @@ namespace Xer.Cqrs.QueryStack.Registrations
         #region IQueryHandlerResolver Implementation
 
         /// <summary>
-        /// Get the registered query handler delegate to handle the query of the specified type.
+        /// Get the registered query handler delegate which handles the query of the specified type.
         /// </summary>
         /// <typeparam name="TQuery">Type of query to be handled.</typeparam>
         /// <typeparam name="TResult">Type of query result.</typeparam>
-        /// <param name="queryType">Type of query to be handled.</param>
-        /// <returns>Instance of invokeable QueryAsyncHandlerDelegate.</returns>
+        /// <returns>Instance of <see cref="QueryHandlerDelegate{TResult}"/> which executes the query handler processing.</returns>
         public QueryHandlerDelegate<TResult> ResolveQueryHandler<TQuery, TResult>() where TQuery : class, IQuery<TResult>
         {
             Type queryType = typeof(TQuery);

@@ -16,19 +16,19 @@ namespace Xer.Cqrs.Events
         event OnErrorHandler OnError;
 
         /// <summary>
-        /// Publish event to subscribers.
+        /// Publish event to registered event handlers.
         /// </summary>
         /// <param name="event">Event to publish.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Asynchronous task.</returns>
+        /// <param name="cancellationToken">Optional cancellation token to support cancellation in event handlers.</param>
+        /// <returns>Asynchronous task which completes when all the event handlers have processed the event.</returns>
         Task PublishAsync(IEvent @event, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Publish event to subscribers.
+        /// Publish events to registered event handlers.
         /// </summary>
         /// <param name="events">Events to publish.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Asynchronous task.</returns>
+        /// <param name="cancellationToken">Optional cancellation token to support cancellation in event handlers.</param>
+        /// <returns>Asynchronous task which completes when all the event handlers have processed the event.</returns>
         Task PublishAsync(IEnumerable<IEvent> events, CancellationToken cancellationToken = default(CancellationToken));
     }
 

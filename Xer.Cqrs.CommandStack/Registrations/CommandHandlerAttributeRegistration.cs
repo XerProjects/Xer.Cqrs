@@ -19,13 +19,14 @@ namespace Xer.Cqrs.CommandStack.Registrations
         #region ICommandHandlerAttributeRegistration Implementation
 
         /// <summary>
-        /// Register all methods of the instance that are marked with [CommandHandler].
-        /// In order to be registered successfully, methods should:
-        /// - Request for the command to be handled as paramater.
-        /// - Return a Task object.
-        /// - (Optional) Request for a CancellationToken as parameter to listen for cancellation from Dispatcher.
+        /// Register methods marked with the [CommandHandler] attribute as command handlers.
+        /// <para>Supported signatures for methods marked with [CommandHandler] are: (Methods can be named differently)</para>
+        /// <para>void HandleCommand(TCommand command);</para>
+        /// <para>Task HandleCommandAsync(TCommand command);</para>
+        /// <para>Task HandleCommandAsync(TCommand command, CancellationToken cancellationToken);</para>
         /// </summary>
-        /// <param name="attributedHandlerFactory">Object which contains methods marked with [CommandHandler].</param>
+        /// <typeparam name="TAttributed">Type of the object which contains the methods marked with the [CommandHandler] attribute.</typeparam>
+        /// <param name="attributedHandlerFactory">Factory which will provide an instance of the specified <typeparamref name="TAttributed"/> type.</param>
         public void Register<TAttributed>(Func<TAttributed> attributedHandlerFactory) where TAttributed : class
         {
             if(attributedHandlerFactory == null)
@@ -56,10 +57,10 @@ namespace Xer.Cqrs.CommandStack.Registrations
         #region ICommandHandlerResolver Implementation
 
         /// <summary>
-        /// Get a delegate to handle the command of the specified type.
+        /// Get the registered command handler delegate which handles the command of the specified type.
         /// </summary>
-        /// <param name="commandType">Type of command to be handled.</param>
-        /// <returns>Instance of invokeable CommandAsyncHandlerDelegate.</returns>
+        /// <typeparam name="TCommand">Type of command to be handled.</typeparam>
+        /// <returns>Instance of <see cref="CommandHandlerDelegate"/> which executes the command handler processing.</returns>
         public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : class, ICommand
         {
             Type commandType = typeof(TCommand);

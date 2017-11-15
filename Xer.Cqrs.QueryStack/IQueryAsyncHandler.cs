@@ -10,7 +10,7 @@ namespace Xer.Cqrs.QueryStack
         /// </summary>
         /// <param name="query">Query to handle and process.</param>
         /// <param name="cancellationToken">Optional cancellation token to support cancellation.</param>
-        /// <returns>Task which contains the result of the dispatched query. This can be awaited asynchronously.</returns>
+        /// <returns>Asynchronous task which contains the result of the dispatched query.</returns>
         Task<TResult> HandleAsync(TQuery query, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

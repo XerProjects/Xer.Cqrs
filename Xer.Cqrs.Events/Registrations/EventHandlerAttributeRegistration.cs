@@ -20,13 +20,14 @@ namespace Xer.Cqrs.Events.Registrations
         #region IEventHandlerAttributeRegistration Implementation
 
         /// <summary>
-        /// Register all methods of the instance that are marked with [EventHandler].
-        /// In order to be registered successfully, methods should:
-        /// - Request for the event to be handled as paramater.
-        /// - Return a void/Task object.
-        /// - (Optional) Request for a CancellationToken as parameter to listen for cancellation from the publisher.
+        /// Register methods marked with the [EventHandler] attribute as event handlers.
+        /// <para>Supported signatures for methods marked with [EventHandler] are: (Methods can be named differently)</para>
+        /// <para>void HandleEvent(TEvent event);</para>
+        /// <para>Task HandleEventAsync(TEvent event);</para>
+        /// <para>Task HandleEventAsync(TEvent event, CancellationToken cancellationToken);</para>
         /// </summary>
-        /// <param name="attributedHandlerFactory">Object which contains methods marked with [EventHandler].</param>
+        /// <typeparam name="TAttributed">Type of the object which contains the methods marked with the [EventHandler] attribute.</typeparam>
+        /// <param name="attributedHandlerFactory">Factory which will provide an instance of the specified <typeparamref name="TAttributed"/> type.</param>
         public void Register<TAttributed>(Func<TAttributed> attributedHandlerFactory) where TAttributed : class
         {
             if(attributedHandlerFactory == null)
@@ -57,10 +58,10 @@ namespace Xer.Cqrs.Events.Registrations
         #region IEventHandlerResolver Implementation
 
         /// <summary>
-        /// Get the registered command handler delegate to handle the event of the specified type.
+        /// Get registered event handler delegates which handle the event of the specified type.
         /// </summary>
         /// <typeparam name="TEvent">Type of event to be handled.</typeparam>
-        /// <returns>Collection of event handlers that are registered for the event.</returns>
+        /// <returns>Collection of <see cref="EventHandlerDelegate"/> which executes event handler processing.</returns>
         public IEnumerable<EventHandlerDelegate> ResolveEventHandlers<TEvent>() where TEvent : class, IEvent
         {
             Type eventType = typeof(TEvent);

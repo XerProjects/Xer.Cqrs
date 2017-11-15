@@ -11,14 +11,14 @@ namespace Xer.Cqrs.Events
         /// Register event handler as subscriber.
         /// </summary>
         /// <typeparam name="TEvent">Event to subscribe to.</typeparam>
-        /// <param name="eventHandlerFactory">Event handler instance factory.</param>
+        /// <param name="eventAsyncHandlerFactory">Factory which will provide an instance of an event handler that handles the specified <typeparamref name="TEvent"/> event.</param>
         void Register<TEvent>(Func<IEventHandler<TEvent>> eventHandlerFactory) where TEvent : class, IEvent;
 
         /// <summary>
-        /// Register event handler as subscriber.
+        /// Register async event handler as subscriber.
         /// </summary>
         /// <typeparam name="TEvent">Event to subscribe to.</typeparam>
-        /// <param name="eventHandlerFactory">Event async handler instance factory.</param>
-        void Register<TEvent>(Func<IEventAsyncHandler<TEvent>> eventHandlerFactory) where TEvent : class, IEvent;
+        /// <param name="eventAsyncHandlerFactory">Factory which will provide an instance of an event handler that handles the specified <typeparamref name="TEvent"/> event.</param>
+        void Register<TEvent>(Func<IEventAsyncHandler<TEvent>> eventAsyncHandlerFactory) where TEvent : class, IEvent;
     }
 }

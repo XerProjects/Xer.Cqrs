@@ -5,7 +5,7 @@
         /// <summary>
         /// Make an operation based on the event.
         /// </summary>
-        /// <param name="event">Event.</param>
+        /// <param name="event">Event to handle.</param>
         void Handle(TEvent @event);
     }
 }

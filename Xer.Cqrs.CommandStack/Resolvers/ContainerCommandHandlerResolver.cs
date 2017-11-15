@@ -17,7 +17,7 @@ namespace Xer.Cqrs.CommandStack.Resolvers
         /// <para>from the container and convert to a command handler delegate which invokes the command handler.</para>
         /// </summary>
         /// <typeparamref name="TCommand">Type of command which is handled by the command handler to resolve.</typeparamref>
-        /// <returns>A command handler delegate which invokes the command handler.</returns>
+        /// <returns>Instance of <see cref="CommandHandlerDelegate"/> which executes the command handler processing.</returns>
         public CommandHandlerDelegate ResolveCommandHandler<TCommand>() where TCommand : class, ICommand
         {
             try

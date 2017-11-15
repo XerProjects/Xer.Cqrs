@@ -15,20 +15,20 @@ namespace Xer.Cqrs.Events.Registrations
         #region IEventHandlerRegistration Implementation
 
         /// <summary>
-        /// Register event handler as subscriber.
+        /// Register event async handler as subscriber.
         /// </summary>
-        /// <typeparam name="TEvent">Event to subscribe to.</typeparam>
-        /// <param name="eventHandlerFactory">Event handler instance factory.</param>
-        public void Register<TEvent>(Func<IEventAsyncHandler<TEvent>> eventHandlerFactory) where TEvent : class, IEvent
+        /// <typeparam name="TEvent">Type of event to subscribe to.</typeparam>
+        /// <param name="eventAsyncHandlerFactory">Factory which will create an instance of an event handler that handles the specified <typeparamref name="TEvent"/> event.</param>
+        public void Register<TEvent>(Func<IEventAsyncHandler<TEvent>> eventAsyncHandlerFactory) where TEvent : class, IEvent
         {
-            if(eventHandlerFactory == null)
+            if(eventAsyncHandlerFactory == null)
             {
-                throw new ArgumentNullException(nameof(eventHandlerFactory));
+                throw new ArgumentNullException(nameof(eventAsyncHandlerFactory));
             }
 
             Type eventType = typeof(TEvent);
 
-            EventHandlerDelegate newSubscribedEventHandlerDelegate = EventHandlerDelegateBuilder.FromFactory(eventHandlerFactory);
+            EventHandlerDelegate newSubscribedEventHandlerDelegate = EventHandlerDelegateBuilder.FromFactory(eventAsyncHandlerFactory);
 
             _eventHandlerDelegateStore.Add(eventType, newSubscribedEventHandlerDelegate);
         }
@@ -36,8 +36,8 @@ namespace Xer.Cqrs.Events.Registrations
         /// <summary>
         /// Register event handler as subscriber.
         /// </summary>
-        /// <typeparam name="TEvent">Event to subscribe to.</typeparam>
-        /// <param name="eventHandlerFactory">Event async handler instance factory.</param>
+        /// <typeparam name="TEvent">Type of event to subscribe to.</typeparam>
+        /// <param name="eventHandlerFactory">Factory which will create an instance of an event handler that handles the specified <typeparamref name="TEvent"/> event.</param>
         public void Register<TEvent>(Func<IEventHandler<TEvent>> eventHandlerFactory) where TEvent : class, IEvent
         {
             if (eventHandlerFactory == null)
@@ -57,10 +57,10 @@ namespace Xer.Cqrs.Events.Registrations
         #region IEventHandlerResolver Implementation
 
         /// <summary>
-        /// Get the registered command handler delegate to handle the event of the specified type.
+        /// Get registered event handler delegates which handle the event of the specified type.
         /// </summary>
         /// <typeparam name="TEvent">Type of event to be handled.</typeparam>
-        /// <returns>Collection of event handlers that are registered for the event.</returns>
+        /// <returns>Collection of <see cref="EventHandlerDelegate"/> which executes event handler processing.</returns>
         public IEnumerable<EventHandlerDelegate> ResolveEventHandlers<TEvent>() where TEvent : class, IEvent
         {
             Type eventType = typeof(TEvent);

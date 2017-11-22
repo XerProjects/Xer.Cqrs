@@ -85,7 +85,7 @@ namespace Xer.Cqrs.EventSourcing.Tests
                 Assert.Equal(2, stream.DomainEventCount);
 
                 // Stream starts from version 1 to 2.
-                Assert.Equal(1, stream.StartVersion);
+                Assert.Equal(1, stream.BeginVersion);
                 Assert.Equal(2, stream.EndVersion);
             }
         }
@@ -111,7 +111,7 @@ namespace Xer.Cqrs.EventSourcing.Tests
                 Assert.Equal(2, stream.DomainEventCount);
 
                 // Stream starts from version 1 to 2.
-                Assert.Equal(1, stream.StartVersion);
+                Assert.Equal(1, stream.BeginVersion);
                 Assert.Equal(2, stream.EndVersion);
             }
         }

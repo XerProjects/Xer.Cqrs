@@ -23,7 +23,7 @@ namespace Xer.Cqrs.EventSourcing
         /// <summary>
         /// Aggregate version of the first domain event in this stream.
         /// </summary>
-        public int StartVersion { get; }
+        public int BeginVersion { get; }
 
         /// <summary>
         /// Aggregate version of the last domain event in this stream.
@@ -47,15 +47,14 @@ namespace Xer.Cqrs.EventSourcing
                 throw new ArgumentNullException(nameof(domainEvents));
             }
 
+            _domainEvents = domainEvents.ToList();
+
             AggregateId = aggregateId;
-
-            _domainEvents = new List<IDomainEvent>(domainEvents);
-
             DomainEventCount = _domainEvents.Count;
             
             if (DomainEventCount > 0)
             {
-                StartVersion = domainEvents.First().AggregateVersion;
+                BeginVersion = domainEvents.First().AggregateVersion;
                 EndVersion = domainEvents.Last().AggregateVersion;
             }
         }
@@ -72,23 +71,7 @@ namespace Xer.Cqrs.EventSourcing
                 throw new ArgumentNullException(nameof(domainEventToAppend));
             }
 
-            if (EndVersion >= domainEventToAppend.AggregateVersion)
-            {
-                throw new DomainEventVersionConflictException(domainEventToAppend,
-                    "Domain event being appended is older than the latest event in the stream.");
-            }
-
-            if (AggregateId != domainEventToAppend.AggregateId)
-            {
-                throw new InvalidOperationException("Cannot append domain event of different aggregate.");
-            }
-
-            List<IDomainEvent> mergedStream = new List<IDomainEvent>(this)
-            {
-                domainEventToAppend
-            };
-
-            return new DomainEventStream(AggregateId, mergedStream);
+            return AppendDomainEventStream(new DomainEventStream(AggregateId, new[] { domainEventToAppend }));
         }
 
         /// <summary>
@@ -103,15 +86,15 @@ namespace Xer.Cqrs.EventSourcing
                 throw new ArgumentNullException(nameof(streamToAppend));
             }
 
-            if (EndVersion >= streamToAppend.StartVersion)
-            {
-                throw new DomainEventStreamVersionConflictException(streamToAppend,
-                    "Domain event stream being appended contains some entries that are older than the latest event in the stream.");
-            }
-
             if (AggregateId != streamToAppend.AggregateId)
             {
-                throw new InvalidOperationException("Cannot append streams of different aggregates.");
+                throw new InvalidOperationException("Cannot append domain event belonging to a different aggregate.");
+            }
+
+            if (EndVersion >= streamToAppend.BeginVersion)
+            {
+                throw new DomainEventVersionConflictException(streamToAppend,
+                    "Domain event streams contain some entries with overlapping versions.");
             }
             
             return new DomainEventStream(AggregateId, this.Concat(streamToAppend));

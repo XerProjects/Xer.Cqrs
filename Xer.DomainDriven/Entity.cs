@@ -25,10 +25,5 @@ namespace Xer.DomainDriven
             Created = DateTime.Now;
             Updated = DateTime.Now;
         }
-
-        public bool Equals(Guid other)
-        {
-            return Id == other;
-        }
     }
 }

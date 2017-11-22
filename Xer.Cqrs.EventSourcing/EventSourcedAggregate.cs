@@ -17,13 +17,13 @@ namespace Xer.Cqrs.EventSourcing
         #region Properties
 
         /// <summary>
-        /// Current version of this aggregate.
+        /// Current version of aggregate.
         /// </summary>
         public int Version { get; private set; }
 
 
         /// <summary>
-        /// Next expected version of this aggregate.
+        /// Next expected version of aggregate.
         /// </summary>
         protected virtual int NextExpectedVersion => Version + 1;
 
@@ -32,9 +32,9 @@ namespace Xer.Cqrs.EventSourcing
         #region Constructors
 
         /// <summary>
-        /// Construtor.
+        /// Constructor.
         /// </summary>
-        /// <param name="aggregateId">Id of this entity.</param>
+        /// <param name="aggregateId">Id of aggregate.</param>
         public EventSourcedAggregate(Guid aggregateId)
             : base(aggregateId)
         {
@@ -42,17 +42,12 @@ namespace Xer.Cqrs.EventSourcing
         }
 
         /// <summary>
-        /// Constructor to build this entity from the domain event stream.
+        /// Constructor to build this aggregate from the domain event stream.
         /// </summary>
         /// <param name="history">Domain event stream.</param>
         public EventSourcedAggregate(DomainEventStream history)
-            : this(Guid.Empty)
+            : this(EnsureValidDomainEventStream(history).AggregateId)
         {
-            if (history == null)
-            {
-                throw new ArgumentNullException(nameof(history));
-            }
-
             // History events are events that are already saved to event store.
             // So, just invoke the applier without tracking events.
             foreach (IDomainEvent domainEvent in history)
@@ -89,7 +84,7 @@ namespace Xer.Cqrs.EventSourcing
         #region Protected Methods
 
         /// <summary>
-        /// Register actions to apply certain domain events.
+        /// Register actions to apply domain events.
         /// </summary>
         /// <param name="applierRegistration">Domain event applier registration.</param>
         protected abstract void RegisterDomainEventAppliers(DomainEventApplierRegistration applierRegistration);
@@ -106,17 +101,27 @@ namespace Xer.Cqrs.EventSourcing
                 throw new ArgumentNullException(nameof(domainEvent));
             }
 
+            if(NextExpectedVersion != domainEvent.AggregateVersion)
+            {
+                throw new DomainEventNotAppliedException(domainEvent,
+                    $"{GetType().Name}'s expected next aggregate version is {NextExpectedVersion} but domain event has {domainEvent.AggregateVersion}.");
+            }
+
             // Invoke and track the event to save to event store.
             InvokeDomainEventApplier(domainEvent);
         }
+
+        #endregion Protected Methods
+
+        #region Functions
 
         /// <summary>
         /// Invoke the registered action to handle the domain event.
         /// </summary>
         /// <typeparam name="TDomainEvent">Type of the domain event to handle.</typeparam>
         /// <param name="domainEvent">Domain event instance to handle.</param>
-        /// <param name="markDomainEventForCommit">True, if domain event should be marked/tracked for commit. Otherwise, false.</param>
-        protected void InvokeDomainEventApplier<TDomainEvent>(TDomainEvent domainEvent, bool markDomainEventForCommit = true) where TDomainEvent : IDomainEvent
+        /// <param name="markDomainEventForCommit">True, if domain event should be marked/tracked for commit. Otherwise, false - which means domain event should just be replayed.</param>
+        private void InvokeDomainEventApplier<TDomainEvent>(TDomainEvent domainEvent, bool markDomainEventForCommit = true) where TDomainEvent : IDomainEvent
         {
             Action<IDomainEvent> domainEventApplier = _domainEventApplierRegistration.GetApplierFor(domainEvent);
             if (domainEventApplier == null)
@@ -130,7 +135,7 @@ namespace Xer.Cqrs.EventSourcing
                 domainEventApplier.Invoke(domainEvent);
 
                 // Bump up version.
-                UpdateToNextVersion();
+                UpdateToDomainEventVersion(domainEvent);
                 
                 if (markDomainEventForCommit)
                 {
@@ -144,10 +149,6 @@ namespace Xer.Cqrs.EventSourcing
                     ex);
             }
         }
-
-        #endregion Protected Methods
-
-        #region Functions
         
         /// <summary>
         /// Add domain event to list of tracked domain events.
@@ -159,14 +160,28 @@ namespace Xer.Cqrs.EventSourcing
         }
 
         /// <summary>
-        /// Update current aggregate version to the next expected version and update the updated timestamp.
+        /// Update current aggregate version to match the applied domain event version.
         /// </summary>
-        private void UpdateToNextVersion()
+        private void UpdateToDomainEventVersion(IDomainEvent domainEvent)
         {
-            Version = NextExpectedVersion;
-
             // Updated.
-            Updated = DateTime.Now;
+            Version = domainEvent.AggregateVersion;
+            Updated = domainEvent.TimeStamp;
+        }
+
+        /// <summary>
+        /// Ensure that the passed-in domain event stream is not null.
+        /// </summary>
+        /// <param name="history">Domain event stream.</param>
+        /// <returns>Valid domain event stream.</returns>
+        private static DomainEventStream EnsureValidDomainEventStream(DomainEventStream history)
+        {
+            if (history == null)
+            {
+                throw new ArgumentNullException(nameof(history));
+            }
+
+            return history;
         }
 
         #endregion Functions

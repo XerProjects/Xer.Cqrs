@@ -2,7 +2,7 @@ using System;
 
 namespace Xer.DomainDriven
 {
-    public interface IEntity<TId> : IEquatable<IEntity<TId>> where TId : IEquatable<TId>
+    public interface IEntity<TId> where TId : IEquatable<TId>
     {
         /// <summary>
         /// Unique identifier.

@@ -1,4 +1,5 @@
 ﻿using System;
+using Xer.DomainDriven;
 
 namespace Xer.Cqrs.EventSourcing.Tests.Mocks
 {
@@ -14,7 +15,7 @@ namespace Xer.Cqrs.EventSourcing.Tests.Mocks
             ApplyChange(new TestAggregateCreatedEvent(aggregateId, string.Empty));
         }
 
-        public TestAggregate(IDomainEventStream<Guid> history) 
+        public TestAggregate(IDomainEventStream<Guid> history)
             : base(history)
         {
         }
@@ -65,4 +66,31 @@ namespace Xer.Cqrs.EventSourcing.Tests.Mocks
     }
 
     #endregion TestAggregate
+
+    #region TestValueObject
+
+    public class TestValueObject : ValueObject<TestValueObject>
+    {
+        public string Data { get; }
+        public int Number { get; }
+
+        public TestValueObject(string data, int number)
+        {
+            Data = data;
+            Number = number;
+        }
+
+        protected override bool ValueEquals(TestValueObject other)
+        {
+            return Data == other.Data &&
+                   Number == other.Number;
+        }
+
+        protected override HashCode GenerateHashCode()
+        {
+            return new HashCode(Data, Number);
+        }
+    }
+
+    #endregion TestValueObject
 }

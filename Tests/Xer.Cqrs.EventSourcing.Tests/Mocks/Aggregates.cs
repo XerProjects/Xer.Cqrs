@@ -4,57 +4,63 @@ namespace Xer.Cqrs.EventSourcing.Tests.Mocks
 {
     #region TestAggregate
 
-    public class TestAggregate : EventSourcedAggregate
+    public class TestAggregate : EventSourcedAggregate<Guid>
     {
-        public string AggregateData { get; private set; }
+        public string LastExecutedOperation { get; private set; }
 
         public TestAggregate(Guid aggregateId)
             : base(aggregateId)
         {
-            ApplyChange(new TestAggregateCreated(aggregateId, string.Empty));
+            ApplyChange(new TestAggregateCreatedEvent(aggregateId, string.Empty));
         }
 
-        public TestAggregate(DomainEventStream history)
+        public TestAggregate(IDomainEventStream<Guid> history) 
             : base(history)
         {
         }
 
-        public void ExecuteSomeOperation(string newData)
+        public void ExecuteSomeOperation(string operation)
         {
-            ApplyChange(new TestAggregateOperationExecuted(Id, NextExpectedVersion, newData));
+            ApplyChange(new OperationExecutedEvent(Id, NextExpectedVersion, operation));
         }
 
-        public void ThrowExceptionOnEventHandler()
+        public void TriggerExceptionOnEventHandler()
         {
-            ApplyChange(new TestAggregateOperationExecuted(Id, NextExpectedVersion, TestAggregateOperationExecuted.Operations.ThrowException));
+            ApplyChange(new ExceptionTriggeredEvent(Id, NextExpectedVersion));
         }
 
-        public void DelayOnEventHandler(int milliSeconds)
+        public void TriggerDelayOnEventHandler(int milliSeconds)
         {
-            ApplyChange(new TestAggregateOperationExecuted<int>(Id, NextExpectedVersion, TestAggregateOperationExecuted.Operations.Delay, milliSeconds));
+            ApplyChange(new DelayTriggeredEvent(Id, NextExpectedVersion, milliSeconds));
         }
 
         protected override void RegisterDomainEventAppliers(DomainEventApplierRegistration applierRegistration)
         {
-            applierRegistration.RegisterApplierFor<TestAggregateCreated>(OnTestAggregateCreated);
-            applierRegistration.RegisterApplierFor<TestAggregateOperationExecuted>(OnTestAggregateOperationExecuted);
-            applierRegistration.RegisterApplierFor<TestAggregateOperationExecuted<int>>(OnTestAggregateOperationExecuted);
+            applierRegistration.RegisterApplierFor<TestAggregateCreatedEvent>(OnTestAggregateCreated);
+            applierRegistration.RegisterApplierFor<OperationExecutedEvent>(OnOperationExecuted);
+            applierRegistration.RegisterApplierFor<DelayTriggeredEvent>(OnDelayTriggered);
+            applierRegistration.RegisterApplierFor<ExceptionTriggeredEvent>(OnExceptionTriggered);
         }
 
-        private void OnTestAggregateCreated(TestAggregateCreated domainEvent)
+        private void OnTestAggregateCreated(TestAggregateCreatedEvent domainEvent)
         {
             Id = domainEvent.AggregateId;
-            AggregateData = domainEvent.Data;
+            LastExecutedOperation = string.Empty;
         }
 
-        private void OnTestAggregateOperationExecuted(TestAggregateOperationExecuted domainEvent)
+        private void OnOperationExecuted(OperationExecutedEvent domainEvent)
         {
-            AggregateData = domainEvent.Operation;
+            LastExecutedOperation = domainEvent.Operation;
         }
 
-        private void OnTestAggregateOperationExecuted(TestAggregateOperationExecuted<int> domainEvent)
+        private void OnDelayTriggered(DelayTriggeredEvent domainEvent)
         {
-            AggregateData = domainEvent.Data.ToString();
+            LastExecutedOperation = domainEvent.Operation;
+        }
+
+        private void OnExceptionTriggered(ExceptionTriggeredEvent domainEvent)
+        {
+            LastExecutedOperation = domainEvent.Operation;
         }
     }
 

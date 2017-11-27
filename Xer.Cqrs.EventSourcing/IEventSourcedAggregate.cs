@@ -1,8 +1,9 @@
+using System;
 using Xer.DomainDriven;
 
 namespace Xer.Cqrs.EventSourcing
 {
-    public interface IEventSourcedAggregate : IAggregate
+    public interface IEventSourcedAggregate<TId> : IAggregate<TId> where TId : IEquatable<TId>
     {
         /// <summary>
         /// Current version of this aggregate.
@@ -13,7 +14,7 @@ namespace Xer.Cqrs.EventSourcing
         /// Get an event stream of all the uncommitted domain events applied to the aggregate.
         /// </summary>
         /// <returns>Stream of uncommitted domain events.</returns>
-        DomainEventStream GetUncommitedDomainEvents();
+        IDomainEventStream<TId> GetUncommitedDomainEvents();
 
         // <summary>
         // Clear all internally tracked domain events.

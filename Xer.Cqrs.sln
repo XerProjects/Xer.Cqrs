@@ -10,8 +10,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.DomainDriven", "Xer.Dom
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.Tests", "Tests\Xer.Cqrs.Tests\Xer.Cqrs.Tests.csproj", "{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.EventSourcing.EventStore", "Xer.Cqrs.EventSourcing.EventStore\Xer.Cqrs.EventSourcing.EventStore.csproj", "{D2EF60DE-DBF8-42B8-8FE2-7844493F38B3}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.EventSourcing.Tests", "Tests\Xer.Cqrs.EventSourcing.Tests\Xer.Cqrs.EventSourcing.Tests.csproj", "{B2315420-95C7-44EF-977B-D34BAD997A98}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.QueryStack", "Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj", "{3BE4E0FA-9992-4F81-BE96-9CFA9FCC1809}"
@@ -42,10 +40,6 @@ Global
 		{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D2EF60DE-DBF8-42B8-8FE2-7844493F38B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D2EF60DE-DBF8-42B8-8FE2-7844493F38B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D2EF60DE-DBF8-42B8-8FE2-7844493F38B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D2EF60DE-DBF8-42B8-8FE2-7844493F38B3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B2315420-95C7-44EF-977B-D34BAD997A98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B2315420-95C7-44EF-977B-D34BAD997A98}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2315420-95C7-44EF-977B-D34BAD997A98}.Release|Any CPU.ActiveCfg = Release|Any CPU

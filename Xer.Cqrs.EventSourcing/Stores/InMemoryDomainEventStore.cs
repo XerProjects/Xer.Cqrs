@@ -7,11 +7,14 @@ using Xer.Cqrs.Events;
 
 namespace Xer.Cqrs.EventSourcing.Stores
 {
-    public class InMemoryDomainEventStore<TAggregate> : IDomainEventStore<TAggregate>, IDomainEventAsyncStore<TAggregate> where TAggregate : IEventSourcedAggregate
+    public class InMemoryDomainEventStore<TAggregate, TAggregateId> : IDomainEventStore<TAggregate, TAggregateId>, 
+                                                                      IDomainEventAsyncStore<TAggregate, TAggregateId> 
+                                                                      where TAggregate : IEventSourcedAggregate<TAggregateId>
+                                                                      where TAggregateId : IEquatable<TAggregateId>
     {
         #region Declarations
 
-        private readonly IDictionary<Guid, DomainEventStream> _domainEventStreamsByAggregateId = new Dictionary<Guid, DomainEventStream>();
+        private readonly IDictionary<TAggregateId, DomainEventStream<TAggregateId>> _domainEventStreamsByAggregateId = new Dictionary<TAggregateId, DomainEventStream<TAggregateId>>();
 
         #endregion Declarations
 
@@ -20,38 +23,44 @@ namespace Xer.Cqrs.EventSourcing.Stores
         /// <summary>
         /// Get all domain events of aggregate.
         /// </summary>
-        /// <param name="aggreggateId">ID of the aggregate.</param>
+        /// <param name="aggregateId">ID of the aggregate.</param>
         /// <returns>All domain events for the aggregate.</returns>
-        public virtual DomainEventStream GetDomainEventStream(Guid aggreggateId)
+        public virtual IDomainEventStream<TAggregateId> GetDomainEventStream(TAggregateId aggregateId)
         {
-            DomainEventStream stream;
-
-            if (!_domainEventStreamsByAggregateId.TryGetValue(aggreggateId, out stream))
-            {
-                stream = DomainEventStream.Empty;
-            }
-
-            // Return a new copy, not the actual reference.
-            return new DomainEventStream(stream.AggregateId, stream);
+            return GetDomainEventStream(aggregateId, 1, int.MaxValue);
         }
 
         /// <summary>
         /// Get domain events of aggregate from the beginning up to the specified version.
         /// </summary>
-        /// <param name="aggreggateId">ID of the aggregate.</param>
-        /// <param name="version">Target aggregate version.</param>
+        /// <param name="aggregateId">ID of the aggregate.</param>
+        /// <param name="upToVersion">Target aggregate version.</param>
         /// <returns>All domain events for the aggregate.</returns>
-        public virtual DomainEventStream GetDomainEventStream(Guid aggreggateId, int version)
+        public virtual IDomainEventStream<TAggregateId> GetDomainEventStream(TAggregateId aggregateId, int upToVersion)
         {
-            DomainEventStream stream;
+            return GetDomainEventStream(aggregateId, 1, upToVersion);
+        }
+        
+        /// <summary>
+        /// Get domain events of aggregate from the specified start and end version.
+        /// </summary>
+        /// <param name="aggregateId">ID of the aggregate.</param>
+        /// <param name="fromVersion">Aggregate version to start retrieving domain events from.</param>
+        /// <param name="toVersion">Target aggregate version.</param>
+        /// <returns>Domain events for the aggregat with the specified version.</returns>
+        public virtual IDomainEventStream<TAggregateId> GetDomainEventStream(TAggregateId aggregateId, int fromVersion, int toVersion)
+        {
+            DomainEventStream<TAggregateId> stream;
 
-            if (!_domainEventStreamsByAggregateId.TryGetValue(aggreggateId, out stream))
+            if (!_domainEventStreamsByAggregateId.TryGetValue(aggregateId, out stream))
             {
-                stream = DomainEventStream.Empty;
+                // Empty stream.
+                return new DomainEventStream<TAggregateId>(aggregateId);
             }
 
             // Return a new copy, not the actual reference.
-            return new DomainEventStream(stream.AggregateId, stream.TakeWhile(e => e.AggregateVersion <= version));
+            return new DomainEventStream<TAggregateId>(aggregateId, stream.SkipWhile(e => e.AggregateVersion < fromVersion)
+                                                                 .TakeWhile(e => e.AggregateVersion <= toVersion));
         }
 
         /// <summary>
@@ -62,7 +71,7 @@ namespace Xer.Cqrs.EventSourcing.Stores
         {
             try
             {
-                DomainEventStream domainEventsToCommit = aggregateRoot.GetUncommitedDomainEvents();
+                IDomainEventStream<TAggregateId> domainEventsToCommit = aggregateRoot.GetUncommitedDomainEvents();
 
                 Commit(domainEventsToCommit);
 
@@ -85,36 +94,41 @@ namespace Xer.Cqrs.EventSourcing.Stores
         /// <param name="aggreggateId">ID of the aggregate.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>All domain events for the aggregate.</returns>
-        public virtual Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggreggateId, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual Task<IDomainEventStream<TAggregateId>> GetDomainEventStreamAsync(TAggregateId aggreggateId, CancellationToken cancellationToken = default(CancellationToken))
         {
-            try
-            {
-                DomainEventStream stream = GetDomainEventStream(aggreggateId);
-                return Task.FromResult(stream);
-            }
-            catch (Exception ex)
-            {
-                return TaskUtility.FromException<DomainEventStream>(ex);
-            }
+            return GetDomainEventStreamAsync(aggreggateId, 1, int.MaxValue, cancellationToken);
+        }
+        
+        /// <summary>
+        /// Get domain events of aggregate from the beginning up to the specified version asynchronously.
+        /// </summary>
+        /// <param name="aggreggateId">ID of the aggregate.</param>
+        /// <param name="upToVersion">Target aggregate version.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>All domain events for the aggregate.</returns>
+        public virtual Task<IDomainEventStream<TAggregateId>> GetDomainEventStreamAsync(TAggregateId aggreggateId, int upToVersion, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return GetDomainEventStreamAsync(aggreggateId, 1, upToVersion, cancellationToken);
         }
 
         /// <summary>
         /// Get domain events of aggregate from the beginning up to the specified version asynchronously.
         /// </summary>
         /// <param name="aggreggateId">ID of the aggregate.</param>
-        /// <param name="version">Target aggregate version.</param>
+        /// <param name="fromVersion">Aggregate version to start retrieving domain events from.</param>
+        /// <param name="toVersion">Target aggregate version.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>All domain events for the aggregate.</returns>
-        public virtual Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggreggateId, int version, CancellationToken cancellationToken = default(CancellationToken))
+        /// <returns>Domain events for the aggregate with the specified version.</returns>
+        public virtual Task<IDomainEventStream<TAggregateId>> GetDomainEventStreamAsync(TAggregateId aggreggateId, int fromVersion, int toVersion, CancellationToken cancellationToken = default(CancellationToken))
         {
             try
             {
-                DomainEventStream stream = GetDomainEventStream(aggreggateId, version);
+                IDomainEventStream<TAggregateId> stream = GetDomainEventStream(aggreggateId, fromVersion, toVersion);
                 return Task.FromResult(stream);
             }
             catch (Exception ex)
             {
-                return TaskUtility.FromException<DomainEventStream>(ex);
+                return TaskUtility.FromException<IDomainEventStream<TAggregateId>>(ex);
             }
         }
 
@@ -145,9 +159,9 @@ namespace Xer.Cqrs.EventSourcing.Stores
         /// Commit the domain event to the in-memory store.
         /// </summary>
         /// <param name="domainEventStreamToCommit">Domain event to store.</param>
-        protected virtual void Commit(DomainEventStream domainEventStreamToCommit)
+        protected virtual void Commit(IDomainEventStream<TAggregateId> domainEventStreamToCommit)
         {
-            DomainEventStream existingStream;
+            DomainEventStream<TAggregateId> existingStream;
 
             if (_domainEventStreamsByAggregateId.TryGetValue(domainEventStreamToCommit.AggregateId, out existingStream))
             {
@@ -159,7 +173,7 @@ namespace Xer.Cqrs.EventSourcing.Stores
             {
                 // Save.
                 _domainEventStreamsByAggregateId.Add(domainEventStreamToCommit.AggregateId,
-                    new DomainEventStream(domainEventStreamToCommit.AggregateId, domainEventStreamToCommit));
+                    new DomainEventStream<TAggregateId>(domainEventStreamToCommit.AggregateId, domainEventStreamToCommit));
             }
         }
 

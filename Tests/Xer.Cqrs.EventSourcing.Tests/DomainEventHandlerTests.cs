@@ -26,14 +26,14 @@ namespace Xer.Cqrs.EventSourcing.Tests
             {
                 TestDomainEventHandler handler = new TestDomainEventHandler(_testOutput);
 
-                IEventSourcedAggregateRepository<TestAggregate> repository = Factory.CreateTestAggregateRepository(reg =>
+                IEventSourcedAggregateRepository<TestAggregate, Guid> repository = Factory.CreateTestAggregateRepository(reg =>
                 {
-                    reg.Register<TestAggregateCreated>(() => handler);
-                    reg.Register<TestAggregateOperationExecuted>(() => handler);
+                    reg.Register<TestAggregateCreatedEvent>(() => handler);
+                    reg.Register<OperationExecutedEvent>(() => handler);
                 });
 
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
-                aggregate.ExecuteSomeOperation("Test 1");
+                aggregate.ExecuteSomeOperation("Test Operation");
                 repository.Save(aggregate);
 
                 // Event may not have yet been handled in background.
@@ -47,8 +47,8 @@ namespace Xer.Cqrs.EventSourcing.Tests
                 // 1. TestAggregateCreated
                 // 2. TestAggregateModified
                 Assert.Equal(2, handler.HandledEvents.Count);
-                Assert.Contains(handler.HandledEvents, (e) => e is TestAggregateCreated);
-                Assert.Contains(handler.HandledEvents, (e) => e is TestAggregateOperationExecuted);
+                Assert.Contains(handler.HandledEvents, (e) => e is TestAggregateCreatedEvent);
+                Assert.Contains(handler.HandledEvents, (e) => e is OperationExecutedEvent);
             }
 
             [Fact]
@@ -58,18 +58,18 @@ namespace Xer.Cqrs.EventSourcing.Tests
                 TestDomainEventHandler handler2 = new TestDomainEventHandler(_testOutput);
                 TestDomainEventHandler handler3 = new TestDomainEventHandler(_testOutput);
 
-                IEventSourcedAggregateRepository<TestAggregate> repository = Factory.CreateTestAggregateRepository(reg =>
+                IEventSourcedAggregateRepository<TestAggregate, Guid> repository = Factory.CreateTestAggregateRepository(reg =>
                 {
-                    reg.Register<TestAggregateCreated>(() => handler1);
-                    reg.Register<TestAggregateOperationExecuted>(() => handler1);
-                    reg.Register<TestAggregateCreated>(() => handler2);
-                    reg.Register<TestAggregateOperationExecuted>(() => handler2);
-                    reg.Register<TestAggregateCreated>(() => handler3);
-                    reg.Register<TestAggregateOperationExecuted>(() => handler3);
+                    reg.Register<TestAggregateCreatedEvent>(() => handler1);
+                    reg.Register<OperationExecutedEvent>(() => handler1);
+                    reg.Register<TestAggregateCreatedEvent>(() => handler2);
+                    reg.Register<OperationExecutedEvent>(() => handler2);
+                    reg.Register<TestAggregateCreatedEvent>(() => handler3);
+                    reg.Register<OperationExecutedEvent>(() => handler3);
                 });
 
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
-                aggregate.ExecuteSomeOperation("Test 1");
+                aggregate.ExecuteSomeOperation("Test Operation");
                 repository.Save(aggregate);
 
                 // Event may not have yet been handled in background.
@@ -83,22 +83,22 @@ namespace Xer.Cqrs.EventSourcing.Tests
                 // 1. TestAggregateCreated
                 // 2. TestAggregateModified
                 Assert.Equal(2, handler1.HandledEvents.Count);
-                Assert.Contains(handler1.HandledEvents, (e) => e is TestAggregateCreated);
-                Assert.Contains(handler1.HandledEvents, (e) => e is TestAggregateOperationExecuted);
+                Assert.Contains(handler1.HandledEvents, (e) => e is TestAggregateCreatedEvent);
+                Assert.Contains(handler1.HandledEvents, (e) => e is OperationExecutedEvent);
 
                 // Handler2 should have 2 events.
                 // 1. TestAggregateCreated
                 // 2. TestAggregateModified
                 Assert.Equal(2, handler2.HandledEvents.Count);
-                Assert.Contains(handler2.HandledEvents, (e) => e is TestAggregateCreated);
-                Assert.Contains(handler2.HandledEvents, (e) => e is TestAggregateOperationExecuted);
+                Assert.Contains(handler2.HandledEvents, (e) => e is TestAggregateCreatedEvent);
+                Assert.Contains(handler2.HandledEvents, (e) => e is OperationExecutedEvent);
 
                 // Handler3 should have 2 events.
                 // 1. TestAggregateCreated
                 // 2. TestAggregateModified
                 Assert.Equal(2, handler3.HandledEvents.Count);
-                Assert.Contains(handler3.HandledEvents, (e) => e is TestAggregateCreated);
-                Assert.Contains(handler3.HandledEvents, (e) => e is TestAggregateOperationExecuted);
+                Assert.Contains(handler3.HandledEvents, (e) => e is TestAggregateCreatedEvent);
+                Assert.Contains(handler3.HandledEvents, (e) => e is OperationExecutedEvent);
             }
 
             [Fact]
@@ -108,22 +108,22 @@ namespace Xer.Cqrs.EventSourcing.Tests
 
                 IEventPublisher publisher = Factory.CreatePublisher(reg =>
                 {
-                    reg.Register<TestAggregateCreated>(() => handler);
-                    reg.Register<TestAggregateOperationExecuted>(() => handler);
+                    reg.Register<TestAggregateCreatedEvent>(() => handler);
+                    reg.Register<OperationExecutedEvent>(() => handler);
                 });
 
                 publisher.OnError += (e, ex) =>
                 {
                     _testOutput.WriteLine($"{ex.GetType().Name} occurred while handling {e.GetType().Name} event: {ex.Message}");
 
-                    Assert.IsType<TestDomainEventHandlerException>(ex);
+                    Assert.IsType<TestAggregateDomainEventHandlerException>(ex);
                 };
 
-                IEventSourcedAggregateRepository<TestAggregate> repository = Factory.CreateTestAggregateRepository(publisher);
+                IEventSourcedAggregateRepository<TestAggregate, Guid> repository = Factory.CreateTestAggregateRepository(publisher);
                                 
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
-                // This would trigger a TestDomainEventHandlerException when handled by TestDomainEventHandler.
-                aggregate.ThrowExceptionOnEventHandler();
+                // This would trigger a TestAggregateDomainEventHandlerException when handled by TestDomainEventHandler.
+                aggregate.TriggerExceptionOnEventHandler();
                 repository.Save(aggregate);
             }
         }

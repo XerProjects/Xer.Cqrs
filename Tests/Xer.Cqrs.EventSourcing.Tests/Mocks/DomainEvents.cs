@@ -2,50 +2,47 @@
 
 namespace Xer.Cqrs.EventSourcing.Tests.Mocks
 {
-    #region TestAggregateCreated
-
-    public class TestAggregateCreated : DomainEvent
+    public class TestAggregateCreatedEvent : DomainEvent
     {
         public string Data { get; }
 
-        public TestAggregateCreated(Guid aggregateId, string data)
+        public TestAggregateCreatedEvent(Guid aggregateId, string data)
             : base(aggregateId)
         {
             Data = data;
         }
     }
 
-    #endregion TestAggregateCreated
-
-    #region TestAggregateModified
-
-    public class TestAggregateOperationExecuted : DomainEvent
+    public class OperationExecutedEvent : DomainEvent
     {
-        public string Operation { get; }
+        public virtual string Operation { get; }
 
-        public TestAggregateOperationExecuted(Guid testAggregateId, int aggregateVersion, string operation)
+        public OperationExecutedEvent(Guid testAggregateId, int aggregateVersion, string operation)
             : base(testAggregateId, aggregateVersion)
         {
             Operation = operation;
         }
-
-        public class Operations
-        {
-            public const string ThrowException = nameof(ThrowException);
-            public const string Delay = nameof(Delay);
-        }
     }
 
-    public class TestAggregateOperationExecuted<TData> : TestAggregateOperationExecuted
+    public class DelayTriggeredEvent : DomainEvent
     {
-        public TData Data { get; }
+        public string Operation => $"{GetType().Name}: Triggering delay for {DelayInMilliseconds} milliseconds.";
+        public int DelayInMilliseconds { get; }
 
-        public TestAggregateOperationExecuted(Guid testAggregateId, int aggregateVersion, string operation, TData data) 
-            : base(testAggregateId, aggregateVersion, operation)
+        public DelayTriggeredEvent(Guid testAggregateId, int aggregateVersion, int delayInMilliseconds) 
+            : base(testAggregateId, aggregateVersion)
         {
-            Data = data;
+            DelayInMilliseconds = delayInMilliseconds;
         }
     }
 
-    #endregion TestAggregateModified
+    public class ExceptionTriggeredEvent : DomainEvent
+    {
+        public string Operation => $"{GetType().Name}: Triggering exception.";
+
+        public ExceptionTriggeredEvent(Guid testAggregateId, int aggregateVersion) 
+            : base(testAggregateId, aggregateVersion)
+        {
+        }
+    }
 }

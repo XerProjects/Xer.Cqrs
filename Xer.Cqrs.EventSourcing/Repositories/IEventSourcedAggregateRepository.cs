@@ -3,8 +3,11 @@ using Xer.DomainDriven.Repositories;
 
 namespace Xer.Cqrs.EventSourcing.Repositories
 {
-    public interface IEventSourcedAggregateRepository<TAggregate> : IAggregateRepository<TAggregate> where TAggregate : IEventSourcedAggregate
+    public interface IEventSourcedAggregateRepository<TAggregate, TAggregateId> : IAggregateRepository<TAggregate, TAggregateId> 
+                                                                                  where TAggregate : IEventSourcedAggregate<TAggregateId>
+                                                                                  where TAggregateId : IEquatable<TAggregateId>
     {
-        TAggregate GetById(Guid aggregateId, int version);
+        TAggregate GetById(TAggregateId aggregateId, int upToVersion);
+        TAggregate GetById(TAggregateId aggregateId, int fromVersion, int toVersion);
     }
 }

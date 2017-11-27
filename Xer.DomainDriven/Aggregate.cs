@@ -2,9 +2,9 @@
 
 namespace Xer.DomainDriven
 {
-    public abstract class Aggregate : Entity, IAggregate
+    public abstract class Aggregate<TId> : Entity<TId>, IAggregate<TId> where TId : IEquatable<TId>
     {
-        public Aggregate(Guid aggregateId) 
+        public Aggregate(TId aggregateId) 
             : base(aggregateId)
         {
         }

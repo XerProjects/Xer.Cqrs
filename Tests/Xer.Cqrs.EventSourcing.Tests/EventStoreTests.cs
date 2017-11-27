@@ -20,13 +20,13 @@ namespace Xer.Cqrs.EventSourcing.Tests
             [Fact]
             public void Should_Append_To_Domain_Event_Store()
             {
-                IDomainEventStore<TestAggregate> eventStore = Factory.CreateEventStore<TestAggregate>();
+                IDomainEventStore<TestAggregate, Guid> eventStore = Factory.CreateEventStore<TestAggregate, Guid>();
 
                 // Create aggregate.
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
                 eventStore.Save(aggregate);
 
-                DomainEventStream stream = eventStore.GetDomainEventStream(aggregate.Id);
+                IDomainEventStream<Guid> stream = eventStore.GetDomainEventStream(aggregate.Id);
 
                 var fromStream = new TestAggregate(stream);
 
@@ -50,13 +50,13 @@ namespace Xer.Cqrs.EventSourcing.Tests
             [Fact]
             public async Task Should_Append_To_Domain_Event_Store()
             {
-                IDomainEventAsyncStore<TestAggregate> eventStore = Factory.CreateEventAsyncStore<TestAggregate>();
+                IDomainEventAsyncStore<TestAggregate, Guid> eventStore = Factory.CreateEventAsyncStore<TestAggregate, Guid>();
 
                 // Create aggregate.
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
                 await eventStore.SaveAsync(aggregate);
 
-                DomainEventStream stream = await eventStore.GetDomainEventStreamAsync(aggregate.Id);
+                IDomainEventStream<Guid> stream = await eventStore.GetDomainEventStreamAsync(aggregate.Id);
 
                 Assert.NotNull(stream);
                 Assert.Equal(aggregate.Id, stream.AggregateId);
@@ -69,14 +69,14 @@ namespace Xer.Cqrs.EventSourcing.Tests
             [Fact]
             public void Should_Retrieve_Aggregate_Stream()
             {
-                IDomainEventStore<TestAggregate> eventStore = Factory.CreateEventStore<TestAggregate>();
+                IDomainEventStore<TestAggregate, Guid> eventStore = Factory.CreateEventStore<TestAggregate, Guid>();
 
                 // Create and modify aggregate.
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
                 aggregate.ExecuteSomeOperation("I was modified!~");
                 eventStore.Save(aggregate);
 
-                DomainEventStream stream = eventStore.GetDomainEventStream(aggregate.Id);
+                IDomainEventStream<Guid> stream = eventStore.GetDomainEventStream(aggregate.Id);
 
                 Assert.NotNull(stream);
                 Assert.Equal(aggregate.Id, stream.AggregateId);
@@ -95,14 +95,14 @@ namespace Xer.Cqrs.EventSourcing.Tests
             [Fact]
             public async Task GetDomainEventStreamAsync_Should_Retrieve_Aggregate_Stream()
             {
-                IDomainEventAsyncStore<TestAggregate> eventStore = Factory.CreateEventAsyncStore<TestAggregate>();
+                IDomainEventAsyncStore<TestAggregate, Guid> eventStore = Factory.CreateEventAsyncStore<TestAggregate, Guid>();
 
                 // Create and modify aggregate.
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
                 aggregate.ExecuteSomeOperation("I was modified!~");
                 await eventStore.SaveAsync(aggregate);
 
-                DomainEventStream stream = await eventStore.GetDomainEventStreamAsync(aggregate.Id);
+                IDomainEventStream<Guid> stream = await eventStore.GetDomainEventStreamAsync(aggregate.Id);
 
                 Assert.NotNull(stream);
                 Assert.Equal(aggregate.Id, stream.AggregateId);

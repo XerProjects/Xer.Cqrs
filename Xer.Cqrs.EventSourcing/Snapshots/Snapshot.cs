@@ -2,7 +2,8 @@
 
 namespace Xer.Cqrs.EventSourcing.Snapshots
 {
-    public abstract class Snapshot<TAggregate> where TAggregate : EventSourcedAggregate
+    public abstract class Snapshot<TAggregate, TAggregateId> where TAggregate : EventSourcedAggregate<TAggregateId>
+                                                             where TAggregateId : IEquatable<TAggregateId>
     {
         TAggregate Data { get; }
         int SnapshotVersion { get; }

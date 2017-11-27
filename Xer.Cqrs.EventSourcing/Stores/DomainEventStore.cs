@@ -6,28 +6,45 @@ using Xer.Cqrs.Events;
 
 namespace Xer.Cqrs.EventSourcing.Stores
 {
-    public abstract class DomainEventStore<TAggregate> : IDomainEventStore<TAggregate> where TAggregate : IEventSourcedAggregate
+    public abstract class DomainEventStore<TAggregate, TAggregateId> : IDomainEventStore<TAggregate, TAggregateId> 
+                                                                       where TAggregate : IEventSourcedAggregate<TAggregateId>
+                                                                       where TAggregateId : IEquatable<TAggregateId>
     {
         /// <summary>
-        /// Get all domain events of aggregate.
+        /// Get domain events of aggregate from the specified start and end version.
         /// </summary>
         /// <param name="aggreggateId">ID of the aggregate.</param>
-        /// <returns>All domain events for the aggregate.</returns>
-        public abstract DomainEventStream GetDomainEventStream(Guid aggreggateId);
+        /// <param name="fromVersion">Aggregate version to start retrieving domain events from.</param>
+        /// <param name="toVersion">Target aggregate version.</param>
+        /// <returns>Domain events for the aggregat with the specified version.</returns>
+        public abstract IDomainEventStream<TAggregateId> GetDomainEventStream(TAggregateId aggreggateId, int fromVersion, int toVersion);
 
         /// <summary>
         /// Get domain events of aggregate from the beginning up to the specified version.
         /// </summary>
         /// <param name="aggreggateId">ID of the aggregate.</param>
-        /// <param name="version">Target aggregate version.</param>
+        /// <param name="upToVersion">Target aggregate version.</param>
         /// <returns>Domain events for the aggregat with the specified version.</returns>
-        public abstract DomainEventStream GetDomainEventStream(Guid aggreggateId, int version);
+        public virtual IDomainEventStream<TAggregateId> GetDomainEventStream(TAggregateId aggreggateId, int upToVersion)
+        {
+            return GetDomainEventStream(aggreggateId, 1, upToVersion);
+        }
+
+        /// <summary>
+        /// Get all domain events of aggregate.
+        /// </summary>
+        /// <param name="aggreggateId">ID of the aggregate.</param>
+        /// <returns>All domain events for the aggregate.</returns>
+        public virtual IDomainEventStream<TAggregateId> GetDomainEventStream(TAggregateId aggreggateId)
+        {
+            return GetDomainEventStream(aggreggateId, int.MaxValue);
+        }
 
         /// <summary>
         /// Commit the domain event to the store.
         /// </summary>
         /// <param name="domainEventStreamToCommit">Domain event to store.</param>
-        protected abstract void Commit(DomainEventStream domainEventStreamToCommit);
+        protected abstract void Commit(IDomainEventStream<TAggregateId> domainEventStreamToCommit);
 
         /// <summary>
         /// Persist aggregate to the event store.
@@ -38,7 +55,7 @@ namespace Xer.Cqrs.EventSourcing.Stores
             try
             {
                 // Get uncommited events.
-                DomainEventStream domainEventsToCommit = aggregateRoot.GetUncommitedDomainEvents();
+                IDomainEventStream<TAggregateId> domainEventsToCommit = aggregateRoot.GetUncommitedDomainEvents();
 
                 Commit(domainEventsToCommit);
 

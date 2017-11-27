@@ -26,48 +26,50 @@ namespace Xer.Cqrs.EventSourcing.Tests.Utilities
 
         #region CreateEventStore
 
-        public static IDomainEventStore<T> CreateEventStore<T>(IEventPublisher publisher = null) where T : EventSourcedAggregate
+        public static IDomainEventStore<T, TId> CreateEventStore<T, TId>(IEventPublisher publisher = null) where T : EventSourcedAggregate<TId> 
+                                                                                                           where TId : IEquatable<TId>
         {
-            return new PublishingDomainEventStore<T>(new InMemoryDomainEventStore<T>(), publisher ?? CreatePublisher());
+            return new PublishingDomainEventStore<T, TId>(new InMemoryDomainEventStore<T, TId>(), publisher ?? CreatePublisher());
         }
 
-        public static IDomainEventAsyncStore<T> CreateEventAsyncStore<T>(IEventPublisher publisher = null) where T : EventSourcedAggregate
+        public static IDomainEventAsyncStore<T, TId> CreateEventAsyncStore<T, TId>(IEventPublisher publisher = null) where T : EventSourcedAggregate<TId>
+                                                                                                                     where TId : IEquatable<TId>
         {
-            return new PublishingDomainEventAsyncStore<T>(new InMemoryDomainEventStore<T>(), publisher ?? CreatePublisher());
+            return new PublishingDomainEventAsyncStore<T, TId>(new InMemoryDomainEventStore<T, TId>(), publisher ?? CreatePublisher());
         }
 
         #endregion CreateEventStore
 
         #region CreateRepository
 
-        public static IEventSourcedAggregateRepository<TestAggregate> CreateTestAggregateRepository(IDomainEventStore<TestAggregate> domainEventStore)
+        public static IEventSourcedAggregateRepository<TestAggregate, Guid> CreateTestAggregateRepository(IDomainEventStore<TestAggregate, Guid> domainEventStore)
         {
             return new TestAggregateRepository(domainEventStore);
         }
 
-        public static IEventSourcedAggregateRepository<TestAggregate> CreateTestAggregateRepository(Action<IEventHandlerRegistration> registrationMutator = null)
+        public static IEventSourcedAggregateRepository<TestAggregate, Guid> CreateTestAggregateRepository(Action<IEventHandlerRegistration> registrationMutator = null)
         {
-            return new TestAggregateRepository(CreateEventStore<TestAggregate>(CreatePublisher(registrationMutator)));
+            return new TestAggregateRepository(CreateEventStore<TestAggregate, Guid>(CreatePublisher(registrationMutator)));
         }
 
-        public static IEventSourcedAggregateRepository<TestAggregate> CreateTestAggregateRepository(IEventPublisher publisher)
+        public static IEventSourcedAggregateRepository<TestAggregate, Guid> CreateTestAggregateRepository(IEventPublisher publisher)
         {
-            return new TestAggregateRepository(CreateEventStore<TestAggregate>(publisher));
+            return new TestAggregateRepository(CreateEventStore<TestAggregate, Guid>(publisher));
         }
         
-        public static IEventSourcedAggregateAsyncRepository<TestAggregate> CreateTestAggregateAsyncRepository(IDomainEventAsyncStore<TestAggregate> domainEventStore)
+        public static IEventSourcedAggregateAsyncRepository<TestAggregate, Guid> CreateTestAggregateAsyncRepository(IDomainEventAsyncStore<TestAggregate, Guid> domainEventStore)
         {
             return new TestAggregateAsyncRepository(domainEventStore);
         }
 
-        public static IEventSourcedAggregateAsyncRepository<TestAggregate> CreateTestAggregateAsyncRepository(IEventPublisher publisher)
+        public static IEventSourcedAggregateAsyncRepository<TestAggregate, Guid> CreateTestAggregateAsyncRepository(IEventPublisher publisher)
         {
-            return new TestAggregateAsyncRepository(CreateEventAsyncStore<TestAggregate>(publisher));
+            return new TestAggregateAsyncRepository(CreateEventAsyncStore<TestAggregate, Guid>(publisher));
         }
 
-        public static IEventSourcedAggregateAsyncRepository<TestAggregate> CreateTestAggregateAsyncRepository(Action<IEventHandlerRegistration> registrationMutator = null) 
+        public static IEventSourcedAggregateAsyncRepository<TestAggregate, Guid> CreateTestAggregateAsyncRepository(Action<IEventHandlerRegistration> registrationMutator = null) 
         {
-            return new TestAggregateAsyncRepository(CreateEventAsyncStore<TestAggregate>(CreatePublisher(registrationMutator)));
+            return new TestAggregateAsyncRepository(CreateEventAsyncStore<TestAggregate, Guid>(CreatePublisher(registrationMutator)));
         }
 
         #endregion CreateRepository

@@ -7,9 +7,11 @@ using Xer.Cqrs.Events;
 
 namespace Xer.Cqrs.EventSourcing.Stores
 {
-    public class PublishingDomainEventAsyncStore<TAggregate> : IDomainEventAsyncStore<TAggregate> where TAggregate : IEventSourcedAggregate
+    public class PublishingDomainEventAsyncStore<TAggregate, TAggregateId> : IDomainEventAsyncStore<TAggregate, TAggregateId> 
+                                                                             where TAggregate : IEventSourcedAggregate<TAggregateId>
+                                                                             where TAggregateId : IEquatable<TAggregateId>
     {
-        private readonly IDomainEventAsyncStore<TAggregate> _domainEventStore;
+        private readonly IDomainEventAsyncStore<TAggregate, TAggregateId> _domainEventStore;
         private readonly IEventPublisher _publisher;
 
         /// <summary>
@@ -17,7 +19,7 @@ namespace Xer.Cqrs.EventSourcing.Stores
         /// </summary>
         /// <param name="domainEventStore">Decorated domain event store.</param>
         /// <param name="publisher">Event publisher.</param>
-        public PublishingDomainEventAsyncStore(IDomainEventAsyncStore<TAggregate> domainEventStore, IEventPublisher publisher)
+        public PublishingDomainEventAsyncStore(IDomainEventAsyncStore<TAggregate, TAggregateId> domainEventStore, IEventPublisher publisher)
         {
             _domainEventStore = domainEventStore;
             _publisher = publisher;
@@ -29,20 +31,46 @@ namespace Xer.Cqrs.EventSourcing.Stores
             };
         }
 
-        public Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggreggateId, CancellationToken cancellationToken = default(CancellationToken))
+        /// <summary>
+        /// Get all domain events of aggregate asynchronously.
+        /// </summary>
+        /// <param name="aggreggateId">ID of the aggregate.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>All domain events for the aggregate.</returns>
+        public Task<IDomainEventStream<TAggregateId>> GetDomainEventStreamAsync(TAggregateId aggreggateId, CancellationToken cancellationToken = default(CancellationToken))
         {
             return _domainEventStore.GetDomainEventStreamAsync(aggreggateId, cancellationToken);
         }
 
-        public Task<DomainEventStream> GetDomainEventStreamAsync(Guid aggreggateId, int version, CancellationToken cancellationToken = default(CancellationToken))
+        /// <summary>
+        /// Get domain events of aggregate from the beginning up to the specified version asynchronously.
+        /// </summary>
+        /// <param name="aggreggateId">ID of the aggregate.</param>
+        /// <param name="upToVersion">Target aggregate version.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Domain events for the aggregate with the specified version.</returns>
+        public Task<IDomainEventStream<TAggregateId>> GetDomainEventStreamAsync(TAggregateId aggreggateId, int upToVersion, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return _domainEventStore.GetDomainEventStreamAsync(aggreggateId, version, cancellationToken);
+            return _domainEventStore.GetDomainEventStreamAsync(aggreggateId, upToVersion, cancellationToken);
+        }
+
+        /// <summary>
+        /// Get domain events of aggregate from the beginning up to the specified version asynchronously.
+        /// </summary>
+        /// <param name="aggreggateId">ID of the aggregate.</param>
+        /// <param name="fromVersion">Aggregate version to start retrieving domain events from.</param>
+        /// <param name="toVersion">Target aggregate version.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Domain events for the aggregate with the specified version.</returns>
+        public Task<IDomainEventStream<TAggregateId>> GetDomainEventStreamAsync(TAggregateId aggreggateId, int fromVersion, int toVersion, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return _domainEventStore.GetDomainEventStreamAsync(aggreggateId, fromVersion, toVersion,  cancellationToken);
         }
 
         public async Task SaveAsync(TAggregate aggregateRoot, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Get a copy of the uncommited domain events before saving.
-            DomainEventStream domainEventStreamToSave = aggregateRoot.GetUncommitedDomainEvents();
+            IDomainEventStream<TAggregateId> domainEventStreamToSave = aggregateRoot.GetUncommitedDomainEvents();
 
             await _domainEventStore.SaveAsync(aggregateRoot, cancellationToken).ConfigureAwait(false);
 
@@ -57,7 +85,7 @@ namespace Xer.Cqrs.EventSourcing.Stores
         /// </summary>
         /// <param name="eventStream">Domain events to publish.</param>
         /// <returns>Asynchronous task.</returns>
-        protected virtual Task PublishDomainEventsAsync(DomainEventStream eventStream)
+        protected virtual Task PublishDomainEventsAsync(IDomainEventStream<TAggregateId> eventStream)
         {
             return _publisher.PublishAsync(eventStream);
         }

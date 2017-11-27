@@ -14,7 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Xer.Cqrs.EventSourcing.EventStore\Xer.Cqrs.EventSourcing.EventStore.csproj" />
     <ProjectReference Include="..\..\Xer.Cqrs.EventSourcing\Xer.Cqrs.EventSourcing.csproj" />
   </ItemGroup>
 

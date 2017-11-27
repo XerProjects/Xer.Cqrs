@@ -14,7 +14,7 @@ namespace Xer.Cqrs.EventSourcing.Tests
             [Fact]
             public void Should_Persist_Aggregate()
             {
-                IEventSourcedAggregateRepository<TestAggregate> repository = Factory.CreateTestAggregateRepository();
+                IEventSourcedAggregateRepository<TestAggregate, Guid> repository = Factory.CreateTestAggregateRepository();
 
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
                 repository.Save(aggregate);
@@ -31,7 +31,7 @@ namespace Xer.Cqrs.EventSourcing.Tests
             [Fact]
             public async Task Should_Persist_Aggregate()
             {
-                IEventSourcedAggregateAsyncRepository<TestAggregate> repository = Factory.CreateTestAggregateAsyncRepository();
+                IEventSourcedAggregateAsyncRepository<TestAggregate, Guid> repository = Factory.CreateTestAggregateAsyncRepository();
 
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
                 await repository.SaveAsync(aggregate);
@@ -48,7 +48,7 @@ namespace Xer.Cqrs.EventSourcing.Tests
             [Fact]
             public void Should_Retrieve_Aggregate()
             {
-                IEventSourcedAggregateRepository<TestAggregate> repository = Factory.CreateTestAggregateRepository();
+                IEventSourcedAggregateRepository<TestAggregate, Guid> repository = Factory.CreateTestAggregateRepository();
 
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
                 repository.Save(aggregate);
@@ -65,7 +65,7 @@ namespace Xer.Cqrs.EventSourcing.Tests
             [Fact]
             public async Task Should_Retrieve_Aggregate()
             {
-                IEventSourcedAggregateAsyncRepository<TestAggregate> repository = Factory.CreateTestAggregateAsyncRepository();
+                IEventSourcedAggregateAsyncRepository<TestAggregate, Guid> repository = Factory.CreateTestAggregateAsyncRepository();
 
                 TestAggregate aggregate = new TestAggregate(Guid.NewGuid());
                 await repository.SaveAsync(aggregate);

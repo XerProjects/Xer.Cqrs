@@ -5,7 +5,9 @@ using Xer.DomainDriven;
 
 namespace Xer.Cqrs.EventSourcing
 {
-    public abstract class EventSourcedAggregate : Aggregate, IEventSourcedAggregate
+    public abstract class EventSourcedAggregate<TId> : Aggregate<TId>, 
+                                                       IEventSourcedAggregate<TId>
+                                                       where TId : IEquatable<TId>
     {
         #region Declarations
 
@@ -35,7 +37,7 @@ namespace Xer.Cqrs.EventSourcing
         /// Constructor.
         /// </summary>
         /// <param name="aggregateId">Id of aggregate.</param>
-        public EventSourcedAggregate(Guid aggregateId)
+        public EventSourcedAggregate(TId aggregateId)
             : base(aggregateId)
         {
             RegisterDomainEventAppliers(_domainEventApplierRegistration);
@@ -45,7 +47,7 @@ namespace Xer.Cqrs.EventSourcing
         /// Constructor to build this aggregate from the domain event stream.
         /// </summary>
         /// <param name="history">Domain event stream.</param>
-        public EventSourcedAggregate(DomainEventStream history)
+        public EventSourcedAggregate(IDomainEventStream<TId> history)
             : this(EnsureValidDomainEventStream(history).AggregateId)
         {
             // History events are events that are already saved to event store.
@@ -66,15 +68,15 @@ namespace Xer.Cqrs.EventSourcing
         /// Get an event stream of all the uncommitted domain events applied to the aggregate.
         /// </summary>
         /// <returns>Stream of uncommitted domain events.</returns>
-        DomainEventStream IEventSourcedAggregate.GetUncommitedDomainEvents()
+        IDomainEventStream<TId> IEventSourcedAggregate<TId>.GetUncommitedDomainEvents()
         {
-            return new DomainEventStream(Id, _uncommittedDomainEvents);
+            return new DomainEventStream<TId>(Id, _uncommittedDomainEvents);
         }
 
         // <summary>
         // Clear all internally tracked domain events.
         // </summary>
-        void IEventSourcedAggregate.ClearUncommitedDomainEvents()
+        void IEventSourcedAggregate<TId>.ClearUncommitedDomainEvents()
         {
             _uncommittedDomainEvents.Clear();
         }
@@ -174,7 +176,7 @@ namespace Xer.Cqrs.EventSourcing
         /// </summary>
         /// <param name="history">Domain event stream.</param>
         /// <returns>Valid domain event stream.</returns>
-        private static DomainEventStream EnsureValidDomainEventStream(DomainEventStream history)
+        private static IDomainEventStream<TId> EnsureValidDomainEventStream(IDomainEventStream<TId> history)
         {
             if (history == null)
             {

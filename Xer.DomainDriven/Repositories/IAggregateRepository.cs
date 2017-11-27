@@ -2,9 +2,10 @@
 
 namespace Xer.DomainDriven.Repositories
 {
-    public interface IAggregateRepository<TAggregate> where TAggregate : IAggregate
+    public interface IAggregateRepository<TAggregate, TAggregateId> where TAggregate : IAggregate<TAggregateId> 
+                                                                    where TAggregateId : IEquatable<TAggregateId>
     {
         void Save(TAggregate aggregate);
-        TAggregate GetById(Guid aggregateId);
+        TAggregate GetById(TAggregateId aggregateId);
     }
 }

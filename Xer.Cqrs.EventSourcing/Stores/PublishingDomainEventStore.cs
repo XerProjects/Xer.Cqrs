@@ -4,9 +4,11 @@ using Xer.Cqrs.Events;
 
 namespace Xer.Cqrs.EventSourcing.Stores
 {
-    public class PublishingDomainEventStore<TAggregate> : IDomainEventStore<TAggregate> where TAggregate : IEventSourcedAggregate
+    public class PublishingDomainEventStore<TAggregate, TAggregateId> : IDomainEventStore<TAggregate, TAggregateId> 
+                                                                        where TAggregate : IEventSourcedAggregate<TAggregateId>
+                                                                        where TAggregateId : IEquatable<TAggregateId>
     {
-        private readonly IDomainEventStore<TAggregate> _domainEventStore;
+        private readonly IDomainEventStore<TAggregate, TAggregateId> _domainEventStore;
         private readonly IEventPublisher _publisher;
 
         /// <summary>
@@ -14,7 +16,7 @@ namespace Xer.Cqrs.EventSourcing.Stores
         /// </summary>
         /// <param name="domainEventStore">Decorated domain event store.</param>
         /// <param name="publisher">Event publisher.</param>
-        public PublishingDomainEventStore(IDomainEventStore<TAggregate> domainEventStore, IEventPublisher publisher)
+        public PublishingDomainEventStore(IDomainEventStore<TAggregate, TAggregateId> domainEventStore, IEventPublisher publisher)
         {
             _domainEventStore = domainEventStore;
             _publisher = publisher;
@@ -31,7 +33,7 @@ namespace Xer.Cqrs.EventSourcing.Stores
         /// </summary>
         /// <param name="aggreggateId">ID of the aggregate.</param>
         /// <returns>All domain events for the aggregate.</returns>
-        public DomainEventStream GetDomainEventStream(Guid aggreggateId)
+        public IDomainEventStream<TAggregateId> GetDomainEventStream(TAggregateId aggreggateId)
         {
             return _domainEventStore.GetDomainEventStream(aggreggateId);
         }
@@ -40,11 +42,23 @@ namespace Xer.Cqrs.EventSourcing.Stores
         /// Get domain events of aggregate from the beginning up to the specified version.
         /// </summary>
         /// <param name="aggreggateId">ID of the aggregate.</param>
-        /// <param name="version">Target aggregate version.</param>
+        /// <param name="upToVersion">Target aggregate version.</param>
         /// <returns>All domain events for the aggregate.</returns>
-        public DomainEventStream GetDomainEventStream(Guid aggreggateId, int version)
+        public IDomainEventStream<TAggregateId> GetDomainEventStream(TAggregateId aggreggateId, int upToVersion)
         {
-            return _domainEventStore.GetDomainEventStream(aggreggateId, version);
+            return _domainEventStore.GetDomainEventStream(aggreggateId, upToVersion);
+        }
+
+        /// <summary>
+        /// Get domain events of aggregate from the specified start and end version.
+        /// </summary>
+        /// <param name="aggregateId">ID of the aggregate.</param>
+        /// <param name="fromVersion">Aggregate version to start retrieving domain events from.</param>
+        /// <param name="toVersion">Target aggregate version.</param>
+        /// <returns>Domain events for the aggregat with the specified version.</returns>
+        public IDomainEventStream<TAggregateId> GetDomainEventStream(TAggregateId aggregateId, int fromVersion, int toVersion)
+        {
+            return _domainEventStore.GetDomainEventStream(aggregateId, fromVersion, toVersion);
         }
 
         /// <summary>
@@ -54,7 +68,7 @@ namespace Xer.Cqrs.EventSourcing.Stores
         public void Save(TAggregate aggregateRoot)
         {
             // Get a copy of the uncommited domain events before saving.
-            DomainEventStream domainEventStreamToSave = aggregateRoot.GetUncommitedDomainEvents();
+            IDomainEventStream<TAggregateId> domainEventStreamToSave = aggregateRoot.GetUncommitedDomainEvents();
 
             _domainEventStore.Save(aggregateRoot);
 
@@ -69,7 +83,7 @@ namespace Xer.Cqrs.EventSourcing.Stores
         /// </summary>
         /// <param name="eventStream">Domain events to publish.</param>
         /// <returns>Asynchronous task.</returns>
-        protected virtual Task PublishDomainEventsAsync(DomainEventStream eventStream)
+        protected virtual Task PublishDomainEventsAsync(IDomainEventStream<TAggregateId> eventStream)
         {
             return _publisher.PublishAsync(eventStream);
         }

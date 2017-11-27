@@ -8,23 +8,55 @@ using Xer.DomainDriven.Exceptions;
 
 namespace Xer.DomainDriven.Repositories
 {
-    public class InMemoryAggregateRepository<TAggregate> : IAggregateRepository<TAggregate>, IAggregateAsyncRepository<TAggregate> where TAggregate : IAggregate
+    public class InMemoryAggregateRepository<TAggregate> : InMemoryAggregateRepository<TAggregate, Guid>
+                                                           where TAggregate : IAggregate<Guid>
+    {
+        public InMemoryAggregateRepository()
+        {
+        }
+
+        public InMemoryAggregateRepository(bool throwIfAggregateIsNotFound) : base(throwIfAggregateIsNotFound)
+        {
+        }
+    }
+
+    public class InMemoryAggregateRepository<TAggregate, TAggregateId> : IAggregateRepository<TAggregate, TAggregateId>, 
+                                                                         IAggregateAsyncRepository<TAggregate, TAggregateId> 
+                                                                         where TAggregate : IAggregate<TAggregateId>
+                                                                         where TAggregateId : IEquatable<TAggregateId>
     {
         #region Declarations
 
         private static readonly Task CompletedTask = Task.FromResult(true);
         private List<TAggregate> _aggregates = new List<TAggregate>();
+        
+        private readonly bool _throwIfAggregateIsNotFound;
 
         #endregion Declarations
 
+        #region Constructors
+
+        public InMemoryAggregateRepository()
+            : this(false)
+        {
+
+        }
+
+        public InMemoryAggregateRepository(bool throwIfAggregateIsNotFound)
+        {
+            _throwIfAggregateIsNotFound = throwIfAggregateIsNotFound;
+        }
+
+        #endregion Constructors
+
         #region IAggregateRepository Implementation
 
-        public TAggregate GetById(Guid aggregateId)
+        public TAggregate GetById(TAggregateId aggregateId)
         {
-            TAggregate aggregate = _aggregates.FirstOrDefault(a => a.Id == aggregateId);
-            if(aggregate == null)
+            TAggregate aggregate = _aggregates.FirstOrDefault(a => a.Id.Equals(aggregateId));
+            if (aggregate == null && _throwIfAggregateIsNotFound)
             {
-                throw new AggregateNotFoundException(aggregateId);
+                throw new AggregateNotFoundException($"Aggregate of ID {aggregateId} was not found.");
             }
 
             return aggregate;
@@ -44,14 +76,14 @@ namespace Xer.DomainDriven.Repositories
 
         #region IAggregateAsyncRepository Implementation
 
-        public Task<TAggregate> GetByIdAsync(Guid aggregateId, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<TAggregate> GetByIdAsync(TAggregateId aggregateId, CancellationToken cancellationToken = default(CancellationToken))
         {
             try
             {
                 TAggregate aggregate = GetById(aggregateId);
                 return Task.FromResult(aggregate);
             }
-            catch(AggregateNotFoundException aex)
+            catch (AggregateNotFoundException aex)
             {
                 return TaskFromException<TAggregate>(aex);
             }
@@ -64,7 +96,7 @@ namespace Xer.DomainDriven.Repositories
                 Save(aggregate);
                 return CompletedTask;
             }
-            catch(AggregateNotFoundException aex)
+            catch (AggregateNotFoundException aex)
             {
                 return TaskFromException<bool>(aex);
             }

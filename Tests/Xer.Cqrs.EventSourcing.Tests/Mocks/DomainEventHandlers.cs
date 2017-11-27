@@ -3,15 +3,16 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
-using static Xer.Cqrs.EventSourcing.Tests.Mocks.TestAggregateOperationExecuted;
+using static Xer.Cqrs.EventSourcing.Tests.Mocks.OperationExecutedEvent;
 
 namespace Xer.Cqrs.EventSourcing.Tests.Mocks.DomainEventHandlers
 {
     #region TestDomainEventHandler
 
-    public class TestDomainEventHandler : IDomainEventHandler<TestAggregateCreated>,
-                                          IDomainEventAsyncHandler<TestAggregateOperationExecuted<int>>,
-                                          IDomainEventAsyncHandler<TestAggregateOperationExecuted>
+    public class TestDomainEventHandler : IDomainEventHandler<TestAggregateCreatedEvent>,
+                                          IDomainEventAsyncHandler<DelayTriggeredEvent>,
+                                          IDomainEventAsyncHandler<ExceptionTriggeredEvent>,
+                                          IDomainEventAsyncHandler<OperationExecutedEvent>
     {
         private readonly List<IDomainEvent> _handledEvents = new List<IDomainEvent>();
         private readonly ITestOutputHelper _testOutput;
@@ -23,39 +24,37 @@ namespace Xer.Cqrs.EventSourcing.Tests.Mocks.DomainEventHandlers
             _testOutput = testOutput;
         }
 
-        public void Handle(TestAggregateCreated domainEvent)
+        public void Handle(TestAggregateCreatedEvent domainEvent)
         {
             handle(domainEvent);
         }
 
-        public Task HandleAsync(TestAggregateOperationExecuted domainEvent, CancellationToken cancellationToken = default(CancellationToken))
+        public Task HandleAsync(OperationExecutedEvent domainEvent, CancellationToken cancellationToken = default(CancellationToken))
         {
             handleAsync(domainEvent);
-
-            if (domainEvent.Operation == Operations.ThrowException)
-            {
-                throw new TestDomainEventHandlerException();
-            }
-
+            
             return Task.CompletedTask;
         }
 
-        public async Task HandleAsync(TestAggregateOperationExecuted<int> domainEvent, CancellationToken cancellationToken = default(CancellationToken))
+        public Task HandleAsync(ExceptionTriggeredEvent domainEvent, CancellationToken cancellationToken = default(CancellationToken))
         {
             handleAsync(domainEvent);
 
-            if (domainEvent.Operation == Operations.Delay)
-            {
-                _testOutput.WriteLine($"Delaying for {domainEvent.Data} milliseconds.");
+            throw new TestAggregateDomainEventHandlerException();
+        }
 
-                cancellationToken.ThrowIfCancellationRequested();
-                await Task.Delay(TimeSpan.FromMilliseconds(domainEvent.Data), cancellationToken);
-            }
+        public async Task HandleAsync(DelayTriggeredEvent domainEvent, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            handleAsync(domainEvent);
+
+            cancellationToken.ThrowIfCancellationRequested();
+            _testOutput.WriteLine($"Delaying for {domainEvent.DelayInMilliseconds} milliseconds.");
+            await Task.Delay(TimeSpan.FromMilliseconds(domainEvent.DelayInMilliseconds), cancellationToken);
         }
 
         private void handleAsync<TEvent>(TEvent domainEvent) where TEvent : IDomainEvent
         {
-            _testOutput.WriteLine($"{DateTime.Now}: {GetType().Name} has handled {domainEvent.GetType()}. asynchronously");
+            _testOutput.WriteLine($"{DateTime.Now}: {GetType().Name} has handled {domainEvent.GetType()} asynchronously.");
             _handledEvents.Add(domainEvent);
         }
 
@@ -66,9 +65,9 @@ namespace Xer.Cqrs.EventSourcing.Tests.Mocks.DomainEventHandlers
         }
     }
 
-    public class TestDomainEventHandlerException : Exception
+    public class TestAggregateDomainEventHandlerException : Exception
     {
-        public TestDomainEventHandlerException()
+        public TestAggregateDomainEventHandlerException()
         {
         }
     }

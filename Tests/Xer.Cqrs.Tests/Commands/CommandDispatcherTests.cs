@@ -60,7 +60,7 @@ namespace Xer.Cqrs.Tests.Commands
             [Fact]
             public Task Should_Throw_When_No_Registered_Command_Handler_Is_Found()
             {
-                return Assert.ThrowsAsync<CommandNotHandledException>(async () =>
+                return Assert.ThrowsAsync<NoCommandHandlerResolvedException>(async () =>
                 {
                     var registration = new CommandHandlerRegistration();
                     var dispatcher = new CommandDispatcher(registration);
@@ -110,7 +110,7 @@ namespace Xer.Cqrs.Tests.Commands
             [Fact]
             public Task Should_Throw_When_No_Registered_Attribute_Command_Handler_Is_Found()
             {
-                return Assert.ThrowsAsync<CommandNotHandledException>(async () =>
+                return Assert.ThrowsAsync<NoCommandHandlerResolvedException>(async () =>
                 {
                     var registration = new CommandHandlerAttributeRegistration();
                     var dispatcher = new CommandDispatcher(registration);
@@ -165,7 +165,7 @@ namespace Xer.Cqrs.Tests.Commands
             [Fact]
             public Task Should_Throw_When_No_Registered_Command_Handler_In_Container_Is_Found()
             {
-                return Assert.ThrowsAsync<CommandNotHandledException>(async () =>
+                return Assert.ThrowsAsync<NoCommandHandlerResolvedException>(async () =>
                 {
                     var commandHandler = new TestCommandHandler(_outputHelper);
                     var container = new Container();
@@ -270,7 +270,7 @@ namespace Xer.Cqrs.Tests.Commands
             [Fact]
             public void Should_Throw_When_No_Registered_Command_Handler_Is_Found()
             {
-                Assert.Throws<CommandNotHandledException>(() =>
+                Assert.Throws<NoCommandHandlerResolvedException>(() =>
                 {
                     var registration = new CommandHandlerRegistration();
                     var dispatcher = new CommandDispatcher(registration);
@@ -308,7 +308,7 @@ namespace Xer.Cqrs.Tests.Commands
             [Fact]
             public void Should_Throw_When_No_Registered_Attribute_Command_Handler_Is_Found()
             {
-                Assert.Throws<CommandNotHandledException>(() =>
+                Assert.Throws<NoCommandHandlerResolvedException>(() =>
                 {
                     var registration = new CommandHandlerAttributeRegistration();
                     var dispatcher = new CommandDispatcher(registration);
@@ -348,7 +348,7 @@ namespace Xer.Cqrs.Tests.Commands
             [Fact]
             public void Should_Throw_When_No_Registered_Command_Handler_In_Container_Is_Found()
             {
-                Assert.Throws<CommandNotHandledException>(() =>
+                Assert.Throws<NoCommandHandlerResolvedException>(() =>
                 {
                     var commandHandler = new TestCommandHandler(_outputHelper);
                     var container = new Container();

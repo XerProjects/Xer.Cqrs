@@ -99,7 +99,7 @@ namespace Xer.Cqrs.Tests.Queries
             [Fact]
             public Task Should_Throw_When_No_Registered_Query_Handler_Is_Found()
             {
-                return Assert.ThrowsAsync<QueryNotHandledException>(async () =>
+                return Assert.ThrowsAsync<NoQueryHandlerResolvedException>(async () =>
                 {
                     var registration = new QueryHandlerRegistration();
                     var dispatcher = new QueryDispatcher(registration);
@@ -192,7 +192,7 @@ namespace Xer.Cqrs.Tests.Queries
             [Fact]
             public Task Should_Throw_When_No_Registered_Attribute_Query_Handler_Is_Found()
             {
-                return Assert.ThrowsAsync<QueryNotHandledException>(async () =>
+                return Assert.ThrowsAsync<NoQueryHandlerResolvedException>(async () =>
                 {
                     var registration = new QueryHandlerAttributeRegistration();
                     var dispatcher = new QueryDispatcher(registration);
@@ -298,7 +298,7 @@ namespace Xer.Cqrs.Tests.Queries
             [Fact]
             public Task Should_Throw_When_No_Registered_Query_Handler_In_Container_Is_Found()
             {
-                return Assert.ThrowsAsync<QueryNotHandledException>(async () =>
+                return Assert.ThrowsAsync<NoQueryHandlerResolvedException>(async () =>
                 {
                     var container = new Container();
                     var containerAdapter = new SimpleInjectorContainerAdapter(container);
@@ -441,7 +441,7 @@ namespace Xer.Cqrs.Tests.Queries
             [Fact]
             public void Should_Throw_When_No_Registered_Query_Handler_Is_Found()
             {
-                Assert.Throws<QueryNotHandledException>(() =>
+                Assert.Throws<NoQueryHandlerResolvedException>(() =>
                 {
                     var registration = new QueryHandlerRegistration();
                     var dispatcher = new QueryDispatcher(registration);
@@ -516,7 +516,7 @@ namespace Xer.Cqrs.Tests.Queries
             [Fact]
             public void Should_Throw_When_No_Registered_Attribute_Query_Handler_Is_Found()
             {
-                Assert.Throws<QueryNotHandledException>(() =>
+                Assert.Throws<NoQueryHandlerResolvedException>(() =>
                 {
                     var registration = new QueryHandlerAttributeRegistration();
                     var dispatcher = new QueryDispatcher(registration);
@@ -601,7 +601,7 @@ namespace Xer.Cqrs.Tests.Queries
             [Fact]
             public void Should_Throw_When_No_Registered_Query_Handler_In_Container_Is_Found()
             {
-                Assert.Throws<QueryNotHandledException>(() =>
+                Assert.Throws<NoQueryHandlerResolvedException>(() =>
                 {
                     var queryHandler = new TestQueryHandler(_testOutputHelper);
                     var container = new Container();

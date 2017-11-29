@@ -26,9 +26,9 @@ namespace Xer.Cqrs.Events.Registrations
 
         #region Constructors
 
-        private EventHandlerAttributeMethod(Type commandType, MethodInfo methodInfo, bool isAsync, bool supportsCancellation)
+        private EventHandlerAttributeMethod(Type eventType, MethodInfo methodInfo, bool isAsync, bool supportsCancellation)
         {
-            EventType = commandType ?? throw new ArgumentNullException(nameof(commandType));
+            EventType = eventType ?? throw new ArgumentNullException(nameof(eventType));
             MethodInfo = methodInfo ?? throw new ArgumentNullException(nameof(methodInfo));
             IsAsync = isAsync;
             SupportsCancellation = supportsCancellation;
@@ -70,8 +70,6 @@ namespace Xer.Cqrs.Events.Registrations
                 throw new InvalidOperationException($"Methods marked with [EventHandler] should accept an event as parameter: {methodInfo.Name}");
             }
 
-            Type eventType = eventParameter.ParameterType;
-
             bool isAsync;
 
             // Only valid return types are Task/void.
@@ -85,13 +83,13 @@ namespace Xer.Cqrs.Events.Registrations
 
                 if (methodInfo.CustomAttributes.Any(p => p.AttributeType == typeof(AsyncStateMachineAttribute)))
                 {
-                    throw new InvalidOperationException($"Methods marked with async void are not allowed. Exceptions from async void methods may crash the application: {methodInfo.Name}.");
+                    throw new InvalidOperationException($"Methods marked with async void are not supported: {methodInfo.Name}.");
                 }
             }
             else
             {
                 // Return type is not Task/void. Invalid.
-                throw new InvalidOperationException($"Method marked with [EventHandler] can only have void or a Task as return value: {methodInfo.Name}");
+                throw new InvalidOperationException($"Method marked with [EventHandler] can only have void or a Task return values: {methodInfo.Name}");
             }
 
             bool supportsCancellation = methodParameters.Any(p => p.ParameterType == typeof(CancellationToken));
@@ -101,7 +99,7 @@ namespace Xer.Cqrs.Events.Registrations
                 throw new InvalidOperationException("Cancellation token support is only available for async methods (Methods returning a Task).");
             }
 
-            return new EventHandlerAttributeMethod(eventType, methodInfo, isAsync, supportsCancellation);
+            return new EventHandlerAttributeMethod(eventParameter.ParameterType, methodInfo, isAsync, supportsCancellation);
         }
 
         #endregion Methods

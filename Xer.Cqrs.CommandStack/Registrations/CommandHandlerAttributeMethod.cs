@@ -116,7 +116,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
         /// <returns>Instance of command handler delegate.</returns>
         private CommandHandlerDelegate createWrappedSyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
-                                   where TCommand : class, ICommand
+                                                                                                                                   where TCommand : class, ICommand
         {
             Action<TAttributed, TCommand> action = (Action<TAttributed, TCommand>)MethodInfo.CreateDelegate(typeof(Action<TAttributed, TCommand>));
 
@@ -131,7 +131,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
         /// <returns>Instance of command handler delegate.</returns>
         private CommandHandlerDelegate createCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
-                                   where TCommand : class, ICommand
+                                                                                                                                        where TCommand : class, ICommand
         {
             Func<TAttributed, TCommand, CancellationToken, Task> cancellableAsyncAction = (Func<TAttributed, TCommand, CancellationToken, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, CancellationToken, Task>));
 
@@ -146,7 +146,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
         /// <returns>Instance of command handler delegate.</returns>
         private CommandHandlerDelegate createNonCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
-                                   where TCommand : class, ICommand
+                                                                                                                                           where TCommand : class, ICommand
         {
             Func<TAttributed, TCommand, Task> asyncAction = (Func<TAttributed, TCommand, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, Task>));
 

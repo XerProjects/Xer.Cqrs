@@ -18,10 +18,18 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.Events", "Xer.Cqrs
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B8368CCD-E692-430E-AE0F-4C346C5233F5}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{3BF5366F-3ED0-4E1B-AF2A-82E2667F4B89}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Samples\Console\Console.csproj", "{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{BDF57B64-636E-4C03-A7F0-986A3E9A6AF0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -52,6 +60,18 @@ Global
 		{EAD6D545-3EC8-476E-B976-33B8EA8E85BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAD6D545-3EC8-476E-B976-33B8EA8E85BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAD6D545-3EC8-476E-B976-33B8EA8E85BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Debug|x64.ActiveCfg = Debug|x64
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Debug|x64.Build.0 = Debug|x64
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Debug|x86.ActiveCfg = Debug|x86
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Debug|x86.Build.0 = Debug|x86
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Release|x64.ActiveCfg = Release|x64
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Release|x64.Build.0 = Release|x64
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Release|x86.ActiveCfg = Release|x86
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -59,6 +79,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB} = {B8368CCD-E692-430E-AE0F-4C346C5233F5}
 		{B2315420-95C7-44EF-977B-D34BAD997A98} = {B8368CCD-E692-430E-AE0F-4C346C5233F5}
+		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64} = {3BF5366F-3ED0-4E1B-AF2A-82E2667F4B89}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {03714871-4DA2-4441-880E-E509A0F8205E}

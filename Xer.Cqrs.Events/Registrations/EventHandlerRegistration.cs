@@ -26,11 +26,9 @@ namespace Xer.Cqrs.Events.Registrations
                 throw new ArgumentNullException(nameof(eventAsyncHandlerFactory));
             }
 
-            Type eventType = typeof(TEvent);
-
             EventHandlerDelegate newSubscribedEventHandlerDelegate = EventHandlerDelegateBuilder.FromFactory(eventAsyncHandlerFactory);
 
-            _eventHandlerDelegateStore.Add(eventType, newSubscribedEventHandlerDelegate);
+            _eventHandlerDelegateStore.Add(typeof(TEvent), newSubscribedEventHandlerDelegate);
         }
 
         /// <summary>
@@ -45,11 +43,9 @@ namespace Xer.Cqrs.Events.Registrations
                 throw new ArgumentNullException(nameof(eventHandlerFactory));
             }
 
-            Type eventType = typeof(TEvent);
-
             EventHandlerDelegate newSubscribedEventHandlerDelegate = EventHandlerDelegateBuilder.FromFactory(eventHandlerFactory);
 
-            _eventHandlerDelegateStore.Add(eventType, newSubscribedEventHandlerDelegate);
+            _eventHandlerDelegateStore.Add(typeof(TEvent), newSubscribedEventHandlerDelegate);
         }
 
         #endregion IEventHandlerRegistration Implementation
@@ -63,12 +59,7 @@ namespace Xer.Cqrs.Events.Registrations
         /// <returns>Collection of <see cref="EventHandlerDelegate"/> which executes event handler processing.</returns>
         public IEnumerable<EventHandlerDelegate> ResolveEventHandlers<TEvent>() where TEvent : class, IEvent
         {
-            Type eventType = typeof(TEvent);
-
-            IEnumerable<EventHandlerDelegate> eventHandlerDelegates;
-            _eventHandlerDelegateStore.TryGetEventHandlerDelegates(eventType, out eventHandlerDelegates);
-
-            return eventHandlerDelegates;
+            return _eventHandlerDelegateStore.GetEventHandlerDelegates(typeof(TEvent));
         }
 
         #endregion IEventHandlerResolver Implementation

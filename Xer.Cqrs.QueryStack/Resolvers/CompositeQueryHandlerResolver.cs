@@ -22,14 +22,14 @@ namespace Xer.Cqrs.QueryStack.Resolvers
         {
             foreach (IQueryHandlerResolver resolver in _resolvers)
             {
-                QueryHandlerDelegate<TResult> handlerDelegate = resolver.ResolveQueryHandler<TQuery, TResult>();
-                if (handlerDelegate != null)
+                QueryHandlerDelegate<TResult> commandHandlerDelegate = resolver.ResolveQueryHandler<TQuery, TResult>();
+                if (commandHandlerDelegate != null)
                 {
-                    return handlerDelegate;
+                    return commandHandlerDelegate;
                 }
             }
 
-            throw new QueryNotHandledException($"No query handler is registered to handle query of type: { typeof(TQuery).Name }");
+            throw new NoQueryHandlerResolvedException($"No query handler is registered to handle query of type: { typeof(TQuery).Name }");
         }
     }
 }

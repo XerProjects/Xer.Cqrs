@@ -65,14 +65,14 @@ namespace Xer.Cqrs.CommandStack.Registrations
         {
             Type commandType = typeof(TCommand);
 
-            CommandHandlerDelegate handlerDelegate;
+            CommandHandlerDelegate commandHandlerDelegate;
 
-            if (!_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out handlerDelegate))
+            if (!_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out commandHandlerDelegate))
             {
-                throw new CommandNotHandledException($"No command handler is registered to handle command of type: { commandType.Name }.");
+                throw new NoCommandHandlerResolvedException($"No command handler is registered to handle command of type: { commandType.Name }.");
             }
 
-            return handlerDelegate;
+            return commandHandlerDelegate;
         }
 
         #endregion ICommandHandlerResolver Implementation

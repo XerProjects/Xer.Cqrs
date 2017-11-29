@@ -20,14 +20,14 @@ namespace Xer.Cqrs.CommandStack.Resolvers
         {
             foreach (ICommandHandlerResolver resolver in _resolvers)
             {
-                CommandHandlerDelegate handlerDelegate = resolver.ResolveCommandHandler<TCommand>();
-                if (handlerDelegate != null)
+                CommandHandlerDelegate commandHandlerDelegate = resolver.ResolveCommandHandler<TCommand>();
+                if (commandHandlerDelegate != null)
                 {
-                    return handlerDelegate;
+                    return commandHandlerDelegate;
                 }
             }
 
-            throw new CommandNotHandledException($"No command handler is registered to handle command of type: { typeof(TCommand).Name }.");
+            throw new NoCommandHandlerResolvedException($"Unable to resolve command handler to handle command of type: { typeof(TCommand).Name }.");
         }
     }
 }

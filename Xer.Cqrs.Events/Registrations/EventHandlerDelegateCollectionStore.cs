@@ -7,28 +7,39 @@ namespace Xer.Cqrs.Events.Registrations
 {
     internal class EventHandlerDelegateCollectionStore
     {
+        private static readonly IEnumerable<EventHandlerDelegate> NullEventHandlerDelegates = Enumerable.Empty<EventHandlerDelegate>();
+        
         private readonly IDictionary<Type, IList<EventHandlerDelegate>> _eventHandlerDelegatesByEventType = new Dictionary<Type, IList<EventHandlerDelegate>>();
 
-        public bool TryGetEventHandlerDelegates(Type eventType, out IEnumerable<EventHandlerDelegate> eventHandlerDelegates)
+        public IEnumerable<EventHandlerDelegate> GetEventHandlerDelegates(Type eventType)
         {
-            IList<EventHandlerDelegate> localEventHandlerDelegates;
-            if (_eventHandlerDelegatesByEventType.TryGetValue(eventType, out localEventHandlerDelegates))
+            IList<EventHandlerDelegate> storedEventHandlerDelegates;
+
+            if (!_eventHandlerDelegatesByEventType.TryGetValue(eventType, out storedEventHandlerDelegates))
             {
-                eventHandlerDelegates = new ReadOnlyCollection<EventHandlerDelegate>(localEventHandlerDelegates);
-                return true;
+                return NullEventHandlerDelegates;
             }
 
-            eventHandlerDelegates = Enumerable.Empty<EventHandlerDelegate>();
-            return false;
+            return new ReadOnlyCollection<EventHandlerDelegate>(storedEventHandlerDelegates);
         }
 
         public void Add(Type eventType, EventHandlerDelegate eventHandlerDelegate)
         {
+            if (eventHandlerDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(eventHandlerDelegate));
+            }
+
             addEventHandlerDelegate(eventType, eventHandlerDelegate);
         }
 
         public void Add(Type eventType, IEnumerable<EventHandlerDelegate> eventHandlerDelegates)
         {
+            if (eventHandlerDelegates == null)
+            {
+                throw new ArgumentNullException(nameof(eventHandlerDelegates));
+            }
+
             foreach (EventHandlerDelegate eventHandlerDelegate in eventHandlerDelegates)
             {
                 addEventHandlerDelegate(eventType, eventHandlerDelegate);

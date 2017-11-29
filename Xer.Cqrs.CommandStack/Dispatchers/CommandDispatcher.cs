@@ -38,14 +38,14 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
                 throw new ArgumentNullException(nameof(command));
             }
 
-            CommandHandlerDelegate handleCommandAsyncDelegate = _resolver.ResolveCommandHandler<TCommand>();
+            CommandHandlerDelegate commandHandlerDelegate = _resolver.ResolveCommandHandler<TCommand>();
 
-            if(handleCommandAsyncDelegate == null)
+            if(commandHandlerDelegate == null)
             {
-                throw new CommandNotHandledException($"No command handler is registered to handle command of type: {typeof(TCommand).Name}.");
+                throw new NoCommandHandlerResolvedException($"No command handler is registered to handle command of type: {typeof(TCommand).Name}.");
             }
             
-            return handleCommandAsyncDelegate.Invoke(command, cancellationToken);
+            return commandHandlerDelegate.Invoke(command, cancellationToken);
         }
     }
 }

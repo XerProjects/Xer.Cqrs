@@ -53,7 +53,7 @@ namespace Xer.Cqrs.CommandStack.Resolvers
             }
 
             // No handlers are resolved. Throw exception.
-            throw new CommandNotHandledException($"Unable to resolve a command handler from the container to handle command of type: { typeof(TCommand).Name }.");
+            throw new NoCommandHandlerResolvedException($"Unable to resolve command handler from the container to handle command of type: { typeof(TCommand).Name }.");
         }
     }
 

@@ -64,11 +64,9 @@ namespace Xer.Cqrs.Events.Registrations
         /// <returns>Collection of <see cref="EventHandlerDelegate"/> which executes event handler processing.</returns>
         public IEnumerable<EventHandlerDelegate> ResolveEventHandlers<TEvent>() where TEvent : class, IEvent
         {
-            Type eventType = typeof(TEvent);
-
             IList<EventHandlerDelegate> eventHandlerDelegates;
 
-            if(!_eventHandlerDelegatesByEventType.TryGetValue(eventType, out eventHandlerDelegates))
+            if(!_eventHandlerDelegatesByEventType.TryGetValue(typeof(TEvent), out eventHandlerDelegates))
             {
                 return Enumerable.Empty<EventHandlerDelegate>();
             }

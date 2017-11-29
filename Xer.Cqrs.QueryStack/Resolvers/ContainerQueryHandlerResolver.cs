@@ -53,7 +53,7 @@ namespace Xer.Cqrs.QueryStack.Resolvers
             }
 
             // No handlers are resolved. Throw exception.
-            throw new QueryNotHandledException($"Unable to resolve a query handler from the container to handle query of type: {typeof(TQuery).Name}.");
+            throw new NoQueryHandlerResolvedException($"Unable to resolve a query handler from the container to handle query of type: {typeof(TQuery).Name}.");
         }
     }
 

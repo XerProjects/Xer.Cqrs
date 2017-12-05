@@ -2,11 +2,11 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using SimpleInjector;
-using Xer.Cqrs.Events;
-using Xer.Cqrs.Events.Attributes;
-using Xer.Cqrs.Events.Publishers;
-using Xer.Cqrs.Events.Registrations;
-using Xer.Cqrs.Events.Resolvers;
+using Xer.Cqrs.EventStack;
+using Xer.Cqrs.EventStack.Attributes;
+using Xer.Cqrs.EventStack.Publishers;
+using Xer.Cqrs.EventStack.Registrations;
+using Xer.Cqrs.EventStack.Resolvers;
 
 namespace Console.EventHandlingDemo
 {

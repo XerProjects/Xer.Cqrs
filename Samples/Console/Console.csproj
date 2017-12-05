@@ -3,7 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Xer.Cqrs.CommandStack\Xer.Cqrs.CommandStack.csproj" />
     <ProjectReference Include="..\..\Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj" />
-    <ProjectReference Include="..\..\Xer.Cqrs.Events\Xer.Cqrs.Events.csproj" />
+    <ProjectReference Include="..\..\Xer.Cqrs.EventStack\Xer.Cqrs.EventStack.csproj" />
   </ItemGroup>
 
   <ItemGroup>

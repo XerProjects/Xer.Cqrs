@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Xer.Cqrs.Events;
-using Xer.Cqrs.Events.Resolvers;
+using Xer.Cqrs.EventStack;
+using Xer.Cqrs.EventStack.Resolvers;
 using Xer.Cqrs.Tests.Mocks;
 using Xunit;
 using Xunit.Abstractions;

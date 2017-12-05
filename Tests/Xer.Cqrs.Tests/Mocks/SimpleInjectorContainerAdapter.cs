@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Xer.Cqrs.Tests.Mocks
 {
-    public class SimpleInjectorContainerAdapter : CommandStack.Resolvers.IContainerAdapter, QueryStack.Resolvers.IContainerAdapter, Cqrs.Events.Resolvers.IContainerAdapter
+    public class SimpleInjectorContainerAdapter : CommandStack.Resolvers.IContainerAdapter, QueryStack.Resolvers.IContainerAdapter, EventStack.Resolvers.IContainerAdapter
     {
         private readonly Container _container;
 

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Xer.Cqrs.Events;
-using Xer.Cqrs.Events.Registrations;
+using Xer.Cqrs.EventStack;
+using Xer.Cqrs.EventStack.Registrations;
 using Xer.Cqrs.Tests.Mocks;
 using Xunit;
 using Xunit.Abstractions;

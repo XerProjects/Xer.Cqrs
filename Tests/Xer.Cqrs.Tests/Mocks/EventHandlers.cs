@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Xer.Cqrs.Events;
-using Xer.Cqrs.Events.Attributes;
+using Xer.Cqrs.EventStack;
+using Xer.Cqrs.EventStack.Attributes;
 using Xunit.Abstractions;
 
 namespace Xer.Cqrs.Tests.Mocks

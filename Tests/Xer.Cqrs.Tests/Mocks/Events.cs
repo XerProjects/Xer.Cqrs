@@ -1,4 +1,4 @@
-﻿using Xer.Cqrs.Events;
+﻿using Xer.Cqrs.EventStack;
 
 namespace Xer.Cqrs.Tests.Mocks
 {

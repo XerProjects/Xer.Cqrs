@@ -6,7 +6,7 @@ namespace Console
 {
     public class SimpleInjectorContainerAdapter : Xer.Cqrs.CommandStack.Resolvers.IContainerAdapter,
                                                   Xer.Cqrs.QueryStack.Resolvers.IContainerAdapter,
-                                                  Xer.Cqrs.Events.Resolvers.IContainerAdapter
+                                                  Xer.Cqrs.EventStack.Resolvers.IContainerAdapter
     {
         private readonly Container _container;
 

@@ -27,8 +27,8 @@ class SampleCommand : Command
 
 }
 ```
-
-* Basic Registration
+#### Command Handler Registration
+Basic Registration
 ```csharp
 private CommandDispatcher SetupDispatcherWithBasicRegistration()
 {
@@ -54,11 +54,12 @@ class SampleCommandAsyncHandler : ICommandAsyncHandler<SampleCommand>
 }
 ```
 
-* Container Registration
+Container Registration
 ```csharp
 private CommandDispatcher SetupDispatcherWithContainerRegistration()
 {
     // Register any command handlers to a container of your choice.
+    // In this sample, I've used SimpleInjector.
     var container = new Container();
     container.Register<ICommandHandler<SampleCommand>, SampleCommandHandler>();
     
@@ -81,7 +82,7 @@ class SampleCommandHandler : ICommandHandler<SampleCommand>
 }
 ```
 
-* Attribute Registration
+Attribute Registration
 ```csharp
 private CommandDispatcher SetupDispatcherWithAttributeRegistration()
 {
@@ -108,7 +109,8 @@ class SampleCommandHandlerAttributeHandler
 }
 ```
 
-* Command Dispatcher Usage
+##### Command Dispatcher Usage
+After setting up the command dispatcher with the command handler registration, commands can now be dispatched by simply doing:
 ```csharp
 public async Task Execute()
 {
@@ -124,8 +126,6 @@ public async Task Execute()
     await _dispatcherSetupWithAttributeRegistration.DispatchAsync(new SampleCommand());
 }
 ```
-
-
 
 ### Query Handling
 
@@ -146,7 +146,8 @@ class SampleResult
 }
 ```
 
-* Basic Registration
+#### Query Handler Registration
+Basic Registration
 ```csharp
 private QueryDispatcher SetupDispatcherWithBasicRegistration()
 {
@@ -172,11 +173,12 @@ class SampleQueryAsyncHandler : IQueryAsyncHandler<SampleQuery, SampleResult>
 }
 ```
 
-* Container Registration
+Container Registration
 ```csharp
 private QueryDispatcher SetupDispatcherWithContainerRegistration()
 {
     // Register any command handlers to a container of your choice.
+    // In this sample, I've used SimpleInjector.
     var container = new Container();
     container.Register<IQueryHandler<SampleQuery, SampleResult>, SampleQueryHandler>();
     
@@ -198,7 +200,7 @@ class SampleQueryHandler : IQueryHandler<SampleQuery, SampleResult>
 }
 ```
 
-* Attribute Registration
+Attribute Registration
 ```csharp
 private QueryDispatcher SetupDispatcherWithAttributeRegistration()
 {
@@ -224,22 +226,29 @@ class SampleQueryHandlerAttributeHandler
     }
 }
 ```
-* Query Dispatcher Usage
+#### Query Dispatcher Usage
+After setting up the query dispatcher with the query handler registration, queries can now be dispatched by simply doing:
 ```csharp
 public async Task ExecuteDemoAsync()
 {
     // Dispatch queries to the registered query handler.
     
     SampleResult result1 = await _dispatcherSetupWithBasicRegistration.DispatchAsync<SampleQuery, SampleResult>(new SampleQuery());
-    // Displays in console: Received result from SampleQueryHandler.
+    // Displays the ff in console: 
+    // SampleQueryHandler handled SampleQuery query.
+    // Received result from SampleQueryHandler.
     System.Console.WriteLine($"Received result from {result1.QueryHandlerName}.");
     
     SampleResult result2 = await _dispatcherSetupWithContainerRegistration.DispatchAsync<SampleQuery, SampleResult>(new SampleQuery());
-    // Displays in console: Received result from SampleQueryAsyncHandler.
+    // Displays the ff in console: 
+    // SampleQueryAsyncHandler handled SampleQuery query.
+    // Received result from SampleQueryAsyncHandler.
     System.Console.WriteLine($"Received result from {result2.QueryHandlerName}.");
 
     SampleResult result3 = await _dispatcherSetupWithAttributeRegistration.DispatchAsync<SampleQuery, SampleResult>(new SampleQuery());
-    // Displays in console: Received result from SampleQueryHandlerAttributeHandler.
+    // Displays the ff in console: 
+    // SampleQueryHandlerAttributeHandler handled SampleQuery query.
+    // Received result from SampleQueryHandlerAttributeHandler.
     System.Console.WriteLine($"Received result from {result3.QueryHandlerName}.");
 }
 ```
@@ -252,12 +261,10 @@ class SampleEvent : IEvent
 
 }
 ```
-
-
-
-* Basic Registration
+#### Event Handler Registration
+Basic Registration
 ```csharp
-private IEventHandlerResolver RegisterEventHandlers()
+private IEventHandlerResolver SetupPublisherWithBasicRegistration()
 {
     // Register any implementations of IEventAsyncHandler/IEventHandler
     // which will be invoked when resolved by the EventPublisher.
@@ -279,9 +286,9 @@ class SampleEventHandler : IEventHandler<SampleEvent>
 }
 ```
 
-* Container Registration
+Container Registration
 ```csharp
-private IEventHandlerResolver RegisterEventHandlersToContainer()
+private IEventHandlerResolver SetupPublisherWithContainerRegistration()
 {
     // Register all event handlers to a container of your choice.
     // In this sample, I've used SimpleInjector.
@@ -308,9 +315,9 @@ class SampleEventAsyncHandler : IEventAsyncHandler<SampleEvent>
 }
 ```
 
-* Attribute Registration
+Attribute Registration
 ```csharp
-private IEventPublisher SetupDispatcherWithAttributeRegistration()
+private IEventPublisher SetupPublisherWithAttributeRegistration()
 {
     // Register any methods marked with [EventHandler] 
     // which will be invoked when resolved by the EventPublisher.
@@ -339,7 +346,8 @@ class SampleEventHandlerAttributeHandler
     }
 }
 ```
-* Event Publisher Usage
+#### Event Publisher Usage
+After setting up the event publisher with the event handler registration, events can now be published by simply doing:
 ```csharp
 public async Task Execute()
 {
@@ -347,9 +355,9 @@ public async Task Execute()
     await _eventPublisher.PublishAsync(new SampleEvent());
     
     // Displays the ff in console:
-    SampleEventHandler handled SampleEvent event.
-    SampleEventAsyncHandler handled SampleEvent event.
-    SampleEventHandlerAttributeHandler handled SampleEvent event asynchronously.
-    SampleEventHandlerAttributeHandler handled SampleEvent event synchronously.
+    // SampleEventHandler handled SampleEvent event.
+    // SampleEventAsyncHandler handled SampleEvent event.
+    // SampleEventHandlerAttributeHandler handled SampleEvent event asynchronously.
+    // SampleEventHandlerAttributeHandler handled SampleEvent event synchronously.
 }
 ```

@@ -6,10 +6,29 @@ namespace Xer.Cqrs.CommandStack.Resolvers
     public class CompositeCommandHandlerResolver : ICommandHandlerResolver
     {
         private readonly IEnumerable<ICommandHandlerResolver> _resolvers;
+        private readonly Func<Exception, bool> _exceptionHandler;
 
-        public CompositeCommandHandlerResolver(IEnumerable<ICommandHandlerResolver> providers)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="resolvers">List of resolvers.</param>
+        public CompositeCommandHandlerResolver(IEnumerable<ICommandHandlerResolver> resolvers)
         {
-            _resolvers = providers;
+            _resolvers = resolvers;
+        }
+
+        /// <summary>
+        /// Constructor with exception handler.
+        /// </summary>
+        /// <param name="resolvers">List of resolvers.</param>
+        /// <param name="exceptionHandler">
+        /// If exception handler returns true, this resolver will try to resolve a command handler 
+        /// from the next resolver in the list. Otherwise, resolve will stop and exception will be re-thrown.
+        /// </param>
+        public CompositeCommandHandlerResolver(IEnumerable<ICommandHandlerResolver> resolvers, Func<Exception, bool> exceptionHandler)
+        {
+            _resolvers = resolvers;
+            _exceptionHandler = exceptionHandler;
         }
 
         /// <summary>
@@ -20,14 +39,33 @@ namespace Xer.Cqrs.CommandStack.Resolvers
         {
             foreach (ICommandHandlerResolver resolver in _resolvers)
             {
-                CommandHandlerDelegate commandHandlerDelegate = resolver.ResolveCommandHandler<TCommand>();
-                if (commandHandlerDelegate != null)
+                try
                 {
-                    return commandHandlerDelegate;
+                    CommandHandlerDelegate commandHandlerDelegate = resolver.ResolveCommandHandler<TCommand>();
+                    if (commandHandlerDelegate != null)
+                    {
+                        return commandHandlerDelegate;
+                    }
+                }
+                catch(Exception ex)
+                {
+                    if(_exceptionHandler == null)
+                    {
+                        // No exception handler. Re-throw exception.
+                        throw;
+                    }
+
+                    bool handled = _exceptionHandler.Invoke(ex);
+                    if(!handled)
+                    {
+                        // Not handled. Re-throw exception.
+                        throw;
+                    }
                 }
             }
 
-            throw new NoCommandHandlerResolvedException($"Unable to resolve command handler to handle command of type: { typeof(TCommand).Name }.");
+            Type commandType = typeof(TCommand);
+            throw new NoCommandHandlerResolvedException($"Unable to resolve command handler to handle command of type: { commandType.Name }.", commandType);
         }
     }
 }

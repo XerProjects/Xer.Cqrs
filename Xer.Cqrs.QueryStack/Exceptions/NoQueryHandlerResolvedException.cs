@@ -4,14 +4,17 @@ namespace Xer.Cqrs.QueryStack
 {
     public class NoQueryHandlerResolvedException : Exception
     {
-        public NoQueryHandlerResolvedException(string message) 
+        public Type QueryType { get; }
+
+        public NoQueryHandlerResolvedException(string message, Type queryType) 
             : base(message)
-        {
+        { 
         }
 
-        public NoQueryHandlerResolvedException(string message, Exception innerException) 
+        public NoQueryHandlerResolvedException(string message, Type queryType, Exception innerException) 
             : base(message, innerException)
         {
+            QueryType = queryType;
         }
     }
 }

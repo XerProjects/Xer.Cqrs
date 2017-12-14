@@ -4,14 +4,17 @@ namespace Xer.Cqrs.CommandStack
 {
     public class NoCommandHandlerResolvedException : Exception
     {
-        public NoCommandHandlerResolvedException(string message) 
-            : base(message)
+        public Type CommandType { get; }
+
+        public NoCommandHandlerResolvedException(string message, Type commandType) 
+            : this(message, commandType, null)
         {
         }
 
-        public NoCommandHandlerResolvedException(string message, Exception innerException) 
+        public NoCommandHandlerResolvedException(string message, Type commandType, Exception innerException) 
             : base(message, innerException)
-        {
+        { 
+            CommandType = commandType;
         }
     }
 }

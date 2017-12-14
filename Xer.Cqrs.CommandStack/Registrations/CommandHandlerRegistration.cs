@@ -85,7 +85,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
             if (!_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out commandHandlerDelegate))
             {
-                throw new NoCommandHandlerResolvedException($"No command handler is registered to handle command of type: { commandType.Name }.");
+                throw new NoCommandHandlerResolvedException($"No command handler is registered to handle command of type: { commandType.Name }.", commandType);
             }
 
             return commandHandlerDelegate;

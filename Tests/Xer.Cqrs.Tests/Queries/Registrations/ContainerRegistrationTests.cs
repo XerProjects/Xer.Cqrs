@@ -30,7 +30,7 @@ namespace Xer.Cqrs.Tests.Queries.Registrations
                 container.Register<IQueryAsyncHandler<QuerySomething, string>>(() => queryHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                var resolver = new ContainerQueryAsyncHandlerResolver(containerAdapter); // Async handler resolver
 
                 const string data = nameof(Should_Store_Registered_Query_Handler_In_Container);
 

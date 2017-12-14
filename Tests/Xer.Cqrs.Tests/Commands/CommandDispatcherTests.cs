@@ -9,6 +9,7 @@ using Xer.Cqrs.CommandStack.Resolvers;
 using Xer.Cqrs.Tests.Mocks;
 using Xunit;
 using Xunit.Abstractions;
+using System.Collections.Generic;
 
 namespace Xer.Cqrs.Tests.Commands
 {
@@ -136,10 +137,10 @@ namespace Xer.Cqrs.Tests.Commands
             {
                 var commandHandler = new TestCommandHandler(_outputHelper);
                 var container = new Container();
-                container.Register<ICommandAsyncHandler<DoSomethingCommand>>(() => commandHandler, Lifestyle.Singleton);
+                container.Register<ICommandHandler<DoSomethingCommand>>(() => commandHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter));
+                var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter)); // Sync handler resolver
 
                 await dispatcher.DispatchAsync(new DoSomethingCommand());
 
@@ -155,7 +156,7 @@ namespace Xer.Cqrs.Tests.Commands
                 container.Register<ICommandAsyncHandler<DoSomethingWithCancellationCommand>>(() => commandHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter));
+                var dispatcher = new CommandDispatcher(new ContainerCommandAsyncHandlerResolver(containerAdapter)); // Async handler resolver
 
                 var cts = new CancellationTokenSource();
 
@@ -163,14 +164,55 @@ namespace Xer.Cqrs.Tests.Commands
             }
 
             [Fact]
+            public async Task Should_Invoke_Registered_Command_Handler_With_Composite_Resolver()
+            {
+                var commandHandler = new TestCommandHandler(_outputHelper);
+                var container = new Container();
+                container.Register<ICommandHandler<DoSomethingCommand>>(() => commandHandler, Lifestyle.Singleton);
+                container.Register<ICommandAsyncHandler<DoSomethingWithCancellationCommand>>(() => commandHandler, Lifestyle.Singleton);
+
+                var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                var containerAsyncHandlerResolver = new ContainerCommandAsyncHandlerResolver(containerAdapter);
+                var containerHandlerResolver = new ContainerCommandHandlerResolver(containerAdapter);
+
+                Func<Exception, bool> exceptionHandler = (ex) => 
+                {
+                    var exception = ex as NoCommandHandlerResolvedException;
+                    if (exception != null) 
+                    {
+                        _outputHelper.WriteLine($"Ignoring encountered exception while trying to resolve command handler for {exception.CommandType.Name}...");
+                        
+                        // Notify as handled if no command handler is resolved from other resolvers.
+                        return true;
+                    }
+
+                    return false;
+                };
+
+                var compositeResolver = new CompositeCommandHandlerResolver(new List<ICommandHandlerResolver>()
+                {
+                    containerAsyncHandlerResolver,
+                    containerHandlerResolver
+                }, exceptionHandler); // Pass in an exception handler.
+
+                var dispatcher = new CommandDispatcher(compositeResolver); // Composite resolver
+
+                await dispatcher.DispatchAsync(new DoSomethingCommand());
+                await dispatcher.DispatchAsync(new DoSomethingWithCancellationCommand());
+
+                Assert.Equal(2, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingWithCancellationCommand);
+            }
+
+            [Fact]
             public Task Should_Throw_When_No_Registered_Command_Handler_In_Container_Is_Found()
             {
                 return Assert.ThrowsAsync<NoCommandHandlerResolvedException>(async () =>
                 {
-                    var commandHandler = new TestCommandHandler(_outputHelper);
                     var container = new Container();
                     var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                    var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter));
+                    var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter)); // Sync handler resolver
 
                     try
                     {
@@ -338,7 +380,7 @@ namespace Xer.Cqrs.Tests.Commands
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
 
-                var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter));
+                var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter)); // Sync handler resolver
                 dispatcher.Dispatch(new DoSomethingCommand());
 
                 Assert.Equal(1, commandHandler.HandledCommands.Count);
@@ -350,10 +392,9 @@ namespace Xer.Cqrs.Tests.Commands
             {
                 Assert.Throws<NoCommandHandlerResolvedException>(() =>
                 {
-                    var commandHandler = new TestCommandHandler(_outputHelper);
                     var container = new Container();
                     var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                    var dispatcher = new CommandDispatcher(new ContainerCommandHandlerResolver(containerAdapter));
+                    var dispatcher = new CommandDispatcher(new ContainerCommandAsyncHandlerResolver(containerAdapter)); // Async handler resolver
 
                     try
                     {

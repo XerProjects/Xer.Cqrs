@@ -45,7 +45,8 @@ namespace Xer.Cqrs.QueryStack.Dispatchers
 
             if (handleQueryAsyncDelegate == null)
             {
-                throw new NoQueryHandlerResolvedException($"No query handler is registered to handle query of type: {typeof(TQuery).Name}.");
+                Type queryType = typeof(TQuery);
+                throw new NoQueryHandlerResolvedException($"No query handler is registered to handle query of type: {queryType.Name}.", queryType);
             }
 
             return handleQueryAsyncDelegate.Invoke(query, cancellationToken);

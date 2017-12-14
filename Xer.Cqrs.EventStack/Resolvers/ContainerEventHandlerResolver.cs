@@ -9,10 +9,17 @@ namespace Xer.Cqrs.EventStack.Resolvers
     public class ContainerEventHandlerResolver : IEventHandlerResolver
     {
         private readonly IContainerAdapter _containerAdapter;
+        private readonly Action<Exception> _exceptionHandler;
 
         public ContainerEventHandlerResolver(IContainerAdapter containerAdapter)
         {
             _containerAdapter = containerAdapter;
+        }
+
+        public ContainerEventHandlerResolver(IContainerAdapter containerAdapter, Action<Exception> exceptionHandler)
+        {
+            _containerAdapter = containerAdapter;
+            _exceptionHandler = exceptionHandler;
         }
 
         /// <summary>
@@ -44,10 +51,10 @@ namespace Xer.Cqrs.EventStack.Resolvers
                     }));
                 }
             }
-            catch(Exception)
+            catch (Exception ex)
             {
-                // Do nothing.
                 // Some containers may throw exception when no instance is resolved.
+                _exceptionHandler?.Invoke(ex);
             }
 
             try
@@ -64,12 +71,12 @@ namespace Xer.Cqrs.EventStack.Resolvers
                     }));
                 }
             }
-            catch(Exception)
+            catch (Exception ex)
             {
-                // Do nothing.
                 // Some containers may throw exception when no instance is resolved.
+                _exceptionHandler?.Invoke(ex);
             }
-            
+
             return new ReadOnlyCollection<EventHandlerDelegate>(handlerDelegates);
         }
     }

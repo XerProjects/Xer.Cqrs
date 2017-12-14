@@ -86,7 +86,7 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
             if (!_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
             {
-                throw new NoQueryHandlerResolvedException($"No query handler is registered to handle query of type: { queryType.Name }.");
+                throw new NoQueryHandlerResolvedException($"No query handler is registered to handle query of type: { queryType.Name }.", queryType);
             }
 
             return handleQueryDelegate;

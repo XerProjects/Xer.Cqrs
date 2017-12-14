@@ -42,7 +42,8 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
 
             if(commandHandlerDelegate == null)
             {
-                throw new NoCommandHandlerResolvedException($"No command handler is registered to handle command of type: {typeof(TCommand).Name}.");
+                Type commandType = typeof(TCommand);
+                throw new NoCommandHandlerResolvedException($"No command handler is registered to handle command of type: {commandType.Name}.", commandType);
             }
             
             return commandHandlerDelegate.Invoke(command, cancellationToken);

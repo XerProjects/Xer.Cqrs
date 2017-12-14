@@ -1,13 +1,12 @@
-﻿using System;
-using System.Threading.Tasks;
+using System;
 
 namespace Xer.Cqrs.QueryStack.Resolvers
 {
-    public class ContainerQueryHandlerResolver : IQueryHandlerResolver
+    public class ContainerQueryAsyncHandlerResolver : IQueryHandlerResolver
     {
         private readonly IContainerAdapter _containerAdapter;
 
-        public ContainerQueryHandlerResolver(IContainerAdapter containerAdapter)
+        public ContainerQueryAsyncHandlerResolver(IContainerAdapter containerAdapter)
         {
             _containerAdapter = containerAdapter;
         }
@@ -23,16 +22,15 @@ namespace Xer.Cqrs.QueryStack.Resolvers
         {
             try
             {
-                // Try resolving sync query handler next.
-                IQueryHandler<TQuery, TResult> queryHandler = _containerAdapter.Resolve<IQueryHandler<TQuery, TResult>>();
+                IQueryAsyncHandler<TQuery, TResult> queryAsyncHandler = _containerAdapter.Resolve<IQueryAsyncHandler<TQuery, TResult>>();
 
-                if (queryHandler == null)
+                if (queryAsyncHandler == null)
                 {
                     // No handlers are resolved. Throw exception.
                     throw NoQueryHandlerResolvedException<TQuery>();
                 }
 
-                return QueryHandlerDelegateBuilder.FromQueryHandler(queryHandler);
+                return QueryHandlerDelegateBuilder.FromQueryHandler(queryAsyncHandler);
             }
             catch(Exception ex)
             {

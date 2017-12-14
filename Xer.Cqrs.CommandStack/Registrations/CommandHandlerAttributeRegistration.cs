@@ -69,7 +69,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
             if (!_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out commandHandlerDelegate))
             {
-                throw new NoCommandHandlerResolvedException($"No command handler is registered to handle command of type: { commandType.Name }.");
+                throw new NoCommandHandlerResolvedException($"No command handler is registered to handle command of type: { commandType.Name }.", commandType);
             }
 
             return commandHandlerDelegate;
@@ -99,7 +99,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
         {
             IEnumerable<MethodInfo> methods = commandHandlerType.GetRuntimeMethods().Where(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute)));
 
-            List<CommandHandlerAttributeMethod> commandHandlerMethods = new List<CommandHandlerAttributeMethod>(methods.Count());
+            List<CommandHandlerAttributeMethod> commandHandlerMethods = new List<CommandHandlerAttributeMethod>();
 
             foreach (MethodInfo methodInfo in methods)
             {

@@ -9,6 +9,7 @@ using Xer.Cqrs.QueryStack.Resolvers;
 using Xer.Cqrs.Tests.Mocks;
 using Xunit;
 using Xunit.Abstractions;
+using System.Collections.Generic;
 
 namespace Xer.Cqrs.Tests.Queries
 {
@@ -223,7 +224,7 @@ namespace Xer.Cqrs.Tests.Queries
                 container.Register<IQueryAsyncHandler<QuerySomething, string>>(() => queryHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                var resolver = new ContainerQueryAsyncHandlerResolver(containerAdapter);
 
                 const string data = nameof(Should_Invoke_Registered_Query_Handler_In_Container);
 
@@ -242,7 +243,7 @@ namespace Xer.Cqrs.Tests.Queries
                 container.Register<IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>>(() => queryHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                var resolver = new ContainerQueryAsyncHandlerResolver(containerAdapter);
 
                 const string data1 = "Test message 1.";
                 const string data2 = "Test message 2.";
@@ -268,7 +269,7 @@ namespace Xer.Cqrs.Tests.Queries
                 container.Register<IQueryAsyncHandler<QuerySomethingWithDelay, string>>(() => queryHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                var resolver = new ContainerQueryAsyncHandlerResolver(containerAdapter);
                 var dispatcher = new QueryDispatcher(resolver);
 
                 var cts = new CancellationTokenSource();
@@ -287,7 +288,7 @@ namespace Xer.Cqrs.Tests.Queries
                 container.Register<IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>>(() => queryHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                var resolver = new ContainerQueryAsyncHandlerResolver(containerAdapter);
                 var dispatcher = new QueryDispatcher(resolver);
 
                 var result = await dispatcher.DispatchAsync<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(1973));
@@ -544,10 +545,10 @@ namespace Xer.Cqrs.Tests.Queries
             {
                 var queryHandler = new TestQueryHandler(_testOutputHelper);
                 var container = new Container();
-                container.Register<IQueryAsyncHandler<QuerySomething, string>>(() => queryHandler, Lifestyle.Singleton);
+                container.Register<IQueryHandler<QuerySomething, string>>(() => queryHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                var resolver = new ContainerQueryHandlerResolver(containerAdapter); // Sync handler resolver
 
                 const string data = nameof(Should_Invoke_Registered_Query_Handler_In_Container);
 
@@ -566,7 +567,7 @@ namespace Xer.Cqrs.Tests.Queries
                 container.Register<IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>>(() => queryHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                var resolver = new ContainerQueryAsyncHandlerResolver(containerAdapter); // Async handler resolver
 
                 const string data1 = "Test message 1.";
                 const string data2 = "Test message 2.";
@@ -590,7 +591,7 @@ namespace Xer.Cqrs.Tests.Queries
                 container.Register<IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>>(() => queryHandler, Lifestyle.Singleton);
 
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                var resolver = new ContainerQueryAsyncHandlerResolver(containerAdapter); // Async handler resolver
                 var dispatcher = new QueryDispatcher(resolver);
 
                 var result = dispatcher.Dispatch<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(1973));
@@ -599,14 +600,54 @@ namespace Xer.Cqrs.Tests.Queries
             }
 
             [Fact]
+            public async Task Should_Invoke_Registered_Query_Handler_With_Composite_Resolver()
+            {
+                var commandHandler = new TestQueryHandler(_testOutputHelper);
+                var container = new Container();
+                container.Register<IQueryAsyncHandler<QuerySomethingWithNonReferenceTypeResult, int>>(() => commandHandler, Lifestyle.Singleton);
+                container.Register<IQueryHandler<QuerySomething, string>>(() => commandHandler, Lifestyle.Singleton);
+
+                var containerAdapter = new SimpleInjectorContainerAdapter(container);
+                var containerAsyncHandlerResolver = new ContainerQueryAsyncHandlerResolver(containerAdapter);
+                var containerHandlerResolver = new ContainerQueryHandlerResolver(containerAdapter);
+
+                Func<Exception, bool> exceptionHandler = (ex) => 
+                {
+                    var exception = ex as NoQueryHandlerResolvedException;
+                    if (exception != null) 
+                    {
+                        _testOutputHelper.WriteLine($"Ignoring encountered exception while trying to resolve query handler for {exception.QueryType.Name}...");
+                        
+                        // Notify as handled if no command handler is resolved from other resolvers.
+                        return true;
+                    }
+
+                    return false;
+                };
+
+                var compositeResolver = new CompositeQueryHandlerResolver(new List<IQueryHandlerResolver>()
+                {
+                    containerAsyncHandlerResolver,
+                    containerHandlerResolver
+                }, exceptionHandler); // Pass in an exception handler.
+
+                var dispatcher = new QueryDispatcher(compositeResolver); // Composite resolver
+
+                int result1 = await dispatcher.DispatchAsync<QuerySomethingWithNonReferenceTypeResult, int>(new QuerySomethingWithNonReferenceTypeResult(1973));
+                string result2 = await dispatcher.DispatchAsync<QuerySomething, string>(new QuerySomething("1973"));
+
+                Assert.Equal(1973, result1);
+                Assert.Equal("1973", result2);
+            }
+
+            [Fact]
             public void Should_Throw_When_No_Registered_Query_Handler_In_Container_Is_Found()
             {
                 Assert.Throws<NoQueryHandlerResolvedException>(() =>
                 {
-                    var queryHandler = new TestQueryHandler(_testOutputHelper);
                     var container = new Container();
                     var containerAdapter = new SimpleInjectorContainerAdapter(container);
-                    var resolver = new ContainerQueryHandlerResolver(containerAdapter);
+                    var resolver = new ContainerQueryHandlerResolver(containerAdapter); // Sync handler resolver
                     var dispatcher = new QueryDispatcher(resolver);
 
                     const string data = nameof(Should_Throw_When_No_Registered_Attribute_Query_Handler_Is_Found);

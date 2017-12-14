@@ -6,10 +6,29 @@ namespace Xer.Cqrs.QueryStack.Resolvers
     public class CompositeQueryHandlerResolver : IQueryHandlerResolver
     {
         private readonly IEnumerable<IQueryHandlerResolver> _resolvers;
+        private readonly Func<Exception, bool> _exceptionHandler;
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="resolvers">List of resolvers.</param>
         public CompositeQueryHandlerResolver(IEnumerable<IQueryHandlerResolver> resolvers)
         {
             _resolvers = resolvers;
+        }
+
+        /// <summary>
+        /// Constructor with exception handler.
+        /// </summary>
+        /// <param name="resolvers">List of resolvers.</param>
+        /// <param name="exceptionHandler">
+        /// If exception handler returns true, this resolver will try to resolve a command handler 
+        /// from the next resolver in the list. Otherwise, resolve will stop and exception will be re-thrown.
+        /// </param>
+        public CompositeQueryHandlerResolver(IEnumerable<IQueryHandlerResolver> resolvers, Func<Exception, bool> exceptionHandler)
+        {
+            _resolvers = resolvers;
+            _exceptionHandler = exceptionHandler;
         }
 
         /// <summary>
@@ -22,14 +41,33 @@ namespace Xer.Cqrs.QueryStack.Resolvers
         {
             foreach (IQueryHandlerResolver resolver in _resolvers)
             {
-                QueryHandlerDelegate<TResult> commandHandlerDelegate = resolver.ResolveQueryHandler<TQuery, TResult>();
-                if (commandHandlerDelegate != null)
+                try
                 {
-                    return commandHandlerDelegate;
+                    QueryHandlerDelegate<TResult> commandHandlerDelegate = resolver.ResolveQueryHandler<TQuery, TResult>();
+                    if (commandHandlerDelegate != null)
+                    {
+                        return commandHandlerDelegate;
+                    }
+                }
+                catch(Exception ex)
+                {
+                    if(_exceptionHandler == null)
+                    {
+                        // No exception handler. Re-throw exception.
+                        throw;
+                    }
+
+                    bool handled = _exceptionHandler.Invoke(ex);
+                    if(!handled)
+                    {
+                        // Not handled. Re-throw exception.
+                        throw;
+                    }
                 }
             }
 
-            throw new NoQueryHandlerResolvedException($"No query handler is registered to handle query of type: { typeof(TQuery).Name }");
+            Type queryType = typeof(TQuery);
+            throw new NoQueryHandlerResolvedException($"No query handler is registered to handle query of type: { queryType.Name }", queryType);
         }
     }
 }

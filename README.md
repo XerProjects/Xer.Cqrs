@@ -264,7 +264,7 @@ class SampleEvent : IEvent
 #### Event Handler Registration
 Basic Registration
 ```csharp
-private IEventHandlerResolver SetupPublisherWithBasicRegistration()
+private IEventPublisher SetupPublisherWithBasicRegistration()
 {
     // Register any implementations of IEventAsyncHandler/IEventHandler
     // which will be invoked when resolved by the EventPublisher.
@@ -288,7 +288,7 @@ class SampleEventHandler : IEventHandler<SampleEvent>
 
 Container Registration
 ```csharp
-private IEventHandlerResolver SetupPublisherWithContainerRegistration()
+private IEventPublisher SetupPublisherWithContainerRegistration()
 {
     // Register all event handlers to a container of your choice.
     // In this sample, I've used SimpleInjector.

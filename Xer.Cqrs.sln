@@ -2,21 +2,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27004.2008
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.DomainDriven", "Xer.DomainDriven\Xer.DomainDriven.csproj", "{109C8CD7-3C6C-48D5-9E83-BFCE82823D6E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.CommandStack", "Src\Xer.Cqrs.CommandStack\Xer.Cqrs.CommandStack.csproj", "{BDF57B64-636E-4C03-A7F0-986A3E9A6AF0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.CommandStack", "Xer.Cqrs.CommandStack\Xer.Cqrs.CommandStack.csproj", "{BDF57B64-636E-4C03-A7F0-986A3E9A6AF0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.QueryStack", "Src\Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj", "{3BE4E0FA-9992-4F81-BE96-9CFA9FCC1809}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.QueryStack", "Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj", "{3BE4E0FA-9992-4F81-BE96-9CFA9FCC1809}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.EventStack", "Xer.Cqrs.EventStack\Xer.Cqrs.EventStack.csproj", "{EAD6D545-3EC8-476E-B976-33B8EA8E85BB}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.EventSourcing", "Xer.EventSourcing\Xer.EventSourcing.csproj", "{76EDEAB0-9099-4A89-B1F6-D33C53A45BD8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.EventStack", "Src\Xer.Cqrs.EventStack\Xer.Cqrs.EventStack.csproj", "{EAD6D545-3EC8-476E-B976-33B8EA8E85BB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B8368CCD-E692-430E-AE0F-4C346C5233F5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.Tests", "Tests\Xer.Cqrs.Tests\Xer.Cqrs.Tests.csproj", "{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.EventSourcing.Tests", "Tests\Xer.EventSourcing.Tests\Xer.EventSourcing.Tests.csproj", "{B2315420-95C7-44EF-977B-D34BAD997A98}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xer.Cqrs.Tests", "Tests\Xer.Cqrs.Tests.csproj", "{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{3BF5366F-3ED0-4E1B-AF2A-82E2667F4B89}"
 EndProject
@@ -36,22 +30,10 @@ Global
 		{BDF57B64-636E-4C03-A7F0-986A3E9A6AF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BDF57B64-636E-4C03-A7F0-986A3E9A6AF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BDF57B64-636E-4C03-A7F0-986A3E9A6AF0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{76EDEAB0-9099-4A89-B1F6-D33C53A45BD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{76EDEAB0-9099-4A89-B1F6-D33C53A45BD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{76EDEAB0-9099-4A89-B1F6-D33C53A45BD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{76EDEAB0-9099-4A89-B1F6-D33C53A45BD8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{109C8CD7-3C6C-48D5-9E83-BFCE82823D6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{109C8CD7-3C6C-48D5-9E83-BFCE82823D6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{109C8CD7-3C6C-48D5-9E83-BFCE82823D6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{109C8CD7-3C6C-48D5-9E83-BFCE82823D6E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B2315420-95C7-44EF-977B-D34BAD997A98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B2315420-95C7-44EF-977B-D34BAD997A98}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B2315420-95C7-44EF-977B-D34BAD997A98}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B2315420-95C7-44EF-977B-D34BAD997A98}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3BE4E0FA-9992-4F81-BE96-9CFA9FCC1809}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3BE4E0FA-9992-4F81-BE96-9CFA9FCC1809}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3BE4E0FA-9992-4F81-BE96-9CFA9FCC1809}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -78,7 +60,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{2FFBBBB7-C2BF-4EA7-B440-3C68DD19A4CB} = {B8368CCD-E692-430E-AE0F-4C346C5233F5}
-		{B2315420-95C7-44EF-977B-D34BAD997A98} = {B8368CCD-E692-430E-AE0F-4C346C5233F5}
 		{2C9D1FFB-07D9-4C2A-9BED-18405803FC64} = {3BF5366F-3ED0-4E1B-AF2A-82E2667F4B89}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

@@ -15,9 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Xer.Cqrs.CommandStack\Xer.Cqrs.CommandStack.csproj" />
-    <ProjectReference Include="..\..\Xer.Cqrs.EventStack\Xer.Cqrs.EventStack.csproj" />
-    <ProjectReference Include="..\..\Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj" />
+    <ProjectReference Include="..\Src\Xer.Cqrs.CommandStack\Xer.Cqrs.CommandStack.csproj" />
+    <ProjectReference Include="..\Src\Xer.Cqrs.EventStack\Xer.Cqrs.EventStack.csproj" />
+    <ProjectReference Include="..\Src\Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj" />
   </ItemGroup>
 
 </Project>

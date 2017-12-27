@@ -1,7 +1,7 @@
 # Xer.Cqrs
-Simple CQRS/ES infrastructure library
+Simple CQRS library
 
-This project composes of components for implementing the CQRS pattern (Command Handling, Query Handling, and Event Handling), or Event Sourcing. This library was built with simplicity and pluggability in mind.
+This project composes of components for implementing the CQRS pattern (Command Handling, Query Handling, and Event Handling). This library was built with simplicity, modularity and pluggability in mind.
 
 ## Features
 * Dispatch commands to their registered command handler (through CommandDispatcher).
@@ -12,7 +12,9 @@ This project composes of components for implementing the CQRS pattern (Command H
 * Supports attribute-based handler registrations by marking methods with [CommandHandler], [QueryHandler], and [EventHandler] attributes.
 
 ## Installation
-Xer.Cqrs libraries are available as Nuget packages:
+You can simply clone this repository and code away!
+
+Xer.Cqrs libraries are also available as Nuget packages:
 * https://www.nuget.org/packages/Xer.Cqrs.CommandStack/
 * https://www.nuget.org/packages/Xer.Cqrs.QueryStack/
 * https://www.nuget.org/packages/Xer.Cqrs.EventStack/

@@ -9,6 +9,6 @@ namespace Xer.Cqrs.EventStack.Hosted
 
         Task StartReceiving(CancellationToken cancellationToken = default(CancellationToken));
         Task StopReceiving(CancellationToken cancellationToken = default(CancellationToken));
-        void Receive(IEvent @event, CancellationToken cancellationToken = default(CancellationToken));
+        Task Receive(IEvent @event);
     }
 }

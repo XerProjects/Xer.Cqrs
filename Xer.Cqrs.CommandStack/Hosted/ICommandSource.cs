@@ -9,6 +9,6 @@ namespace Xer.Cqrs.CommandStack.Hosted
 
         Task StartReceiving(CancellationToken cancellationToken = default(CancellationToken));
         Task StopReceiving(CancellationToken cancellationToken = default(CancellationToken));
-        void Receive(ICommand command, CancellationToken cancellationToken = default(CancellationToken));
+        Task Receive(ICommand command);
     }
 }

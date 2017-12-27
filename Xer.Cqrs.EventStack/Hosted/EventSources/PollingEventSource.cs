@@ -6,6 +6,7 @@ namespace Xer.Cqrs.EventStack.Hosted.EventSources
 {
     public abstract class PollingEventSource : IEventSource
     {
+        private CancellationToken _receiveCancellationToken;
         private Task _pollingTask;
 
         /// <summary>
@@ -40,7 +41,8 @@ namespace Xer.Cqrs.EventStack.Hosted.EventSources
                 State = PollingState.Started;
 
                 OnStart();
-                
+
+                _receiveCancellationToken = cancellationToken;
                 _pollingTask = StartPolling(cancellationToken);
             }
 
@@ -72,15 +74,19 @@ namespace Xer.Cqrs.EventStack.Hosted.EventSources
         /// Receive event and publish for processing.
         /// </summary>
         /// <param name="@event">Event to receive.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        public void Receive(IEvent @event, CancellationToken cancellationToken = default(CancellationToken))
+        /// <returns>Asynchronous task.</returns>
+        public Task Receive(IEvent @event)
         {
             if (@event == null)
             {
-                throw new ArgumentNullException(nameof(@event));
+                return TaskUtility.FromException(new ArgumentNullException(nameof(@event)));
             }
 
-            OnEventReceived(@event, cancellationToken);
+            // Cancel this when the cancellation token passed in the 
+            // StartReceiving method is cancelled. 
+            OnEventReceived(@event, _receiveCancellationToken);
+
+            return TaskUtility.CompletedTask;
         }
 
         /// <summary>

@@ -84,8 +84,7 @@ namespace Xer.Cqrs.EventStack.Hosted
         /// <returns>Completed task.</returns>
         Task IEventAsyncHandler<TEvent>.HandleAsync(TEvent @event, CancellationToken cancellationToken)
         {
-            _internalEventSource.Receive(@event, cancellationToken);
-            return TaskUtility.CompletedTask;
+            return _internalEventSource.Receive(@event);
         }
 
         /// <summary>
@@ -94,7 +93,7 @@ namespace Xer.Cqrs.EventStack.Hosted
         /// <param name="@event">Event to handle.</param>
         void IEventHandler<TEvent>.Handle(TEvent @event)
         {
-            _internalEventSource.Receive(@event);
+            _internalEventSource.Receive(@event).GetAwaiter().GetResult();
         }
 
         /// <summary>

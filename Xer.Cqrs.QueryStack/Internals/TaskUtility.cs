@@ -11,7 +11,7 @@
                 throw new ArgumentNullException(nameof(task));
             }
 
-            return task.ConfigureAwait(false).GetAwaiter().GetResult();
+            return task.GetAwaiter().GetResult();
         }
 
         internal static Task<TResult> FromException<TResult>(Exception ex)

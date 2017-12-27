@@ -21,7 +21,7 @@ namespace Xer.Cqrs.CommandStack.Dispatchers
         public void Dispatch<TCommand>(TCommand command) where TCommand : class, ICommand
         {
             // Wait Task completion.
-            DispatchAsync(command).Await();
+            DispatchAsync(command).GetAwaiter().GetResult();
         }
 
         /// <summary>

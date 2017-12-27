@@ -84,8 +84,7 @@ namespace Xer.Cqrs.CommandStack.Hosted
         /// <returns>Completed task.</returns>
         Task ICommandAsyncHandler<TCommand>.HandleAsync(TCommand command, CancellationToken cancellationToken)
         {
-            _internalCommandSource.Receive(command, cancellationToken);
-            return TaskUtility.CompletedTask;
+            return _internalCommandSource.Receive(command);
         }
 
         /// <summary>
@@ -94,7 +93,7 @@ namespace Xer.Cqrs.CommandStack.Hosted
         /// <param name="command">Command to handle.</param>
         void ICommandHandler<TCommand>.Handle(TCommand command)
         {
-            _internalCommandSource.Receive(command);
+            _internalCommandSource.Receive(command).GetAwaiter().GetResult();
         }
 
         /// <summary>

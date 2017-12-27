@@ -4,16 +4,6 @@
     {
         internal static readonly Task CompletedTask = Task.FromResult(true);
 
-        internal static void Await(this Task task)
-        {
-            if (task == null)
-            {
-                throw new ArgumentNullException(nameof(task));
-            }
-
-            task.ConfigureAwait(false).GetAwaiter().GetResult();
-        }
-
         internal static Task FromException(Exception ex)
         {
             TaskCompletionSource<bool> completionSource = new TaskCompletionSource<bool>();

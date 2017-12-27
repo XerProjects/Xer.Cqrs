@@ -6,6 +6,7 @@ namespace Xer.Cqrs.CommandStack.Hosted.CommandSources
 {
     public abstract class PollingCommandSource : ICommandSource
     {
+        private CancellationToken _receiveCancellationToken;
         private Task _pollingTask;
 
         /// <summary>
@@ -41,6 +42,7 @@ namespace Xer.Cqrs.CommandStack.Hosted.CommandSources
 
                 OnStart();
 
+                _receiveCancellationToken = cancellationToken;
                 _pollingTask = StartPolling(cancellationToken);
             }
             
@@ -72,15 +74,19 @@ namespace Xer.Cqrs.CommandStack.Hosted.CommandSources
         /// Receive command and publish for processing.
         /// </summary>
         /// <param name="command">Command to receive.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        public void Receive(ICommand command, CancellationToken cancellationToken = default(CancellationToken))
+        /// <returns>Asynchronous task.</returns>
+        public Task Receive(ICommand command)
         {
             if (command == null)
             {
-                throw new ArgumentNullException(nameof(command));
+                return TaskUtility.FromException(new ArgumentNullException(nameof(command)));
             }
 
-            OnCommandReceived(command, cancellationToken);
+            // Cancel this when the cancellation token passed in the 
+            // StartReceiving method is cancelled. 
+            OnCommandReceived(command, _receiveCancellationToken);
+            
+            return TaskUtility.CompletedTask;
         }
 
         /// <summary>

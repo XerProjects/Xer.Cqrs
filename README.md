@@ -30,7 +30,10 @@ class SampleCommand : Command
 }
 ```
 #### Command Handler Registration
-Basic Registration
+
+Before we can dispatch any commands, first, we need to register our command handlers. There are several ways to do this:
+
+1. Basic Registration
 ```csharp
 private CommandDispatcher SetupDispatcherWithBasicRegistration()
 {
@@ -56,7 +59,7 @@ class SampleCommandAsyncHandler : ICommandAsyncHandler<SampleCommand>
 }
 ```
 
-Container Registration
+2. Container Registration
 ```csharp
 private CommandDispatcher SetupDispatcherWithContainerRegistration()
 {
@@ -84,7 +87,7 @@ class SampleCommandHandler : ICommandHandler<SampleCommand>
 }
 ```
 
-Attribute Registration
+3. Attribute Registration
 ```csharp
 private CommandDispatcher SetupDispatcherWithAttributeRegistration()
 {
@@ -147,9 +150,11 @@ class SampleResult
     }
 }
 ```
-
 #### Query Handler Registration
-Basic Registration
+
+Before we can dispatch any commands, first, we need to register our query handlers. There are several ways to do this:
+
+1. Basic Registration
 ```csharp
 private QueryDispatcher SetupDispatcherWithBasicRegistration()
 {
@@ -175,7 +180,7 @@ class SampleQueryAsyncHandler : IQueryAsyncHandler<SampleQuery, SampleResult>
 }
 ```
 
-Container Registration
+2. Container Registration
 ```csharp
 private QueryDispatcher SetupDispatcherWithContainerRegistration()
 {
@@ -202,7 +207,7 @@ class SampleQueryHandler : IQueryHandler<SampleQuery, SampleResult>
 }
 ```
 
-Attribute Registration
+3. Attribute Registration
 ```csharp
 private QueryDispatcher SetupDispatcherWithAttributeRegistration()
 {
@@ -264,7 +269,10 @@ class SampleEvent : IEvent
 }
 ```
 #### Event Handler Registration
-Basic Registration
+
+Before we can publish any events, first, we need to register our event handlers. There are several ways to do this:
+
+1. Basic Registration
 ```csharp
 private IEventPublisher SetupPublisherWithBasicRegistration()
 {
@@ -288,7 +296,7 @@ class SampleEventHandler : IEventHandler<SampleEvent>
 }
 ```
 
-Container Registration
+2. Container Registration
 ```csharp
 private IEventPublisher SetupPublisherWithContainerRegistration()
 {
@@ -317,7 +325,7 @@ class SampleEventAsyncHandler : IEventAsyncHandler<SampleEvent>
 }
 ```
 
-Attribute Registration
+3. Attribute Registration
 ```csharp
 private IEventPublisher SetupPublisherWithAttributeRegistration()
 {

@@ -48,10 +48,8 @@ namespace Xer.Cqrs.CommandStack.Resolvers
             {
                 return new NoCommandHandlerResolvedException($"Error occurred while trying to resolve command handler from the container to handle command of type: { commandType.Name }.", commandType, ex);
             }
-            else
-            {
-                return new NoCommandHandlerResolvedException($"Unable to resolve command handler from the container to handle command of type: { commandType.Name }.", commandType);
-            }
+            
+            return new NoCommandHandlerResolvedException($"Unable to resolve command handler from the container to handle command of type: { commandType.Name }.", commandType);
         }
     }
 }

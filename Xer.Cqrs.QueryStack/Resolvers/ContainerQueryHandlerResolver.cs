@@ -49,10 +49,8 @@ namespace Xer.Cqrs.QueryStack.Resolvers
             {
                 return new NoQueryHandlerResolvedException($"Error occurred while trying to resolve command handler from the container to handle command of type: { queryType.Name }.", queryType, ex);
             }
-            else
-            {
-                return new NoQueryHandlerResolvedException($"Unable to resolve command handler from the container to handle command of type: { queryType.Name }.", queryType);
-            }
+            
+            return new NoQueryHandlerResolvedException($"Unable to resolve command handler from the container to handle command of type: { queryType.Name }.", queryType);
         }
     }
 }

@@ -22,7 +22,7 @@ namespace Xer.Cqrs.QueryStack.Resolvers
         /// </summary>
         /// <param name="resolvers">List of resolvers.</param>
         /// <param name="exceptionHandler">
-        /// If exception handler returns true, this resolver will try to resolve a command handler 
+        /// If exception handler returns true, this resolver will try to resolve a query handler 
         /// from the next resolver in the list. Otherwise, resolve will stop and exception will be re-thrown.
         /// </param>
         public CompositeQueryHandlerResolver(IEnumerable<IQueryHandlerResolver> resolvers, Func<Exception, bool> exceptionHandler)

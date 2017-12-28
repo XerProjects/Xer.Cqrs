@@ -20,7 +20,7 @@ namespace Xer.Cqrs.Tests.Commands.Registration
             }
 
             [Fact]
-            public void Should_Store_All_Command_Handlers()
+            public void Should_Register_All_Command_Handlers()
             {
                 var commandHandler = new TestCommandHandler(_testOutputHelper);
 

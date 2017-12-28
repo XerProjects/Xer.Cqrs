@@ -99,13 +99,17 @@ namespace Xer.Cqrs.Tests.Commands
             [Fact]
             public async Task Should_Invoke_Registered_Attributed_Command_Handler_With_Cancellation()
             {
+                var commandHandler = new TestAttributedCommandHandler(_outputHelper);
                 var registration = new CommandHandlerAttributeRegistration();
-                registration.Register(() => new TestAttributedCommandHandler(_outputHelper));
+                registration.Register(() => commandHandler);
 
                 var cts = new CancellationTokenSource();
 
                 var dispatcher = new CommandDispatcher(registration);
                 await dispatcher.DispatchAsync(new DoSomethingWithCancellationCommand(), cts.Token);
+
+                Assert.Equal(1, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingWithCancellationCommand);
             }
 
             [Fact]
@@ -161,6 +165,9 @@ namespace Xer.Cqrs.Tests.Commands
                 var cts = new CancellationTokenSource();
 
                 await dispatcher.DispatchAsync(new DoSomethingWithCancellationCommand(), cts.Token);
+
+                Assert.Equal(1, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingWithCancellationCommand);
             }
 
             [Fact]

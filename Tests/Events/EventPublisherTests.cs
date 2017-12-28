@@ -298,7 +298,7 @@ namespace Xer.Cqrs.Tests.Events
                 await publisher.PublishAsync(new TestEvent1());
 
                 // Just to make sure that events have been processed.
-                await Task.Delay(50);
+                await Task.Delay(100);
 
                 // Handler1 should have 2 events.
                 // It contains sync and async handlers for:

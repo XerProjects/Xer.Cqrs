@@ -21,7 +21,7 @@ namespace Xer.Cqrs.Tests.Commands.Registration
             }
 
             [Fact]
-            public void Should_Resolve_All_Command_Handlers()
+            public void Should_Register_All_Command_Handlers()
             {
                 var container = new Container();
                 container.Register<ICommandHandler<DoSomethingCommand>>(() => new TestCommandHandler(_testOutputHelper), Lifestyle.Singleton);

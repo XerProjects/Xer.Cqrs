@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.CommandStack.Registrations;
 using Xer.Cqrs.Tests.Mocks;
 using Xunit;
@@ -19,6 +20,25 @@ namespace Xer.Cqrs.Tests.Commands.Registration
             public RegisterMethod(ITestOutputHelper outputHelper)
             {
                 _outputHelper = outputHelper;
+            }
+
+            [Fact]
+            public void Should_Register_All_Command_Handlers_Methods()
+            {
+                var commandHandler = new TestAttributedCommandHandler(_outputHelper);
+
+                var registration = new CommandHandlerAttributeRegistration();
+                registration.Register(() => commandHandler);
+
+                CommandHandlerDelegate commandHandlerDelegate = registration.ResolveCommandHandler<DoSomethingCommand>();
+
+                Assert.NotNull(commandHandlerDelegate);
+
+                // Delegate should invoke the actual command handler - TestAttributedCommandHandler.
+                commandHandlerDelegate.Invoke(new DoSomethingCommand());
+
+                Assert.Equal(1, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
             }
 
             [Fact]

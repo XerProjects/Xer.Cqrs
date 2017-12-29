@@ -78,8 +78,9 @@ namespace Xer.Cqrs.EventStack.Registrations
 
         #region Functions
 
-        private void registerEventHandlerMethod<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory, EventHandlerAttributeMethod eventHandlerMethod) where TAttributed : class 
-                                                          where TEvent : class, IEvent
+        private void registerEventHandlerMethod<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory, EventHandlerAttributeMethod eventHandlerMethod) 
+            where TAttributed : class 
+            where TEvent : class, IEvent
         {
             Type eventType = typeof(TEvent);
 

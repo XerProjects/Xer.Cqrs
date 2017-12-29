@@ -26,11 +26,19 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
         #region Constructors
 
-        private QueryHandlerAttributeMethod(Type queryType, Type queryReturnType, MethodInfo methodInfo, bool isAsync, bool supportsCancellation)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="methodInfo">Method info.</param>
+        /// <param name="queryType">Type of query that is accepted by this method.</param>
+        /// <param name="queryReturnType">Method's return type. This should match query's result type.</param>
+        /// <param name="isAsync">Is method an async method?</param>
+        /// <param name="supportsCancellation">Does method supports cancellation?</param>
+        private QueryHandlerAttributeMethod(MethodInfo methodInfo, Type queryType, Type queryReturnType,bool isAsync, bool supportsCancellation)
         {
+            MethodInfo = methodInfo ?? throw new ArgumentNullException(nameof(methodInfo));
             QueryType = queryType ?? throw new ArgumentNullException(nameof(queryType));
             QueryReturnType = queryReturnType ?? throw new ArgumentNullException(nameof(queryReturnType));
-            MethodInfo = methodInfo ?? throw new ArgumentNullException(nameof(methodInfo));
             IsAsync = isAsync;
             SupportsCancellation = supportsCancellation;
         }
@@ -39,8 +47,17 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
         #region Methods
 
-        public QueryHandlerDelegate<TResult> CreateDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
-                                   where TQuery : class, IQuery<TResult>
+        /// <summary>
+        /// Create a QueryHandlerDelegate based on the internal method info.
+        /// </summary>
+        /// <typeparam name="TAttributed">Type of object that contains methods marked with [QueryHandler].</typeparam>
+        /// <typeparam name="TQuery">Type of query that is handled by the QueryHandlerDelegate.</typeparam>
+        /// <typeparam name="TResult">Query's result type.</typeparam>
+        /// <param name="attributedObjectFactory">Factory which returns an instance of the object with methods that are marked with QueryHandlerAttribute.</param>
+        /// <returns>Instance of QueryHandlerDelegate.</returns>
+        public QueryHandlerDelegate<TResult> CreateDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) 
+            where TAttributed : class
+            where TQuery : class, IQuery<TResult>
         {
             Type specificQueryType = typeof(TQuery);
 
@@ -61,6 +78,11 @@ namespace Xer.Cqrs.QueryStack.Registrations
             }
         }
 
+        /// <summary>
+        /// Create QueryHandlerAttributeMethod from the method info.
+        /// </summary>
+        /// <param name="methodInfo">Method info that has QueryHandlerAttribute custom attribute.</param>
+        /// <returns>Instance of QueryHandlerAttributeMethod.</returns>
         public static QueryHandlerAttributeMethod Create(MethodInfo methodInfo)
         {
             Type queryMethodReturnType = methodInfo.ReturnType;
@@ -104,31 +126,58 @@ namespace Xer.Cqrs.QueryStack.Registrations
                 throw new InvalidOperationException($"Methods marked with [QueryHandler] should accept a query parameter and return type should match expected result of the query it's accepting: {methodInfo.Name}");
             }
 
-            return new QueryHandlerAttributeMethod(queryParameter.ParameterType, queryMethodReturnType, methodInfo, isAsync, supportsCancellation);
+            return new QueryHandlerAttributeMethod(methodInfo, queryParameter.ParameterType, queryMethodReturnType,isAsync, supportsCancellation);
         }
 
         #endregion Methods
 
         #region Functions
 
-        private QueryHandlerDelegate<TResult> createWrappedSyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
-                                                      where TQuery : class, IQuery<TResult>
+        /// <summary>
+        /// Create a delegate from a synchronous action.
+        /// </summary>
+        /// <typeparam name="TAttributed">Type of object that contains methods marked with [QueryHandler].</typeparam>
+        /// <typeparam name="TQuery">Type of query that is handled by the QueryHandlerDelegate.</typeparam>
+        /// <typeparam name="TResult">Query's result type.</typeparam>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
+        /// <returns>Instance of QueryHandlerDelegate.</returns>
+        private QueryHandlerDelegate<TResult> createWrappedSyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) 
+            where TAttributed : class
+            where TQuery : class, IQuery<TResult>
         {
             Func<TAttributed, TQuery, TResult> func = (Func<TAttributed, TQuery, TResult>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TQuery, TResult>));
 
             return QueryHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, func);
         }
 
-        private QueryHandlerDelegate<TResult> createCancellableAsyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
-                                                      where TQuery : class, IQuery<TResult>
+        /// <summary>
+        /// Create a delegate from an asynchronous (cancellable) action.
+        /// </summary>
+        /// <typeparam name="TAttributed">Type of object that contains methods marked with [QueryHandler].</typeparam>
+        /// <typeparam name="TQuery">Type of query that is handled by the QueryHandlerDelegate.</typeparam>
+        /// <typeparam name="TResult">Query's result type.</typeparam>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
+        /// <returns>Instance of QueryHandlerDelegate.</returns>
+        private QueryHandlerDelegate<TResult> createCancellableAsyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) 
+            where TAttributed : class
+            where TQuery : class, IQuery<TResult>
         {
             Func<TAttributed, TQuery, CancellationToken, Task<TResult>> asyncCancellableFunc = (Func<TAttributed, TQuery, CancellationToken, Task<TResult>>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TQuery, CancellationToken, Task<TResult>>));
 
             return QueryHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, asyncCancellableFunc);
         }
 
-        private QueryHandlerDelegate<TResult> createNonCancellableAsyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
-                                                      where TQuery : class, IQuery<TResult>
+        /// <summary>
+        /// Create a delegate from an asynchronous (non-cancellable) action.
+        /// </summary>
+        /// <typeparam name="TAttributed">Type of object that contains methods marked with [QueryHandler].</typeparam>
+        /// <typeparam name="TQuery">Type of query that is handled by the QueryHandlerDelegate.</typeparam>
+        /// <typeparam name="TResult">Query's result type.</typeparam>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
+        /// <returns>Instance of QueryHandlerDelegate.</returns>
+        private QueryHandlerDelegate<TResult> createNonCancellableAsyncDelegate<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory) 
+            where TAttributed : class
+            where TQuery : class, IQuery<TResult>
         {
             Func<TAttributed, TQuery, Task<TResult>> asyncFunc = (Func<TAttributed, TQuery, Task<TResult>>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TQuery, Task<TResult>>));
 

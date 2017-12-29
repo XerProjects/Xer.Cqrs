@@ -79,8 +79,9 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
         #region Functions
 
-        private void registerCommandHandlerMethod<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, CommandHandlerAttributeMethod commandHandlerMethod) where TAttributed : class
-                                                                                       where TCommand : class, ICommand
+        private void registerCommandHandlerMethod<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, CommandHandlerAttributeMethod commandHandlerMethod) 
+            where TAttributed : class
+            where TCommand : class, ICommand
         {
             Type commandType = typeof(TCommand);
 

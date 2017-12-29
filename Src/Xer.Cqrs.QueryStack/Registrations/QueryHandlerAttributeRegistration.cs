@@ -80,8 +80,9 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
         #region Functions
 
-        private void registerQueryHandlerMethod<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory, QueryHandlerAttributeMethod queryHandlerMethod) where TAttributed : class 
-                                                                                   where TQuery : class, IQuery<TResult>
+        private void registerQueryHandlerMethod<TAttributed, TQuery, TResult>(Func<TAttributed> attributedObjectFactory, QueryHandlerAttributeMethod queryHandlerMethod) 
+            where TAttributed : class 
+            where TQuery : class, IQuery<TResult>
         {
             Type specificQueryType = typeof(TQuery);
 

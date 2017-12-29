@@ -25,11 +25,18 @@ namespace Xer.Cqrs.EventStack.Registrations
         #endregion Properties
 
         #region Constructors
-
-        private EventHandlerAttributeMethod(Type eventType, MethodInfo methodInfo, bool isAsync, bool supportsCancellation)
+        
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="methodInfo">Method info.</param>
+        /// <param name="eventType">Type of event that is accepted by this method.</param>
+        /// <param name="isAsync">Is method an async method?</param>
+        /// <param name="supportsCancellation">Does method supports cancellation?</param>
+        private EventHandlerAttributeMethod(MethodInfo methodInfo, Type eventType,bool isAsync, bool supportsCancellation)
         {
-            EventType = eventType ?? throw new ArgumentNullException(nameof(eventType));
             MethodInfo = methodInfo ?? throw new ArgumentNullException(nameof(methodInfo));
+            EventType = eventType ?? throw new ArgumentNullException(nameof(eventType));
             IsAsync = isAsync;
             SupportsCancellation = supportsCancellation;
         }
@@ -38,8 +45,16 @@ namespace Xer.Cqrs.EventStack.Registrations
 
         #region Methods
 
-        public EventHandlerDelegate CreateDelegate<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
-           where TEvent : class, IEvent
+        /// <summary>
+        /// Create a EventHandlerDelegate based on the internal method info.
+        /// </summary>
+        /// <typeparam name="TAttributed">Type of object that contains methods marked with [EventHandler].</typeparam>
+        /// <typeparam name="TEvent">Type of event that is handled by the EventHandlerDelegate.</typeparam>
+        /// <param name="attributedObjectFactory">Factory which returns an instance of the object with methods that are marked with EventHandlerAttribute.</param>
+        /// <returns>Instance of EventHandlerDelegate.</returns>
+        public EventHandlerDelegate CreateDelegate<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory) 
+            where TAttributed : class
+            where TEvent : class, IEvent
         {
             if (IsAsync)
             {
@@ -58,6 +73,11 @@ namespace Xer.Cqrs.EventStack.Registrations
             }
         }
 
+        /// <summary>
+        /// Create EventHandlerAttributeMethod from the method info.
+        /// </summary>
+        /// <param name="methodInfo">Method info that has EventHandlerAttribute custom attribute.</param>
+        /// <returns>Instance of EventHandlerAttributeMethod.</returns>
         public static EventHandlerAttributeMethod Create(MethodInfo methodInfo)
         {
             ParameterInfo[] methodParameters = methodInfo.GetParameters();
@@ -99,7 +119,7 @@ namespace Xer.Cqrs.EventStack.Registrations
                 throw new InvalidOperationException("Cancellation token support is only available for async methods (Methods returning a Task).");
             }
 
-            return new EventHandlerAttributeMethod(eventParameter.ParameterType, methodInfo, isAsync, supportsCancellation);
+            return new EventHandlerAttributeMethod(methodInfo, eventParameter.ParameterType, isAsync, supportsCancellation);
         }
 
         #endregion Methods
@@ -110,11 +130,12 @@ namespace Xer.Cqrs.EventStack.Registrations
         /// Create a delegate from a synchronous action.
         /// </summary>
         /// <typeparam name="TAttributed">Type of object that contains methods marked with [EventHandler].</typeparam>
-        /// <typeparam name="TEvent">Type of event that is handled by the event handler delegate.</typeparam>
+        /// <typeparam name="TEvent">Type of event that is handled by the EventHandlerDelegate.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
-        /// <returns>Instance of event handler delegate.</returns>
-        private EventHandlerDelegate createWrappedSyncDelegate<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
-                                   where TEvent : class, IEvent
+        /// <returns>Instance of EventHandlerDelegate.</returns>
+        private EventHandlerDelegate createWrappedSyncDelegate<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory) 
+            where TAttributed : class
+            where TEvent : class, IEvent
         {
             Action<TAttributed, TEvent> action = (Action<TAttributed, TEvent>)MethodInfo.CreateDelegate(typeof(Action<TAttributed, TEvent>));
             
@@ -125,11 +146,12 @@ namespace Xer.Cqrs.EventStack.Registrations
         /// Create a delegate from an asynchronous (cancellable) action.
         /// </summary>
         /// <typeparam name="TAttributed">Type of object that contains methods marked with [EventHandler].</typeparam>
-        /// <typeparam name="TEvent">Type of event that is handled by the event handler delegate.</typeparam>
+        /// <typeparam name="TEvent">Type of event that is handled by the EventHandlerDelegate.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
-        /// <returns>Instance of event handler delegate.</returns>
-        private EventHandlerDelegate createCancellableAsyncDelegate<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
-                                   where TEvent : class, IEvent
+        /// <returns>Instance of EventHandlerDelegate.</returns>
+        private EventHandlerDelegate createCancellableAsyncDelegate<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory) 
+            where TAttributed : class
+            where TEvent : class, IEvent
         {
             Func<TAttributed, TEvent, CancellationToken, Task> asyncCancellableAction = (Func<TAttributed, TEvent, CancellationToken, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TEvent, CancellationToken, Task>));
 
@@ -140,9 +162,9 @@ namespace Xer.Cqrs.EventStack.Registrations
         /// Create a delegate from an asynchronous (non-cancellable) action.
         /// </summary>
         /// <typeparam name="TAttributed">Type of object that contains methods marked with [EventHandler].</typeparam>
-        /// <typeparam name="TEvent">Type of event that is handled by the event handler delegate.</typeparam>
+        /// <typeparam name="TEvent">Type of event that is handled by the EventHandlerDelegate.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
-        /// <returns>Instance of event handler delegate.</returns>
+        /// <returns>Instance of EventHandlerDelegate.</returns>
         private EventHandlerDelegate createNonCancellableAsyncDelegate<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory) where TAttributed : class
                                    where TEvent : class, IEvent
         {

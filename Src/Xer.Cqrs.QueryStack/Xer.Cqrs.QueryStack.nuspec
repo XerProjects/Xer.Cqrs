@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>Xer.Cqrs.QueryStack</id>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <title>Xer.Cqrs.QueryStack</title>
     <authors>jeyjeyemem</authors>
     <owners>jeyjeyemem</owners>
@@ -10,7 +10,10 @@
     <projectUrl>https://github.com/jeyjeyemem/Xer.Cqrs</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A very simple library for handling queries on applications based on the CQRS pattern.</description>
-    <releaseNotes>Initial Release.</releaseNotes>
+    <summary>A very simple library for handling queries on applications based on the CQRS pattern.</summary>
+    <releaseNotes>
+      - Created separate container resolvers for async and sync query handlers.
+    </releaseNotes>
     <copyright>Copyright 2017</copyright>
     <tags>CQRS Query Handling Library</tags>
   </metadata>

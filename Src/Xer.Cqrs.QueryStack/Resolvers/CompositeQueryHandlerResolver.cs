@@ -66,8 +66,7 @@ namespace Xer.Cqrs.QueryStack.Resolvers
                 }
             }
 
-            Type queryType = typeof(TQuery);
-            throw new NoQueryHandlerResolvedException($"No query handler is registered to handle query of type: { queryType.Name }", queryType);
+            throw ExceptionBuilder.NoQueryHandlerResolvedException(typeof(TQuery));
         }
     }
 }

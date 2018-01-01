@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Xer.Cqrs.CommandStack.Attributes;
 
 namespace Xer.Cqrs.CommandStack.Registrations
 {
@@ -17,6 +19,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
 
         #region Properties
 
+        public Type DeclaringType { get; }
         public Type CommandType { get; }
         public MethodInfo MethodInfo { get; }
         public bool IsAsync { get; }
@@ -36,6 +39,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
         private CommandHandlerAttributeMethod(MethodInfo methodInfo, Type commandType, bool isAsync, bool supportsCancellation)
         {
             MethodInfo = methodInfo ?? throw new ArgumentNullException(nameof(methodInfo));
+            DeclaringType = methodInfo.DeclaringType;
             CommandType = commandType ?? throw new ArgumentNullException(nameof(commandType));
             IsAsync = isAsync;
             SupportsCancellation = supportsCancellation;
@@ -56,6 +60,11 @@ namespace Xer.Cqrs.CommandStack.Registrations
             where TAttributed : class
             where TCommand : class, ICommand
         {
+            if (attributedObjectFactory == null)
+            {
+                throw new ArgumentNullException(nameof(attributedObjectFactory));
+            }
+
             if (IsAsync)
             {
                 if (SupportsCancellation)
@@ -78,8 +87,13 @@ namespace Xer.Cqrs.CommandStack.Registrations
         /// </summary>
         /// <param name="methodInfo">Method info that has CommandHandlerAttribute custom attribute.</param>
         /// <returns>Instance of CommandHandlerAttributeMethod.</returns>
-        public static CommandHandlerAttributeMethod Create(MethodInfo methodInfo)
+        public static CommandHandlerAttributeMethod FromMethodInfo(MethodInfo methodInfo)
         {
+            if (methodInfo == null)
+            {
+                throw new ArgumentNullException(nameof(methodInfo));
+            }
+
             ParameterInfo[] methodParameters = methodInfo.GetParameters();
 
             ParameterInfo commandParameter = methodParameters.FirstOrDefault(p => CommandTypeInfo.IsAssignableFrom(p.ParameterType.GetTypeInfo()));
@@ -122,6 +136,88 @@ namespace Xer.Cqrs.CommandStack.Registrations
             }
 
             return new CommandHandlerAttributeMethod(methodInfo, commandType, isAsync, supportsCancellation);
+        }
+
+        /// <summary>
+        /// Create CommandHandlerAttributeMethod from the method info.
+        /// </summary>
+        /// <param name="methodInfos">Method infos that have CommandHandlerAttribute custom attributes.</param>
+        /// <returns>Instances of CommandHandlerAttributeMethod.</returns>
+        public static List<CommandHandlerAttributeMethod> FromMethodInfos(IEnumerable<MethodInfo> methodInfos)
+        {
+            if (methodInfos == null)
+            {
+                throw new ArgumentNullException(nameof(methodInfos));
+            }
+
+            return methodInfos.Select(m => FromMethodInfo(m)).ToList();
+        }
+
+        /// <summary>
+        /// Detect methods marked with [CommandHandler] attribute and translate to CommandHandlerAttributeMethod instances.
+        /// </summary>
+        /// <param name="type">Type to scan for methods marked with the [CommandHandler] attribute.</param>
+        /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
+        public static List<CommandHandlerAttributeMethod> FromType(Type type)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            IEnumerable<MethodInfo> methods = type.GetRuntimeMethods()
+                                                  .Where(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute)));
+
+            return FromMethodInfos(methods);
+        }
+
+        /// <summary>
+        /// Detect methods marked with [CommandHandler] attribute and translate to CommandHandlerAttributeMethod instances.
+        /// </summary>
+        /// <param name="types">Types to scan for methods marked with the [CommandHandler] attribute.</param>
+        /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
+        public static List<CommandHandlerAttributeMethod> FromTypes(IEnumerable<Type> types)
+        {
+            if (types == null)
+            {
+                throw new ArgumentNullException(nameof(types));
+            }
+
+            return types.SelectMany(t => FromType(t)).ToList();
+        }
+
+        /// <summary>
+        /// Detect methods marked with [CommandHandler] attribute and translate to CommandHandlerAttributeMethod instances.
+        /// </summary>
+        /// <param name="commandHandlerAssembly">Assembly to scan for methods marked with the [CommandHandler] attribute.</param>
+        /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
+        public static List<CommandHandlerAttributeMethod> FromAssembly(Assembly commandHandlerAssembly)
+        {
+            if (commandHandlerAssembly == null)
+            {
+                throw new ArgumentNullException(nameof(commandHandlerAssembly));
+            }
+
+            IEnumerable<MethodInfo> commandHandlerMethods = commandHandlerAssembly.DefinedTypes.SelectMany(t => 
+                                                                t.DeclaredMethods.Where(m => 
+                                                                    m.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute))));
+            
+            return FromMethodInfos(commandHandlerMethods);
+        }
+
+        /// <summary>
+        /// Detect methods marked with [CommandHandler] attribute and translate to CommandHandlerAttributeMethod instances.
+        /// </summary>
+        /// <param name="commandHandlerAssemblies">Assemblies to scan for methods marked with the [CommandHandler] attribute.</param>
+        /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
+        public static List<CommandHandlerAttributeMethod> FromAssemblies(IEnumerable<Assembly> commandHandlerAssemblies)
+        {
+            if (commandHandlerAssemblies == null)
+            {
+                throw new ArgumentNullException(nameof(commandHandlerAssemblies));
+            }
+
+            return commandHandlerAssemblies.SelectMany(a => FromAssembly(a)).ToList();
         }
 
         #endregion Methods

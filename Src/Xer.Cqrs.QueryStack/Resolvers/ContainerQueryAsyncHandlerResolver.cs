@@ -27,7 +27,7 @@ namespace Xer.Cqrs.QueryStack.Resolvers
                 if (queryAsyncHandler == null)
                 {
                     // No handlers are resolved. Throw exception.
-                    throw NoQueryHandlerResolvedException<TQuery>();
+                    throw ExceptionBuilder.NoQueryHandlerResolvedException(typeof(TQuery));
                 }
 
                 return QueryHandlerDelegateBuilder.FromQueryHandler(queryAsyncHandler);
@@ -35,20 +35,8 @@ namespace Xer.Cqrs.QueryStack.Resolvers
             catch(Exception ex)
             {
                 // No handlers are resolved. Throw exception.
-                throw NoQueryHandlerResolvedException<TQuery>(ex);
+                throw ExceptionBuilder.NoQueryHandlerResolvedException(typeof(TQuery), ex);
             }
-        }
-            
-        private static NoQueryHandlerResolvedException NoQueryHandlerResolvedException<TQuery>(Exception ex = null)
-        {
-            Type queryType = typeof(TQuery);
-
-            if(ex != null)
-            {
-                return new NoQueryHandlerResolvedException($"Error occurred while trying to resolve command handler from the container to handle command of type: { queryType.Name }.", queryType, ex);
-            }
-            
-            return new NoQueryHandlerResolvedException($"Unable to resolve command handler from the container to handle command of type: { queryType.Name }.", queryType);
         }
     }
 }

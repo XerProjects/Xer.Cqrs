@@ -64,9 +64,8 @@ namespace Xer.Cqrs.CommandStack.Resolvers
                     }
                 }
             }
-
-            Type commandType = typeof(TCommand);
-            throw new NoCommandHandlerResolvedException($"Unable to resolve command handler to handle command of type: { commandType.Name }.", commandType);
+            
+            throw ExceptionBuilder.NoCommandHandlerResolvedException(typeof(TCommand));
         }
     }
 }

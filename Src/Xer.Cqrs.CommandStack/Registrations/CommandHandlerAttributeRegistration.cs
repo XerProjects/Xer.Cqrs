@@ -10,7 +10,10 @@ namespace Xer.Cqrs.CommandStack.Registrations
     {
         #region Declarations
         
-        private static readonly MethodInfo RegisterCommandHandlerOpenGenericMethodInfo = typeof(CommandHandlerAttributeRegistration).GetTypeInfo().DeclaredMethods.First(m => m.Name == nameof(registerCommandHandlerMethod));
+        private static readonly MethodInfo RegisterCommandHandlerOpenGenericMethodInfo = typeof(CommandHandlerAttributeRegistration)
+                                                                                            .GetTypeInfo().
+                                                                                            DeclaredMethods.
+                                                                                            First(m => m.Name == nameof(registerCommandHandlerMethod));
 
         private readonly IDictionary<Type, CommandHandlerDelegate> _commandHandlerDelegatesByCommandType = new Dictionary<Type, CommandHandlerDelegate>();
 
@@ -37,7 +40,7 @@ namespace Xer.Cqrs.CommandStack.Registrations
             Type attributedObjectType = typeof(TAttributed);
 
             // Get all public methods marked with CommandHandler attribute.
-            IEnumerable<CommandHandlerAttributeMethod> commandHandlerMethods = getCommandHandlerMethods(attributedObjectType);
+            IEnumerable<CommandHandlerAttributeMethod> commandHandlerMethods = CommandHandlerAttributeMethod.FromType(attributedObjectType);
 
             foreach (CommandHandlerAttributeMethod commandHandlerMethod in commandHandlerMethods)
             {                
@@ -65,11 +68,9 @@ namespace Xer.Cqrs.CommandStack.Registrations
         {
             Type commandType = typeof(TCommand);
 
-            CommandHandlerDelegate commandHandlerDelegate;
-
-            if (!_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out commandHandlerDelegate))
+            if (!_commandHandlerDelegatesByCommandType.TryGetValue(commandType, out CommandHandlerDelegate commandHandlerDelegate))
             {
-                throw new NoCommandHandlerResolvedException($"No command handler is registered to handle command of type: { commandType.Name }.", commandType);
+                throw ExceptionBuilder.NoCommandHandlerResolvedException(commandType);
             }
 
             return commandHandlerDelegate;
@@ -94,21 +95,6 @@ namespace Xer.Cqrs.CommandStack.Registrations
             CommandHandlerDelegate newHandleCommandDelegate = commandHandlerMethod.CreateDelegate<TAttributed, TCommand>(attributedObjectFactory);
 
             _commandHandlerDelegatesByCommandType.Add(commandType, newHandleCommandDelegate);
-        }
-
-        private static IEnumerable<CommandHandlerAttributeMethod> getCommandHandlerMethods(Type commandHandlerType)
-        {
-            IEnumerable<MethodInfo> methods = commandHandlerType.GetRuntimeMethods().Where(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute)));
-
-            List<CommandHandlerAttributeMethod> commandHandlerMethods = new List<CommandHandlerAttributeMethod>();
-
-            foreach (MethodInfo methodInfo in methods)
-            {
-                // Return methods marked with [CommandHandler].
-                commandHandlerMethods.Add(CommandHandlerAttributeMethod.Create(methodInfo));
-            }
-
-            return commandHandlerMethods;
         }
 
         #endregion Functions

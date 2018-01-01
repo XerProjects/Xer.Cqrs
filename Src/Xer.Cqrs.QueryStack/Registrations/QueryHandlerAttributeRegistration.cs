@@ -9,7 +9,10 @@ namespace Xer.Cqrs.QueryStack.Registrations
     {
         #region Declarations
 
-        private static readonly MethodInfo RegisterQueryHandlerOpenGenericMethodInfo = typeof(QueryHandlerAttributeRegistration).GetTypeInfo().DeclaredMethods.First(m => m.Name == nameof(registerQueryHandlerMethod));
+        private static readonly MethodInfo RegisterQueryHandlerOpenGenericMethodInfo = typeof(QueryHandlerAttributeRegistration)
+                                                                                            .GetTypeInfo()
+                                                                                            .DeclaredMethods
+                                                                                            .First(m => m.Name == nameof(registerQueryHandlerMethod));
 
         private readonly QueryHandlerDelegateStore _queryHandlerDelegatesByQueryType = new QueryHandlerDelegateStore();
 
@@ -33,17 +36,15 @@ namespace Xer.Cqrs.QueryStack.Registrations
                 throw new ArgumentNullException(nameof(attributedHandlerFactory));
             }
 
-            Type attributedHandlerType = typeof(TAttributed);
-
             // Get all public methods marked with CommandHandler attribute.
-            IEnumerable<QueryHandlerAttributeMethod> queryHandlerMethods = getQueryHandlerMethods(attributedHandlerType);
+            IEnumerable<QueryHandlerAttributeMethod> queryHandlerMethods = getQueryHandlerMethods(typeof(TAttributed));
 
             foreach (QueryHandlerAttributeMethod queryHandlerMethod in queryHandlerMethods)
             {
                 MethodInfo registerQueryHandlerGenericMethodInfo = RegisterQueryHandlerOpenGenericMethodInfo.MakeGenericMethod(
-                    attributedHandlerType, 
+                    queryHandlerMethod.DeclaringType, 
                     queryHandlerMethod.QueryType, 
-                    queryHandlerMethod.QueryReturnType);
+                    queryHandlerMethod.QueryResultType);
 
                 registerQueryHandlerGenericMethodInfo.Invoke(this, new object[]
                 {
@@ -70,7 +71,7 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
             if (!_queryHandlerDelegatesByQueryType.TryGetValue(queryType, out handleQueryDelegate))
             {
-                throw new NoQueryHandlerResolvedException($"No query handler is registered to handle query of type: { queryType.Name }", queryType);
+                throw ExceptionBuilder.NoQueryHandlerResolvedException(typeof(TQuery));
             }
 
             return handleQueryDelegate;
@@ -101,15 +102,7 @@ namespace Xer.Cqrs.QueryStack.Registrations
         {
             IEnumerable<MethodInfo> methods = queryHandlerType.GetRuntimeMethods().Where(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(QueryHandlerAttribute)));
 
-            List<QueryHandlerAttributeMethod> queryHandlerMethods = new List<QueryHandlerAttributeMethod>(methods.Count());
-
-            foreach (MethodInfo methodInfo in methods)
-            {
-                // Return methods marked with [QueryHandler].
-                queryHandlerMethods.Add(QueryHandlerAttributeMethod.Create(methodInfo));
-            }
-
-            return queryHandlerMethods;
+            return QueryHandlerAttributeMethod.FromMethodInfos(methods);
         }
 
         #endregion Functions

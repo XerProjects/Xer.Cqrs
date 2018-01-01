@@ -27,7 +27,7 @@ namespace Xer.Cqrs.CommandStack.Resolvers
                 if (commandAsyncHandler == null)
                 {
                     // No handlers are resolved. Throw exception.
-                    throw NoCommandHandlerResolvedException<TCommand>();
+                    throw ExceptionBuilder.NoCommandHandlerResolvedException(typeof(TCommand));
                 }
 
                 return CommandHandlerDelegateBuilder.FromCommandHandler(commandAsyncHandler);
@@ -35,20 +35,8 @@ namespace Xer.Cqrs.CommandStack.Resolvers
             catch(Exception ex)
             {
                 // No handlers are resolved. Throw exception.
-                throw NoCommandHandlerResolvedException<TCommand>(ex);
+                throw ExceptionBuilder.NoCommandHandlerResolvedException(typeof(TCommand), ex);
             }
-        }
-
-        private static NoCommandHandlerResolvedException NoCommandHandlerResolvedException<TCommand>(Exception ex = null) where TCommand : class, ICommand
-        {
-            Type commandType = typeof(TCommand);
-
-            if(ex != null)
-            {
-                return new NoCommandHandlerResolvedException($"Error occurred while trying to resolve command handler from the container to handle command of type: { commandType.Name }.", commandType, ex);
-            }
-            
-            return new NoCommandHandlerResolvedException($"Unable to resolve command handler from the container to handle command of type: { commandType.Name }.", commandType, ex);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -16,8 +17,9 @@ namespace Xer.Cqrs.QueryStack.Registrations
 
         #region Properties
 
+        public Type DeclaringType { get; }
         public Type QueryType { get; }
-        public Type QueryReturnType { get; }
+        public Type QueryResultType { get; }
         public MethodInfo MethodInfo { get; }
         public bool IsAsync { get; }
         public bool SupportsCancellation { get; }
@@ -31,14 +33,15 @@ namespace Xer.Cqrs.QueryStack.Registrations
         /// </summary>
         /// <param name="methodInfo">Method info.</param>
         /// <param name="queryType">Type of query that is accepted by this method.</param>
-        /// <param name="queryReturnType">Method's return type. This should match query's result type.</param>
+        /// <param name="queryResultType">Method's return type. This should match query's result type.</param>
         /// <param name="isAsync">Is method an async method?</param>
         /// <param name="supportsCancellation">Does method supports cancellation?</param>
-        private QueryHandlerAttributeMethod(MethodInfo methodInfo, Type queryType, Type queryReturnType,bool isAsync, bool supportsCancellation)
+        private QueryHandlerAttributeMethod(MethodInfo methodInfo, Type queryType, Type queryResultType, bool isAsync, bool supportsCancellation)
         {
             MethodInfo = methodInfo ?? throw new ArgumentNullException(nameof(methodInfo));
+            DeclaringType = methodInfo.DeclaringType;
             QueryType = queryType ?? throw new ArgumentNullException(nameof(queryType));
-            QueryReturnType = queryReturnType ?? throw new ArgumentNullException(nameof(queryReturnType));
+            QueryResultType = queryResultType ?? throw new ArgumentNullException(nameof(queryResultType));
             IsAsync = isAsync;
             SupportsCancellation = supportsCancellation;
         }
@@ -59,6 +62,11 @@ namespace Xer.Cqrs.QueryStack.Registrations
             where TAttributed : class
             where TQuery : class, IQuery<TResult>
         {
+            if (attributedObjectFactory == null)
+            {
+                throw new ArgumentNullException(nameof(attributedObjectFactory));
+            }
+
             Type specificQueryType = typeof(TQuery);
 
             if (IsAsync)
@@ -83,8 +91,13 @@ namespace Xer.Cqrs.QueryStack.Registrations
         /// </summary>
         /// <param name="methodInfo">Method info that has QueryHandlerAttribute custom attribute.</param>
         /// <returns>Instance of QueryHandlerAttributeMethod.</returns>
-        public static QueryHandlerAttributeMethod Create(MethodInfo methodInfo)
+        public static QueryHandlerAttributeMethod FromMethodInfo(MethodInfo methodInfo)
         {
+            if (methodInfo == null)
+            {
+                throw new ArgumentNullException(nameof(methodInfo));
+            }
+
             Type queryMethodReturnType = methodInfo.ReturnType;
             if (queryMethodReturnType == typeof(void))
             {
@@ -126,7 +139,89 @@ namespace Xer.Cqrs.QueryStack.Registrations
                 throw new InvalidOperationException($"Methods marked with [QueryHandler] should accept a query parameter and return type should match expected result of the query it's accepting: {methodInfo.Name}");
             }
 
-            return new QueryHandlerAttributeMethod(methodInfo, queryParameter.ParameterType, queryMethodReturnType,isAsync, supportsCancellation);
+            return new QueryHandlerAttributeMethod(methodInfo, queryParameter.ParameterType, queryMethodReturnType, isAsync, supportsCancellation);
+        }
+
+        /// <summary>
+        /// Create QueryHandlerAttributeMethod from the method info.
+        /// </summary>
+        /// <param name="methodInfos">Method infos that have QueryHandlerAttribute custom attributes.</param>
+        /// <returns>Instances of QueryHandlerAttributeMethod.</returns>
+        public static List<QueryHandlerAttributeMethod> FromMethodInfos(IEnumerable<MethodInfo> methodInfos)
+        {
+            if (methodInfos == null)
+            {
+                throw new ArgumentNullException(nameof(methodInfos));
+            }
+
+            return methodInfos.Select(m => FromMethodInfo(m)).ToList();
+        }
+
+        /// <summary>
+        /// Detect methods marked with [QueryHandler] attribute and translate to QueryHandlerAttributeMethod instances.
+        /// </summary>
+        /// <param name="type">Type to scan for methods marked with the [QueryHandler] attribute.</param>
+        /// <returns>List of all QueryHandlerAttributeMethod detected.</returns>
+        public static List<QueryHandlerAttributeMethod> FromType(Type type)
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            IEnumerable<MethodInfo> methods = type.GetRuntimeMethods()
+                                                  .Where(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(QueryHandlerAttribute)));
+
+            return methods.Select(m => FromMethodInfo(m)).ToList();
+        }
+
+        /// <summary>
+        /// Detect methods marked with [QueryHandler] attribute and translate to QueryHandlerAttributeMethod instances.
+        /// </summary>
+        /// <param name="types">Types to scan for methods marked with the [QueryHandler] attribute.</param>
+        /// <returns>List of all QueryHandlerAttributeMethod detected.</returns>
+        public static List<QueryHandlerAttributeMethod> FromTypes(IEnumerable<Type> types)
+        {
+            if (types == null)
+            {
+                throw new ArgumentNullException(nameof(types));
+            }
+
+            return types.SelectMany(t => FromType(t)).ToList();
+        }
+
+        /// <summary>
+        /// Detect methods marked with [QueryHandler] attribute and translate to QueryHandlerAttributeMethod instances.
+        /// </summary>
+        /// <param name="queryHandlerAssembly">Assembly to scan for methods marked with the [QueryHandler] attribute.</param>
+        /// <returns>List of all QueryHandlerAttributeMethod detected.</returns>
+        public static List<QueryHandlerAttributeMethod> FromAssembly(Assembly queryHandlerAssembly)
+        {
+            if (queryHandlerAssembly == null)
+            {
+                throw new ArgumentNullException(nameof(queryHandlerAssembly));
+            }
+
+            IEnumerable<MethodInfo> commandHandlerMethods = queryHandlerAssembly.DefinedTypes.SelectMany(t => 
+                                                                t.DeclaredMethods.Where(m => 
+                                                                    m.CustomAttributes.Any(a => a.AttributeType == typeof(QueryHandlerAttribute))));
+            
+            return FromMethodInfos(commandHandlerMethods);
+        }
+
+        /// <summary>
+        /// Detect methods marked with [QueryHandler] attribute and translate to QueryHandlerAttributeMethod instances.
+        /// </summary>
+        /// <param name="queryHandlerAssemblies">Assemblies to scan for methods marked with the [QueryHandler] attribute.</param>
+        /// <returns>List of all QueryHandlerAttributeMethod detected.</returns>
+        public static List<QueryHandlerAttributeMethod> FromAssemblies(IEnumerable<Assembly> queryHandlerAssemblies)
+        {
+            if (queryHandlerAssemblies == null)
+            {
+                throw new ArgumentNullException(nameof(queryHandlerAssemblies));
+            }
+
+            return queryHandlerAssemblies.SelectMany(a => FromAssembly(a)).ToList();
         }
 
         #endregion Methods

@@ -11,7 +11,17 @@ namespace Xer.Cqrs.QueryStack
 
         internal static ArgumentException InvalidQueryTypeArgumentException(Type expected, Type actual)
         {
-            return new ArgumentException($"Invalid query passed to the query handler delegate. Delegate handles a {expected.Name} query but was passed in a {actual.Name} query.");
+            return new ArgumentException($"Invalid query passed to the query handler delegate. Delegate handles a {expected.Name} query but was given a {actual.Name} query.");
+        }
+            
+        internal static NoQueryHandlerResolvedException NoQueryHandlerResolvedException(Type queryType, Exception ex = null)
+        {
+            if(ex != null)
+            {
+                return new NoQueryHandlerResolvedException($"Error occurred while trying to resolve command handler to handle command of type: { queryType.Name }.", queryType, ex);
+            }
+            
+            return new NoQueryHandlerResolvedException($"Unable to resolve command handler to handle command of type: { queryType.Name }.", queryType);
         }
     }
 }

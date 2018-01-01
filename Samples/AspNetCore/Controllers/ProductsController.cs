@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AspNetCore.Domain;
-using AspNetCore.Domain.Commands;
-using AspNetCore.Domain.Repositories;
+using Domain;
+using Domain.Commands;
+using Domain.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Xer.Cqrs.CommandStack;

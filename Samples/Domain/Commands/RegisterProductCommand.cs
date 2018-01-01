@@ -1,12 +1,12 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using AspNetCore.Domain.Exceptions;
-using AspNetCore.Domain.Repositories;
+using Domain.Exceptions;
+using Domain.Repositories;
 using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.CommandStack.Attributes;
 
-namespace AspNetCore.Domain.Commands
+namespace Domain.Commands
 {
     public class RegisterProductCommand : Command
     {

@@ -1,46 +1,83 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Console.EventHandlers;
+using Domain.Commands;
+using Domain.Queries;
+using Domain.Repositories;
+using SimpleInjector;
+using Xer.Cqrs.CommandStack;
+using Xer.Cqrs.CommandStack.Dispatchers;
+using Xer.Cqrs.CommandStack.Resolvers;
+using Xer.Cqrs.EventStack;
+using Xer.Cqrs.EventStack.Publishers;
+using Xer.Cqrs.EventStack.Resolvers;
+using Xer.Cqrs.QueryStack;
+using Xer.Cqrs.QueryStack.Dispatchers;
+using Xer.Cqrs.QueryStack.Resolvers;
 
 namespace Console
 {
     class Program
     {
-        static void Main(string[] args) => MainAsync().GetAwaiter().GetResult();
+        static void Main(string[] args) => MainAsync(args).GetAwaiter().GetResult();
 
-        private static async Task MainAsync()
+        private static async Task MainAsync(string[] args)
         {
-            await CommandHandlingDemo();
-            await QueryHandlingDemo();
-            await EventHandlingDemo();
+            using(CancellationTokenSource cts = new CancellationTokenSource())
+            {
+                App app = Setup(args);
+                await app.StartAsync(args, cts.Token);
 
-            System.Console.WriteLine("Press any key to close demo application.");
-            System.Console.ReadKey();
+                System.Console.WriteLine("Exiting console application...");
+            }
         }
 
-        private static async Task CommandHandlingDemo()
+        private static App Setup(string[] args)
         {
-            System.Console.WriteLine("-------------------Command Handling Demo Start-------------------");
+            Container container = new Container();
 
-            await new CommandHandlingDemo.Demo().ExecuteDemoAsync();
+            container.RegisterSingleton<IProductRepository, InMemoryProductRepository>();
 
-            System.Console.WriteLine("-------------------Command Handling Demo End-------------------");
-        }
+            // Register all async command handlers in assembly.
+            container.Register(typeof(ICommandAsyncHandler<>), new[] { typeof(RegisterProductCommandHandler).Assembly });
 
-        private static async Task QueryHandlingDemo()
-        {
-            System.Console.WriteLine("-------------------Query Handling Demo Start-------------------");
+            // Register all async query handlers in assembly.
+            container.Register(typeof(IQueryAsyncHandler<,>), new[] { typeof(QueryProductByIdHandler).Assembly });
 
-            await new QueryHandlingDemo.Demo().ExecuteDemoAsync();
+            // Register all sync and async event handlers in assembly.
+            container.RegisterCollection(typeof(IEventHandler<>), typeof(ProductRegisteredEventHandler).Assembly);
+            container.RegisterCollection(typeof(IEventAsyncHandler<>), typeof(ProductRegisteredEventHandler).Assembly);
 
-            System.Console.WriteLine("-------------------Query Handling Demo End-------------------");
-        }
-
-        private static async Task EventHandlingDemo()
-        {
-            System.Console.WriteLine("-------------------Event Handling Demo Start-------------------");
-
-            await new EventHandlingDemo.Demo().ExecuteDemoAsync();
+            var containerAdapter = new SimpleInjectorContainerAdapter(container);
+            var commandDispatcher = new CommandDispatcher(new ContainerCommandAsyncHandlerResolver(containerAdapter));
+            var queryDispatcher = new QueryDispatcher(new ContainerQueryAsyncHandlerResolver(containerAdapter));
+            var eventPublisher = new EventPublisher(new ContainerEventHandlerResolver(containerAdapter));
             
-            System.Console.WriteLine("-------------------Event Handling Demo Start-------------------");
+            return new App(commandDispatcher, queryDispatcher, eventPublisher);
+        }
+    }
+    
+    public class SimpleInjectorContainerAdapter : Xer.Cqrs.CommandStack.Resolvers.IContainerAdapter,
+                                                  Xer.Cqrs.QueryStack.Resolvers.IContainerAdapter,
+                                                  Xer.Cqrs.EventStack.Resolvers.IContainerAdapter
+    {
+        private readonly Container _container;
+
+        public SimpleInjectorContainerAdapter(Container container)
+        {
+            _container = container;
+        }
+
+        public T Resolve<T>() where T : class
+        {
+            return _container.GetInstance<T>();
+        }
+
+        public IEnumerable<T> ResolveMultiple<T>() where T : class
+        {
+            return _container.GetAllInstances<T>();
         }
     }
 }

@@ -1,6 +1,6 @@
 using System;
 
-namespace AspNetCore.Domain
+namespace Domain
 {
     public class Product
     {

@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace AspNetCore.Domain.Repositories
+namespace Domain.Repositories
 {
     public interface IProductRepository
     {

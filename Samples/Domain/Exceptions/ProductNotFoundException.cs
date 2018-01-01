@@ -1,6 +1,6 @@
 using System;
 
-namespace AspNetCore.Domain.Exceptions
+namespace Domain.Exceptions
 {
     public class ProductNotFoundException : Exception
     {

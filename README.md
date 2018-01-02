@@ -259,7 +259,7 @@ public class QueryProductById : IQuery<Product>
 
 Before we can dispatch any commands, first, we need to register our query handlers. There are several ways to do this:
 
-1. Basic Registration
+##### 1. Basic Registration
 ```csharp
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)
@@ -300,7 +300,7 @@ public class QueryProductByIdHandler : IQueryAsyncHandler<QueryProductById, Prod
 }
 ```
 
-2. Container Registration
+##### 2. Container Registration
 ```csharp
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)
@@ -356,7 +356,7 @@ class AspNetCoreServiceProviderAdapter : Xer.Cqrs.QueryStack.Resolvers.IContaine
 }
 ```
 
-3. Attribute Registration
+##### 3. Attribute Registration
 ```csharp
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)
@@ -441,7 +441,7 @@ public class ProductRegisteredEvent : IEvent
 
 Before we can publish any events, first, we need to register our event handlers. There are several ways to do this:
 
-1. Basic Registration
+##### 1. Basic Registration
 ```csharp
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)
@@ -485,7 +485,7 @@ public class ProductRegisteredEmailNotifier : IEventAsyncHandler<ProductRegister
 }
 ```
 
-2. Container Registration
+##### 2. Container Registration
 ```csharp
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)
@@ -544,7 +544,7 @@ class AspNetCoreServiceProviderAdapter : Xer.Cqrs.EventStack.Resolvers.IContaine
 }
 ```
 
-3. Attribute Registration
+##### 3. Attribute Registration
 ```csharp
 private IEventPublisher SetupPublisherWithAttributeRegistration()
 {

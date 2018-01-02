@@ -144,7 +144,7 @@ public class RegisterProductCommandHandler : ICommandHandler<RegisterProductComm
 }
 
 // Container adapter.
-class AspNetCoreServiceProviderAdapter : IContainerAdapter
+class AspNetCoreServiceProviderAdapter : Xer.Cqrs.CommandStack.Resolvers.IContainerAdapter
 {
     private readonly IServiceProvider _serviceProvider;
 
@@ -325,7 +325,7 @@ public class QueryProductByIdHandler : IQueryHandler<QueryProductById, Product>
 }
 
 // Container adapter.
-class AspNetCoreServiceProviderAdapter : IContainerAdapter
+class AspNetCoreServiceProviderAdapter : Xer.Cqrs.QueryStack.Resolvers.IContainerAdapter
 {
     private readonly IServiceProvider _serviceProvider;
 
@@ -513,7 +513,7 @@ public class ProductRegisteredEmailNotifier : IEventAsyncHandler<ProductRegister
 }
 
 // Container adapter.
-class AspNetCoreServiceProviderAdapter : IContainerAdapter
+class AspNetCoreServiceProviderAdapter : Xer.Cqrs.EventStack.Resolvers.IContainerAdapter
 {
     private readonly IServiceProvider _serviceProvider;
 
@@ -522,9 +522,9 @@ class AspNetCoreServiceProviderAdapter : IContainerAdapter
         _serviceProvider = serviceProvider;
     }
 
-    public T Resolve<T>() where T : class
+    public IEnumerable<T> ResolveMultiple<T>() where T : class;
     {
-        return _serviceProvider.GetService<T>();
+        return _serviceProvider.GetServices<T>();
     }
 }
 ```

@@ -1,4 +1,19 @@
-# Xer.Cqrs
+# Table of contents
+* [Overview](#overview)
+* [Features](#features)
+* [Installation](#installation)
+* [Getting Started](#getting-started)
+   * [Command Handling](#command-handling)
+      * [Command Handler Registration](#command-handler-registration)
+      * [Command Dispatcher Usage](#command-dispatcher-usage)
+   * [Query Handling](#query-handling)
+      * [Query Handler Registration](#query-handler-registration)
+      * [Query Dispatcher Usage](#query-dispatcher-usage)
+   * [Event Handling](#event-handling)
+      * [Event Handler Registration](#event-handler-registration)
+      * [Event Publisher Usage](#event-publisher-usage)
+
+# Overview
 Simple CQRS library
 
 This project composes of components for implementing the CQRS pattern (Command Handling, Query Handling, and Event Handling). This library was built with simplicity, modularity and pluggability in mind.
@@ -39,7 +54,7 @@ To install Nuget packages:
     dotnet restore
     ```
 
-## Getting started
+## Getting Started
 (Samples are in ASP.NET Core)
 
 ### Command Handling
@@ -62,7 +77,7 @@ public class RegisterProductCommand : Command
 
 Before we can dispatch any commands, first we need to register our command handlers. There are several ways to do this:
 
-1. Basic Registration
+##### 1. Basic Registration
 ```csharp
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)
@@ -103,7 +118,7 @@ public class RegisterProductCommandHandler : ICommandAsyncHandler<RegisterProduc
 }
 ```
 
-2. Container Registration
+##### 2. Container Registration
 ```csharp
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)
@@ -160,7 +175,7 @@ class AspNetCoreServiceProviderAdapter : Xer.Cqrs.CommandStack.Resolvers.IContai
 }
 ```
 
-3. Attribute Registration
+##### 3. Attribute Registration
 ```csharp
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)

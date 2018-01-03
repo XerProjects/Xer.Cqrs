@@ -370,7 +370,7 @@ public void ConfigureServices(IServiceCollection services)
     {
         // This implements IQueryHandlerResolver.
         var attributeRegistration = new QueryHandlerAttributeRegistration();
-        // Register methods with [QueryHandler] attribute.
+        // Register ALL methods with [QueryHandler] attribute.
         attributeRegistration.Register(() => new QueryProductByIdHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
 
         return attributeRegistration;
@@ -481,6 +481,7 @@ public class ProductRegisteredEmailNotifier : IEventAsyncHandler<ProductRegister
     public Task HandleAsync(ProductRegisteredEvent @event, CancellationToken ct = default(CancellationToken))
     {
         System.Console.WriteLine($"Sending email notification...");
+        return Task.CompletedTask;
     }
 }
 ```
@@ -495,7 +496,8 @@ public void ConfigureServices(IServiceCollection services)
     services.AddSingleton<IProductRepository, InMemoryProductRepository>();
     
     // Register event handlers to the container.
-    services.AddTransient<IEventHandler<ProductRegisteredEvent>, ProductRegisteredEventHandler>();
+    // You can use assembly scanners to scan for handlers.
+    services.AddTransient<IEventHandler<ProductRegisteredEvent>, ProductRegisteredEventHandler>();
     services.AddTransient<IEventAsyncHandler<ProductRegisteredEvent>, ProductRegisteredEmailNotifier>();
 
     // Register event handler resolver. This is resolved by EventPublisher.
@@ -524,6 +526,7 @@ public class ProductRegisteredEmailNotifier : IEventAsyncHandler<ProductRegister
     public Task HandleAsync(ProductRegisteredEvent @event, CancellationToken ct = default(CancellationToken))
     {
         System.Console.WriteLine($"Sending email notification...");
+        return Task.CompletedTask;
     }
 }
 
@@ -546,35 +549,6 @@ class AspNetCoreServiceProviderAdapter : Xer.Cqrs.EventStack.Resolvers.IContaine
 
 ##### 3. Attribute Registration
 ```csharp
-private IEventPublisher SetupPublisherWithAttributeRegistration()
-{
-    // Register any methods marked with [EventHandler] 
-    // which will be invoked when resolved by the EventPublisher.
-    var attributeRegistration = new EventHandlerAttributeRegistration();
-    attributeRegistration.Register(() => new SampleEventHandlerAttributeHandler());
-    
-    // EventPublisher receives an implementation of IEventHandlerResolver 
-    // which is implemented by EventHandlerAttributeRegistration.
-    return new EventPublisher(attributeRegistration);
-}
-
-// Note: Objects can have multiple [EventHandler] methods for a single event type.
-class SampleEventHandlerAttributeHandler
-{
-    [EventHandler]
-    public Task HandleSampleEventAsync(SampleEvent @event, CancellationToken cancellationToken)
-    {
-        System.Console.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event asynchronously.");
-        return Task.CompletedTask;
-    }
-
-    [EventHandler]
-    public void HandleSampleEvent(SampleEvent @event)
-    {
-        System.Console.WriteLine($"{GetType().Name} handled {@event.GetType().Name} event synchronously.");
-    }
-}
-
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)
 {            
@@ -589,7 +563,7 @@ public void ConfigureServices(IServiceCollection services)
         var attributeRegistration = new EventHandlerAttributeRegistration();
 
         // Register ALL methods with [EventHandler] attribute.
-        attributeRegistration.Register(() => new ProductRegisteredEventHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+        attributeRegistration.Register(() => new ProductRegisteredEventHandlers(serviceProvider.GetRequiredService<IProductRepository>()));
         return attributeRegistration;
     });
 
@@ -598,24 +572,22 @@ public void ConfigureServices(IServiceCollection services)
     ...
 }
 
-// Event handler 1.
-[EventHandler]
-public class ProductRegisteredEventHandler : IEventHandler<ProductRegisteredEvent>
+public class ProductRegisteredEventHandlers : IEventHandler<ProductRegisteredEvent>
 {
+    // Event handler 1.
+    [EventHandler]
     public void Handle(ProductRegisteredEvent @event)
     {
         System.Console.WriteLine($"ProductRegisteredEventHandler handled {@event.GetType()}.");
     }
-}
-
-// Event handler 2.
-[EventHandler]
-public class ProductRegisteredEmailNotifier : IEventAsyncHandler<ProductRegisteredEvent>
-{
-    public Task HandleAsync(ProductRegisteredEvent @event, CancellationToken ct = default(CancellationToken))
+    
+    // Event handler 2.
+    [EventHandler]
+    public Task SendEmailNotificationAsync(ProductRegisteredEvent @event, CancellationToken ct = default(CancellationToken))
     {
         System.Console.WriteLine($"Sending email notification...");
-    }
+        return Task.CompletedTask;
+    }
 }
 ```
 #### Event Publisher Usage

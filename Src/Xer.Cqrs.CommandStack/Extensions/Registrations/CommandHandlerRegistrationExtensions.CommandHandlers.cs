@@ -17,6 +17,11 @@ namespace Xer.Delegator.Registrations
                                                             Func<ICommandHandler<TCommand>> commandHandlerFactory) 
                                                             where TCommand : class
         {
+            if (registration == null)
+            {
+                throw new ArgumentNullException(nameof(registration));
+            }
+
             if (commandHandlerFactory == null)
             {
                 throw new ArgumentNullException(nameof(commandHandlerFactory));
@@ -38,7 +43,12 @@ namespace Xer.Delegator.Registrations
                                                             Func<ICommandAsyncHandler<TCommand>> commandAsyncHandlerFactory) 
                                                             where TCommand : class
         {
-            if(commandAsyncHandlerFactory == null)
+            if (registration == null)
+            {
+                throw new ArgumentNullException(nameof(registration));
+            }
+
+            if (commandAsyncHandlerFactory == null)
             {
                 throw new ArgumentNullException(nameof(commandAsyncHandlerFactory));
             }

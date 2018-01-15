@@ -152,16 +152,17 @@ namespace Xer.Cqrs.CommandStack
                 {
                     return true;
                 }
+                
+                // Factory returned null, no exception actually occurred.
+                exception = FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>();
+                return false;
             }
             catch (Exception ex)
             {
                 // Wrap inner exception.
                 exception = FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(ex);
+                return false;
             }
-
-            // Factory returned null, no exception actually occurred.
-            exception = FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>();
-            return false;
         }
         
         private static InvalidOperationException FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(Exception ex = null)

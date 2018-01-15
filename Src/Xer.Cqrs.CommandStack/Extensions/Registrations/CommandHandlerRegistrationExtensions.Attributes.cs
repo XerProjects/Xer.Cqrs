@@ -32,6 +32,11 @@ namespace Xer.Delegator.Registrations
                                                                                Func<TAttributedObject> attributedObjectFactory) 
                                                                                where TAttributedObject : class
         {
+            if (registration == null)
+            {
+                throw new ArgumentNullException(nameof(registration));
+            }
+
             List<CommandHandlerAttributeMethod> commandHandlerMethods = CommandHandlerAttributeMethod.FromType(typeof(TAttributedObject));
 
             foreach (CommandHandlerAttributeMethod commandHandlerMethod in commandHandlerMethods)
@@ -66,6 +71,11 @@ namespace Xer.Delegator.Registrations
                                                                                       where TAttributedObject : class
                                                                                       where TCommand : class
         {
+            if (registration == null)
+            {
+                throw new ArgumentNullException(nameof(registration));
+            }
+            
             // Create delegate.
             MessageHandlerDelegate<TCommand> commandHandlerDelegate = commandHandlerMethod.CreateMessageHandlerDelegate<TAttributedObject, TCommand>(attributedObjectFactory);
 

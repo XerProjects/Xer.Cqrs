@@ -12,12 +12,18 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Dispatchers;
-using Xer.Cqrs.CommandStack.Registrations;
 using Xer.Cqrs.CommandStack.Resolvers;
+using Xer.Delegator;
+using Xer.Delegator.Registrations;
+using Xer.Delegator.Resolvers;
 
 namespace AspNetCore
 {
+    class AspNetCore
+    {
+
+    }
+
     public class StartupWithMixedRegistration
     {
         public StartupWithMixedRegistration(IConfiguration configuration)
@@ -39,33 +45,36 @@ namespace AspNetCore
             // Repository.
             services.AddSingleton<IProductRepository, InMemoryProductRepository>();
 
+            // Register command handler registration to be access later.
+            services.AddSingleton<SingleMessageHandlerRegistration, SingleMessageHandlerRegistration>();
+
             // Register command handlers.
             SetupContainerRegistration(services);
             SetupAttributeRegistration(services);
             SetupBasicRegistration(services);
 
             // Command dispatcher.
-            services.AddSingleton<ICommandAsyncDispatcher>(serviceProvider =>
+            services.AddSingleton<IMessageDelegator>(serviceProvider =>
             {
                 // Wrap ASP NET Core service provider in a resolver.
-                ICommandHandlerResolver containerResolver = new ContainerCommandAsyncHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider));
+                IMessageHandlerResolver containerResolver = new ContainerCommandAsyncHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider));
 
                 // CommandHandlerAttributeRegistration implements ICommandHandlerResolver.
-                ICommandHandlerResolver attributeResolver = serviceProvider.GetRequiredService<CommandHandlerAttributeRegistration>();
+                IMessageHandlerResolver attributeResolver = serviceProvider.GetRequiredService<SingleMessageHandlerRegistration>().BuildMessageHandlerResolver();
                 
                 // CommandHandlerRegistration implements ICommandHandlerResolver.
-                ICommandHandlerResolver basicResolver = serviceProvider.GetRequiredService<CommandHandlerRegistration>();
+                IMessageHandlerResolver basicResolver = serviceProvider.GetRequiredService<SingleMessageHandlerRegistration>().BuildMessageHandlerResolver();
 
                 // Merge all resolvers.
-                var compositeResolver = new CompositeCommandHandlerResolver(new ICommandHandlerResolver[]
+                var compositeResolver = new CompositeMessageHandlerResolver(new IMessageHandlerResolver[]
                 {
                     // Order is followed when resolving handlers.
                     containerResolver,
                     attributeResolver,
                     basicResolver
-                }, (ex) => true); // Handle any exception if exception is thrown from a resolver, we can return true to allow the dispatcher to proceed to next resolver.
+                });
 
-                return new CommandDispatcher(compositeResolver);
+                return new MessageDelegator(compositeResolver);
             });
 
             services.AddMvc();
@@ -100,24 +109,24 @@ namespace AspNetCore
 
         private static void SetupAttributeRegistration(IServiceCollection services)
         {
-            services.AddSingleton<CommandHandlerAttributeRegistration>((serviceProvider) =>
+            services.AddSingleton<SingleMessageHandlerRegistration>((serviceProvider) =>
             {
                 // Register methods marked with [CommandHandler] attribute.
-                var attributeRegistration = new CommandHandlerAttributeRegistration();
-                attributeRegistration.Register(() => new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                var registration = serviceProvider.GetRequiredService<SingleMessageHandlerRegistration>();
+                registration.RegisterCommandHandlerAttributes(() => new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
 
-                return attributeRegistration;
+                return registration;
             });
         }
 
         private static void SetupBasicRegistration(IServiceCollection services)
         {
-            services.AddSingleton<CommandHandlerRegistration>((serviceProvider) =>
+            services.AddSingleton<SingleMessageHandlerRegistration>((serviceProvider) =>
             {
                 // Needed to cast to ICommandHandler because below handlers implements both ICommandAsyncHandler and ICommandHandler.
                 // The Register method accepts both interfaces so compiling is complaining that it is ambiguous.  
-                var registration = new CommandHandlerRegistration();
-                registration.Register(() => (ICommandAsyncHandler<ActivateProductCommand>)new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                var registration = new SingleMessageHandlerRegistration();
+                registration.RegisterCommandHandler(() => (ICommandHandler<ActivateProductCommand>)new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
 
                 return registration;
             });

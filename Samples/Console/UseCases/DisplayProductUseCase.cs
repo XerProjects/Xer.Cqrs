@@ -11,6 +11,8 @@ namespace Console.UseCases
     {
         private readonly IQueryAsyncDispatcher _queryDispatcher;
 
+        public override string Name => "DisplayProduct";
+
         public DisplayProductUseCase(IQueryAsyncDispatcher queryDispatcher)
         {
             _queryDispatcher = queryDispatcher;    
@@ -31,7 +33,6 @@ namespace Console.UseCases
             Product product = await _queryDispatcher.DispatchAsync<QueryProductById, Product>(new QueryProductById(int.Parse(productId)));
 
             System.Console.WriteLine($"Product ID: {product.Id}, Product Name: {product.Name}, IsActive: {product.IsActive}");
-            System.Console.WriteLine(Environment.NewLine);
         }
     }
 }

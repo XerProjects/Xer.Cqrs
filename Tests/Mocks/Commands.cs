@@ -2,22 +2,22 @@
 
 namespace Xer.Cqrs.Tests.Mocks
 {
-    public class DoSomethingCommand : Command
+    public class DoSomethingCommand
     {
 
     }
 
-    public class ThrowExceptionCommand : Command
+    public class ThrowExceptionCommand
     {
 
     }
 
-    public class DoSomethingWithCancellationCommand : Command
+    public class DoSomethingWithCancellationCommand
     {
 
     }
 
-    public class DoSomethingForSpecifiedDurationCommand : Command
+    public class DoSomethingForSpecifiedDurationCommand
     {
         public int DurationInMilliSeconds { get; }
 

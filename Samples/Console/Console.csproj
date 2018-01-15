@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="SimpleInjector" Version="4.0.12" />
+    <PackageReference Include="Xer.Delegator" Version="0.2.2" />
   </ItemGroup>
 
   <PropertyGroup>

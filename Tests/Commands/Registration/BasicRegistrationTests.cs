@@ -1,6 +1,7 @@
 ﻿using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Registrations;
 using Xer.Cqrs.Tests.Mocks;
+using Xer.Delegator;
+using Xer.Delegator.Registrations;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -24,10 +25,12 @@ namespace Xer.Cqrs.Tests.Commands.Registration
             {
                 var commandHandler = new TestCommandHandler(_testOutputHelper);
 
-                var registration = new CommandHandlerRegistration();
-                registration.Register(() => (ICommandHandler<DoSomethingCommand>)commandHandler);
+                var registration = new SingleMessageHandlerRegistration();
+                registration.RegisterCommandHandler(() => (ICommandHandler<DoSomethingCommand>)commandHandler);
 
-                CommandHandlerDelegate commandHandlerDelegate = registration.ResolveCommandHandler<DoSomethingCommand>();
+                IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
+
+                MessageHandlerDelegate<DoSomethingCommand> commandHandlerDelegate = resolver.ResolveMessageHandler<DoSomethingCommand>();
 
                 Assert.NotNull(commandHandlerDelegate);
 

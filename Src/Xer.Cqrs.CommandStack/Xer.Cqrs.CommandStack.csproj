@@ -4,4 +4,8 @@
     <TargetFramework>netstandard1.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Xer.Delegator" Version="0.2.2" />
+  </ItemGroup>
+
 </Project>

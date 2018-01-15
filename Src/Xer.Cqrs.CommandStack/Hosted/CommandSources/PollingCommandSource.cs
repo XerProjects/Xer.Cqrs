@@ -4,7 +4,11 @@ using System.Threading.Tasks;
 
 namespace Xer.Cqrs.CommandStack.Hosted.CommandSources
 {
-    public abstract class PollingCommandSource : ICommandSource
+    public abstract class PollingCommandSource : PollingCommandSource<object>
+    {
+    }
+
+    public abstract class PollingCommandSource<TCommand> : ICommandSource<TCommand> where TCommand : class
     {
         private CancellationToken _receiveCancellationToken;
         private Task _pollingTask;
@@ -27,7 +31,7 @@ namespace Xer.Cqrs.CommandStack.Hosted.CommandSources
         /// <summary>
         /// Event where received commands are published.
         /// </summary>
-        public event CommandHandlerDelegate CommandReceived;
+        public event CommandReceivedDelegate<TCommand> CommandReceived;
 
         /// <summary>
         /// Start receiving commands from the source.
@@ -75,7 +79,7 @@ namespace Xer.Cqrs.CommandStack.Hosted.CommandSources
         /// </summary>
         /// <param name="command">Command to receive.</param>
         /// <returns>Asynchronous task.</returns>
-        public Task Receive(ICommand command)
+        public Task Receive(TCommand command)
         {
             if (command == null)
             {
@@ -94,7 +98,7 @@ namespace Xer.Cqrs.CommandStack.Hosted.CommandSources
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Asynchronous task.</returns>
-        protected abstract Task<ICommand> GetNextCommandAsync(CancellationToken cancellationToken);
+        protected abstract Task<TCommand> GetNextCommandAsync(CancellationToken cancellationToken);
 
         /// <summary>
         /// Start polling the source for any commands.
@@ -105,7 +109,7 @@ namespace Xer.Cqrs.CommandStack.Hosted.CommandSources
         {
             while (!IsTimeToStop && !cancellationToken.IsCancellationRequested)
             {
-                ICommand receivedCommand = await GetNextCommandAsync(cancellationToken).ConfigureAwait(false);
+                TCommand receivedCommand = await GetNextCommandAsync(cancellationToken).ConfigureAwait(false);
                 if (receivedCommand != null)
                 {
                     OnCommandReceived(receivedCommand, cancellationToken);
@@ -138,7 +142,7 @@ namespace Xer.Cqrs.CommandStack.Hosted.CommandSources
         /// </summary>
         /// <param name="receivedCommand">Received command.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        private void OnCommandReceived(ICommand receivedCommand, CancellationToken cancellationToken)
+        private void OnCommandReceived(TCommand receivedCommand, CancellationToken cancellationToken)
         {
             if(CommandReceived != null)
             {

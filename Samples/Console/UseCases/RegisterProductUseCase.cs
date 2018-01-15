@@ -4,15 +4,18 @@ using Domain.Commands;
 using DomainEvents;
 using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.EventStack;
+using Xer.Delegator;
 
 namespace Console.UseCases
 {
     public class RegisterProductUseCase : UseCaseBase
     {
-        private readonly ICommandAsyncDispatcher _commandDispatcher;
+        private readonly IMessageDelegator _commandDispatcher;
         private readonly IEventPublisher _eventPublisher;
 
-        public RegisterProductUseCase(ICommandAsyncDispatcher commandDispatcher, IEventPublisher eventPublisher)
+        public override string Name => "RegisterProduct";
+
+        public RegisterProductUseCase(IMessageDelegator commandDispatcher, IEventPublisher eventPublisher)
         {
             _eventPublisher = eventPublisher;
             _commandDispatcher = commandDispatcher;
@@ -32,7 +35,7 @@ namespace Console.UseCases
 
             string productName = RequestInput("Enter product name:");
 
-            await _commandDispatcher.DispatchAsync(new RegisterProductCommand(int.Parse(id), productName));
+            await _commandDispatcher.SendAsync(new RegisterProductCommand(int.Parse(id), productName));
             await _eventPublisher.PublishAsync(new ProductRegisteredEvent(int.Parse(id), productName));
 
             System.Console.WriteLine($"{productName} registered.");

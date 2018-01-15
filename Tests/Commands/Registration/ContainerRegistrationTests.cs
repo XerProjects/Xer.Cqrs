@@ -2,6 +2,7 @@
 using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.CommandStack.Resolvers;
 using Xer.Cqrs.Tests.Mocks;
+using Xer.Delegator;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -29,7 +30,7 @@ namespace Xer.Cqrs.Tests.Commands.Registration
                 var containerAdapter = new SimpleInjectorContainerAdapter(container);
                 var resolver = new ContainerCommandHandlerResolver(containerAdapter);
 
-                CommandHandlerDelegate commandHandlerDelegate = resolver.ResolveCommandHandler<DoSomethingCommand>();
+                MessageHandlerDelegate<DoSomethingCommand> commandHandlerDelegate = resolver.ResolveMessageHandler<DoSomethingCommand>();
                 
                 // Delegate should invoke the actual command handler - TestCommandHandler.
                 commandHandlerDelegate.Invoke(new DoSomethingCommand());

@@ -1,6 +1,6 @@
 ﻿namespace Xer.Cqrs.CommandStack
 {
-    public interface ICommandHandler<in TCommand> where TCommand : ICommand
+    public interface ICommandHandler<in TCommand> where TCommand : class
     {
         /// <summary>
         /// Handle and process the command.

@@ -8,7 +8,6 @@ using Domain.Queries;
 using Domain.Repositories;
 using SimpleInjector;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Dispatchers;
 using Xer.Cqrs.CommandStack.Resolvers;
 using Xer.Cqrs.EventStack;
 using Xer.Cqrs.EventStack.Publishers;
@@ -16,6 +15,7 @@ using Xer.Cqrs.EventStack.Resolvers;
 using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Dispatchers;
 using Xer.Cqrs.QueryStack.Resolvers;
+using Xer.Delegator;
 
 namespace Console
 {
@@ -51,7 +51,7 @@ namespace Console
             container.RegisterCollection(typeof(IEventAsyncHandler<>), typeof(ProductRegisteredEventHandler).Assembly);
 
             var containerAdapter = new SimpleInjectorContainerAdapter(container);
-            var commandDispatcher = new CommandDispatcher(new ContainerCommandAsyncHandlerResolver(containerAdapter));
+            var commandDispatcher = new MessageDelegator(new ContainerCommandAsyncHandlerResolver(containerAdapter));
             var queryDispatcher = new QueryDispatcher(new ContainerQueryAsyncHandlerResolver(containerAdapter));
             var eventPublisher = new EventPublisher(new ContainerEventHandlerResolver(containerAdapter));
             

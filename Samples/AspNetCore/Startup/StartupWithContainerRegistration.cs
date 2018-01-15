@@ -12,9 +12,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Dispatchers;
-using Xer.Cqrs.CommandStack.Registrations;
 using Xer.Cqrs.CommandStack.Resolvers;
+using Xer.Delegator;
 
 namespace AspNetCore
 {
@@ -46,13 +45,13 @@ namespace AspNetCore
             services.AddTransient<ICommandAsyncHandler<DeactivateProductCommand>, DeactivateProductCommandHandler>();
 
             // Register command handler resolver. This is resolved by the CommandDispatcher.
-            services.AddTransient<ICommandHandlerResolver>(serviceProvider =>
+            services.AddTransient<IMessageHandlerResolver>(serviceProvider =>
                 // This resolver only resolves async handlers. For sync handlers, ContainerCommandHandlerResolver should be used.
                 new ContainerCommandAsyncHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider))
             );
 
             // Register command dispatcher.
-            services.AddSingleton<ICommandAsyncDispatcher, CommandDispatcher>();
+            services.AddSingleton<IMessageDelegator, MessageDelegator>();
 
             services.AddMvc();
         }

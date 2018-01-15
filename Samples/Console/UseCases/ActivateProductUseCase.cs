@@ -3,14 +3,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using Domain.Commands;
 using Xer.Cqrs.CommandStack;
+using Xer.Delegator;
 
 namespace Console.UseCases
 {
     public class ActivateProductUseCase : UseCaseBase
     {
-        private readonly ICommandAsyncDispatcher _commandDispatcher;
+        private readonly IMessageDelegator _commandDispatcher;
 
-        public ActivateProductUseCase(ICommandAsyncDispatcher commandDispatcher)
+        public override string Name => "ActivateProduct";
+
+        public ActivateProductUseCase(IMessageDelegator commandDispatcher)
         {
             _commandDispatcher = commandDispatcher;    
         }
@@ -27,7 +30,7 @@ namespace Console.UseCases
                 return InputValidationResult.WithErrors("Invalid product ID.");
             });
 
-            await _commandDispatcher.DispatchAsync(new ActivateProductCommand(int.Parse(productId)));
+            await _commandDispatcher.SendAsync(new ActivateProductCommand(int.Parse(productId)));
 
             System.Console.WriteLine("Product activated.");
         }

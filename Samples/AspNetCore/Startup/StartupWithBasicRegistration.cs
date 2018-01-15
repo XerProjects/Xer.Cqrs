@@ -12,9 +12,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Dispatchers;
-using Xer.Cqrs.CommandStack.Registrations;
 using Xer.Cqrs.CommandStack.Resolvers;
+using Xer.Delegator;
+using Xer.Delegator.Registrations;
 
 namespace AspNetCore
 {
@@ -40,24 +40,23 @@ namespace AspNetCore
             services.AddSingleton<IProductRepository, InMemoryProductRepository>();
 
             // Register command handler resolver. This is resolved by CommandDispatcher.
-            services.AddSingleton<ICommandHandlerResolver>((serviceProvider) =>
+            services.AddSingleton<IMessageHandlerResolver>((serviceProvider) =>
             {
-                // This object implements ICommandHandlerResolver.
-                var registration = new CommandHandlerRegistration();
+                var registration = new SingleMessageHandlerRegistration();
                 
                 // Needed to cast to ICommandHandler because below handlers implements both ICommandAsyncHandler and ICommandHandler.
                 // The Register method accepts both interfaces so compiling is complaining that it is ambiguous.  
                 // We could also cast to ICommandAsyncHandler instead but decided to go with this 
                 // because I already did the ICommandAsyncHandler in the container registration sample.
-                registration.Register(() => (ICommandHandler<RegisterProductCommand>)new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-                registration.Register(() => (ICommandHandler<ActivateProductCommand>)new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-                registration.Register(() => (ICommandHandler<DeactivateProductCommand>)new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                registration.RegisterCommandHandler(() => (ICommandAsyncHandler<RegisterProductCommand>)new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                registration.RegisterCommandHandler(() => (ICommandAsyncHandler<ActivateProductCommand>)new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                registration.RegisterCommandHandler(() => (ICommandAsyncHandler<DeactivateProductCommand>)new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
 
-                return registration;
+                return registration.BuildMessageHandlerResolver();
             });
 
             // Command dispatcher.
-            services.AddSingleton<ICommandAsyncDispatcher, CommandDispatcher>();
+            services.AddSingleton<IMessageDelegator, MessageDelegator>();
 
             services.AddMvc();
         }

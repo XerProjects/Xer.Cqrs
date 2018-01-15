@@ -12,9 +12,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Dispatchers;
-using Xer.Cqrs.CommandStack.Registrations;
 using Xer.Cqrs.CommandStack.Resolvers;
+using Xer.Delegator;
+using Xer.Delegator.Registrations;
 
 namespace AspNetCore
 {
@@ -40,21 +40,21 @@ namespace AspNetCore
             services.AddSingleton<IProductRepository, InMemoryProductRepository>();
 
             // Register command handler resolver. This is resolved by CommandDispatcher.
-            services.AddSingleton<ICommandHandlerResolver>((serviceProvider) =>
+            services.AddSingleton<IMessageHandlerResolver>((serviceProvider) =>
             {
                 // This implements ICommandHandlerResolver.
-                var attributeRegistration = new CommandHandlerAttributeRegistration();
+                var attributeRegistration = new SingleMessageHandlerRegistration();
 
                 // Register methods with [CommandHandler] attribute.
-                attributeRegistration.Register(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-                attributeRegistration.Register(() => new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-                attributeRegistration.Register(() => new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                attributeRegistration.RegisterCommandHandlerAttributes(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                attributeRegistration.RegisterCommandHandlerAttributes(() => new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                attributeRegistration.RegisterCommandHandlerAttributes(() => new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
 
-                return attributeRegistration;
+                return attributeRegistration.BuildMessageHandlerResolver();
             });
 
             // Command dispatcher.
-            services.AddSingleton<ICommandAsyncDispatcher, CommandDispatcher>();
+            services.AddSingleton<IMessageDelegator, MessageDelegator>();
 
             services.AddMvc();
         }

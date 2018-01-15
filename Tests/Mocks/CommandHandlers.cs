@@ -13,24 +13,24 @@ namespace Xer.Cqrs.Tests.Mocks
     
     public abstract class TestCommandHandlerBase
     {
-        private List<ICommand> _handledCommands = new List<ICommand>();
+        private List<object> _handledCommands = new List<object>();
 
         protected ITestOutputHelper TestOutputHelper { get; }
 
-        public IReadOnlyCollection<ICommand> HandledCommands => _handledCommands.AsReadOnly();
+        public IReadOnlyCollection<object> HandledCommands => _handledCommands.AsReadOnly();
 
         public TestCommandHandlerBase(ITestOutputHelper outputHelper)
         {
             TestOutputHelper = outputHelper;
         }
 
-        protected void HandleAsync<TCommand>(TCommand command) where TCommand : ICommand
+        protected void HandleAsync<TCommand>(TCommand command) where TCommand : class
         {
             TestOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} executed command of type {command.GetType().Name} asynchronously.");
             _handledCommands.Add(command);
         }
 
-        protected void Handle<TCommand>(TCommand command) where TCommand : ICommand
+        protected void Handle<TCommand>(TCommand command) where TCommand : class
         {
             TestOutputHelper.WriteLine($"{DateTime.Now}: {GetType().Name} executed command of type {command.GetType().Name}.");
             _handledCommands.Add(command);

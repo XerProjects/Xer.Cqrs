@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xer.Delegator;
 
 namespace Xer.Cqrs.CommandStack
 {
@@ -8,201 +9,164 @@ namespace Xer.Cqrs.CommandStack
     {
         #region From CommandHandler
 
-        internal static CommandHandlerDelegate FromCommandHandler<TCommand>(ICommandAsyncHandler<TCommand> commandAsyncHandler)
-            where TCommand : class, ICommand
+        internal static MessageHandlerDelegate<TCommand> FromCommandHandler<TCommand>(ICommandAsyncHandler<TCommand> commandAsyncHandler)
+            where TCommand : class
         {
-            return new CommandHandlerDelegate(async (inputCommand, ct) =>
-            {
-                TCommand command = EnsureValidCommand<TCommand>(inputCommand);
-                await commandAsyncHandler.HandleAsync(command, ct).ConfigureAwait(false);
-            });
+            return (inputCommand, ct) => commandAsyncHandler.HandleAsync(inputCommand, ct);
         }
 
-        internal static CommandHandlerDelegate FromCommandHandler<TCommand>(ICommandHandler<TCommand> commandHandler)
-            where TCommand : class, ICommand
+        internal static MessageHandlerDelegate<TCommand> FromCommandHandler<TCommand>(ICommandHandler<TCommand> commandHandler)
+            where TCommand : class
         {
-            return new CommandHandlerDelegate((inputCommand, ct) =>
+            return (inputCommand, ct) =>
             {
-                TCommand command;
                 try
                 {
-                    command = EnsureValidCommand<TCommand>(inputCommand);
-                }
-                catch (Exception ex)
-                {
-                    return TaskUtility.FromException(ex);
-                }
-
-                try
-                {
-                    commandHandler.Handle(command);
+                    commandHandler.Handle(inputCommand);
                     return TaskUtility.CompletedTask;
                 }
                 catch (Exception ex)
                 {
                     return TaskUtility.FromException(ex);
                 }
-            });
+            };
         }
 
         #endregion From CommandHandler
 
         #region From Factory
-
-        internal static CommandHandlerDelegate FromFactory<TCommand>(Func<ICommandAsyncHandler<TCommand>> commandHandlerFactory)
-            where TCommand : class, ICommand
+        
+        internal static MessageHandlerDelegate<TCommand> FromCommandHandlerFactory<TCommand>(Func<ICommandAsyncHandler<TCommand>> commandHandlerFactory)
+            where TCommand : class
         {
-            return new CommandHandlerDelegate(async (inputCommand, ct) =>
+            return (inputCommand, ct) =>
             {
-                TCommand command = EnsureValidCommand<TCommand>(inputCommand);
-                ICommandAsyncHandler<TCommand> instance = EnsureInstanceFromFactory(commandHandlerFactory);
+                if(!TryGetInstanceFromFactory(commandHandlerFactory, out ICommandAsyncHandler<TCommand> instance, out Exception exception))
+                {
+                    // Exception occurred or null is returned by factory.
+                    return TaskUtility.FromException(exception);
+                }
                 
-                await instance.HandleAsync(command, ct).ConfigureAwait(false);
-            });
+                return instance.HandleAsync(inputCommand, ct);
+            };
         }
 
-        internal static CommandHandlerDelegate FromFactory<TCommand>(Func<ICommandHandler<TCommand>> commandHandlerFactory)
-            where TCommand : class, ICommand
+        internal static MessageHandlerDelegate<TCommand> FromCommandHandlerFactory<TCommand>(Func<ICommandHandler<TCommand>> commandHandlerFactory)
+            where TCommand : class
         {
-            return new CommandHandlerDelegate((inputCommand, ct) =>
+            return (inputCommand, ct) =>
             {
-                TCommand command;
                 try
-                {
-                    command = EnsureValidCommand<TCommand>(inputCommand);
-                }
-                catch(Exception ex)
-                {
-                    return TaskUtility.FromException(ex);
-                }
-                
-                ICommandHandler<TCommand> instance;
-                try
-                {
-                    instance = EnsureInstanceFromFactory(commandHandlerFactory);
-                }
-                catch (Exception ex)
-                {
-                    return TaskUtility.FromException(ex);
-                }
+                {                    
+                    if(!TryGetInstanceFromFactory(commandHandlerFactory, out ICommandHandler<TCommand> instance, out Exception exception))
+                    {
+                        // Exception occurred or null is returned by factory.
+                        return TaskUtility.FromException(exception);
+                    }
 
-                try
-                {
-                    instance.Handle(command);
+                    instance.Handle(inputCommand);
                     return TaskUtility.CompletedTask;
                 }
                 catch (Exception ex)
                 {
                     return TaskUtility.FromException(ex);
                 }
-            });
+            };
         }
 
         #endregion From Factory
 
         #region From Delegate
         
-        internal static CommandHandlerDelegate FromDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, Func<TAttributed, TCommand, Task> asyncAction)
+        internal static MessageHandlerDelegate<TCommand> FromDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, Func<TAttributed, TCommand, Task> asyncAction)
             where TAttributed : class
-            where TCommand : class, ICommand
+            where TCommand : class
         {
-            return new CommandHandlerDelegate(async (inputCommand, ct) =>
+            return (inputCommand, ct) =>
             {
-                TCommand command = EnsureValidCommand<TCommand>(inputCommand);
-                TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
+                if(!TryGetInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                {
+                    // Exception occurred or null is returned by factory.
+                    return TaskUtility.FromException(exception);
+                }
                 
-                await asyncAction.Invoke(instance, command).ConfigureAwait(false);
-            });
+                return asyncAction.Invoke(instance, inputCommand);
+            };
         }
 
-        internal static CommandHandlerDelegate FromDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, Func<TAttributed, TCommand, CancellationToken, Task> cancellableAsyncAction)
+        internal static MessageHandlerDelegate<TCommand> FromDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, Func<TAttributed, TCommand, CancellationToken, Task> cancellableAsyncAction)
             where TAttributed : class
-            where TCommand : class, ICommand
+            where TCommand : class
         {
-            return new CommandHandlerDelegate(async (inputCommand, ct) =>
+            return (inputCommand, ct) =>
             {
-                TCommand command = EnsureValidCommand<TCommand>(inputCommand);
-                TAttributed instance = EnsureInstanceFromFactory(attributedObjectFactory);
+                if(!TryGetInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                {
+                    // Exception occurred or null is returned by factory.
+                    return TaskUtility.FromException(exception);
+                }
 
-                await cancellableAsyncAction.Invoke(instance, command, ct).ConfigureAwait(false);
-            });
+                return cancellableAsyncAction.Invoke(instance, inputCommand, ct);
+            };
         }
 
-        internal static CommandHandlerDelegate FromDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, Action<TAttributed, TCommand> action)
+        internal static MessageHandlerDelegate<TCommand> FromDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, Action<TAttributed, TCommand> action)
             where TAttributed : class
-            where TCommand : class, ICommand
+            where TCommand : class
         {
-            return new CommandHandlerDelegate((inputCommand, ct) =>
+            return (inputCommand, ct) =>
             {
-                TCommand command;
                 try
                 {
-                    command = EnsureValidCommand<TCommand>(inputCommand);
-                }
-                catch(Exception ex)
-                {
-                    return TaskUtility.FromException(ex);
-                }
+                    if(!TryGetInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                    {
+                        // Exception occurred or null is returned by factory.
+                        return TaskUtility.FromException(exception);
+                    }
 
-                TAttributed instance;
-                try
-                {
-                    instance = EnsureInstanceFromFactory(attributedObjectFactory);
-                }
-                catch(Exception ex)
-                {
-                    return TaskUtility.FromException(ex);
-                }
-
-                try
-                {
-                    action.Invoke(instance, command);
+                    action.Invoke(instance, inputCommand);
                     return TaskUtility.CompletedTask;
                 }
                 catch (Exception ex)
                 {
                     return TaskUtility.FromException(ex);
                 }
-            });
+            };
         }
 
         #endregion From Delegate
 
         #region Functions
 
-        private static TInstance EnsureInstanceFromFactory<TInstance>(Func<TInstance> factory)
+        private static bool TryGetInstanceFromFactory<TInstance>(Func<TInstance> factory, out TInstance instance, out Exception exception) 
+            where TInstance : class
         {
+            // Defaults.
+            instance = null;
+            exception = null;
+
             try
             {
-                TInstance instance = factory.Invoke();
-
-                if (instance == null)
+                instance = factory.Invoke();
+                if (instance != null)
                 {
-                    throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>();
+                    return true;
                 }
-
-                return instance;
             }
             catch (Exception ex)
             {
-                throw ExceptionBuilder.FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(ex);
+                // Wrap inner exception.
+                exception = FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(ex);
             }
+
+            // Factory returned null, no exception actually occurred.
+            exception = FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>();
+            return false;
         }
-
-        private static TCommand EnsureValidCommand<TCommand>(ICommand inputCommand) where TCommand : class
+        
+        private static InvalidOperationException FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(Exception ex = null)
         {
-            if (inputCommand == null)
-            {
-                throw new ArgumentNullException(nameof(inputCommand));
-            }
-
-            TCommand command = inputCommand as TCommand;
-            if (command == null)
-            {
-                throw ExceptionBuilder.InvalidCommandTypeArgumentException(typeof(TCommand), inputCommand.GetType());
-            }
-
-            return command;
+            return new InvalidOperationException($"Failed to retrieve an instance of {typeof(TInstance).Name} from the registered factory delegate. Please check registration configuration.", ex);
         }
 
         #endregion Functions

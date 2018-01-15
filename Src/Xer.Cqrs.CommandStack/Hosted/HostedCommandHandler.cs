@@ -4,19 +4,23 @@ using System.Threading.Tasks;
 
 namespace Xer.Cqrs.CommandStack.Hosted
 {
+    public abstract class HostedCommandHandler : HostedCommandHandler<object>
+    {
+    }
+
     public abstract class HostedCommandHandler<TCommand> : ICommandAsyncHandler<TCommand>,
                                                            ICommandHandler<TCommand> 
-                                                           where TCommand : class, ICommand
+                                                           where TCommand : class
     {
         /// <summary>
         /// Internal command source derived from CommandSource.
         /// </summary>
-        private ICommandSource _internalCommandSource;
+        private ICommandSource<TCommand> _internalCommandSource;
 
         /// <summary>
         /// Command source where command handler will subscribe to for commands.
         /// </summary>
-        protected abstract ICommandSource CommandSource { get; }
+        protected abstract ICommandSource<TCommand> CommandSource { get; }
 
         /// <summary>
         /// Start hosted command handler.

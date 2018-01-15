@@ -6,6 +6,8 @@ namespace Console.UseCases
 {
     public abstract class UseCaseBase : IUseCase
     {
+        public abstract string Name { get; }
+
         protected string RequestInput(string message, Func<string, InputValidationResult> inputValidator = null)
         {
             System.Console.WriteLine(message);

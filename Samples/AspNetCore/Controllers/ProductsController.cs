@@ -8,19 +8,20 @@ using Domain.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Xer.Cqrs.CommandStack;
+using Xer.Delegator;
 
 namespace AspNetCore.Controllers
 {
     [Route("api/[controller]")]
     public class ProductsController : Controller
     {
-        private readonly ICommandAsyncDispatcher _commandDispatcher;
+        private readonly IMessageDelegator _commandDelegator;
         private readonly IProductRepository _productRepository;
         
-        public ProductsController(ICommandAsyncDispatcher commandDispatcher, IProductRepository productRepository)
+        public ProductsController(IMessageDelegator commandDispatcher, IProductRepository productRepository)
         {
             _productRepository = productRepository;
-            _commandDispatcher = commandDispatcher;
+            _commandDelegator = commandDispatcher;
         }
 
         // GET api/products/{productId}
@@ -42,7 +43,7 @@ namespace AspNetCore.Controllers
         {
             RegisterProductCommand command = model.ToDomainCommand();
             
-            await _commandDispatcher.DispatchAsync(command);
+            await _commandDelegator.SendAsync(command);
             return Ok();
         }
 
@@ -63,13 +64,13 @@ namespace AspNetCore.Controllers
 
         private async Task<IActionResult> InternalActivateProduct(int productId)
         {
-            await _commandDispatcher.DispatchAsync(new ActivateProductCommand(productId));
+            await _commandDelegator.SendAsync(new ActivateProductCommand(productId));
             return Ok();
         }
 
         private async Task<IActionResult> InternalDeactivateProduct(int productId)
         {
-            await _commandDispatcher.DispatchAsync(new DeactivateProductCommand(productId));
+            await _commandDelegator.SendAsync(new DeactivateProductCommand(productId));
             return Ok();
         }
 

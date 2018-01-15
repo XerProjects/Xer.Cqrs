@@ -8,7 +8,7 @@ using Xer.Cqrs.CommandStack.Attributes;
 
 namespace Domain.Commands
 {
-    public class ActivateProductCommand : Command
+    public class ActivateProductCommand
     {
         public int ProductId { get; }
 

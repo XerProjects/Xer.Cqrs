@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.Tests.Mocks;
+using Xer.Cqrs.Tests.Entities;
 using Xer.Delegator;
 using Xer.Delegator.Registrations;
 using Xunit;
@@ -12,13 +12,13 @@ namespace Xer.Cqrs.Tests.Commands.Registration
 {
     public class AttributeRegistrationTests
     {
-        #region Register Method
+        #region RegisterCommandHandlerAttributes Method
 
-        public class RegisterMethod
+        public class RegisterCommandHandlerAttributes
         {
             private readonly ITestOutputHelper _outputHelper;
 
-            public RegisterMethod(ITestOutputHelper outputHelper)
+            public RegisterCommandHandlerAttributes(ITestOutputHelper outputHelper)
             {
                 _outputHelper = outputHelper;
             }
@@ -33,15 +33,15 @@ namespace Xer.Cqrs.Tests.Commands.Registration
 
                 IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
 
-                MessageHandlerDelegate<DoSomethingCommand> commandHandlerDelegate = resolver.ResolveMessageHandler<DoSomethingCommand>();
+                MessageHandlerDelegate commandHandlerDelegate = resolver.ResolveMessageHandler(typeof(TestCommand));
 
                 Assert.NotNull(commandHandlerDelegate);
 
                 // Delegate should invoke the actual command handler - TestAttributedCommandHandler.
-                commandHandlerDelegate.Invoke(new DoSomethingCommand());
+                commandHandlerDelegate.Invoke(new TestCommand());
 
                 Assert.Equal(1, commandHandler.HandledCommands.Count);
-                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
+                Assert.Contains(commandHandler.HandledCommands, c => c is TestCommand);
             }
 
             // [Fact]
@@ -81,6 +81,6 @@ namespace Xer.Cqrs.Tests.Commands.Registration
             }
         }
 
-        #endregion Register Method
+        #endregion RegisterCommandHandlerAttributes Method
     }
 }

@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Resolvers;
 
 namespace Xer.Delegator.Registrations
 {
@@ -11,9 +12,9 @@ namespace Xer.Delegator.Registrations
     {
         #region Declarations
         
-        private static readonly MethodInfo CreateAndRegisterMessageHandlerDelegateOpenGenericMethodInfo = typeof(CommandHandlerRegistrationExtensions)
+        private static readonly MethodInfo RegisterMessageHandlerDelegateOpenGenericMethodInfo = typeof(CommandHandlerRegistrationExtensions)
                                                                                                             .GetTypeInfo()
-                                                                                                            .GetDeclaredMethod(nameof(createMessageHandlerDelegate));
+                                                                                                            .GetDeclaredMethod(nameof(registerMessageHandlerDelegate));
         
         #endregion Declarations
 
@@ -32,12 +33,21 @@ namespace Xer.Delegator.Registrations
                                                                                Func<TAttributedObject> attributedObjectFactory) 
                                                                                where TAttributedObject : class
         {
-            List<CommandHandlerAttributeMethod> commandHandlerMethods = CommandHandlerAttributeMethod.FromType(typeof(TAttributedObject));
+            if (registration == null)
+            {
+                throw new ArgumentNullException(nameof(registration));
+            }
 
-            foreach (CommandHandlerAttributeMethod commandHandlerMethod in commandHandlerMethods)
+            if (attributedObjectFactory == null)
+            {
+                throw new ArgumentNullException(nameof(attributedObjectFactory));
+            }
+
+            // Get all methods marked with CommandHandler attribute and register.
+            foreach (CommandHandlerAttributeMethod commandHandlerMethod in CommandHandlerAttributeMethod.FromType(typeof(TAttributedObject)).ToList())
             {
                 // Create method and register to registration.
-                CreateAndRegisterMessageHandlerDelegateOpenGenericMethodInfo
+                RegisterMessageHandlerDelegateOpenGenericMethodInfo
                     .MakeGenericMethod(commandHandlerMethod.DeclaringType, commandHandlerMethod.CommandType)
                     // Null because this is static method.
                     .Invoke(null, new object[] 
@@ -54,23 +64,21 @@ namespace Xer.Delegator.Registrations
         #region Functions
 
         /// <summary>
-        /// Create message handler delegate from CommandHandlerMethod and register to IMessageHandlerRegistration.
+        /// Create message handler delegate from CommandHandlerAttributeMethod and register to SingleMessageHandlerRegistration.
         /// </summary>
-        /// <typeparam name="TAttributed">Type of the object which contains the methods marked with the [CommandHandler] attribute.</typeparam>
+        /// <typeparam name="TAttributedObject">Type of the object which contains the methods marked with the [CommandHandler] attribute.</typeparam>
+        /// <typeparam name="TEvent">Type of event.</typeparam>
         /// <param name="registration">Message handler registration.</param>
         /// <param name="commandHandlerMethod">Command handler method object built from methods marked with [CommandHandler] attribute.</param>
-        /// <param name="attributedHandlerFactory">Factory which will provide an instance of the specified <typeparamref name="TAttributed"/> type.</param>
-        private static void createMessageHandlerDelegate<TAttributedObject, TCommand>(SingleMessageHandlerRegistration registration,
-                                                                                      CommandHandlerAttributeMethod commandHandlerMethod,
-                                                                                      Func<TAttributedObject> attributedObjectFactory)
-                                                                                      where TAttributedObject : class
-                                                                                      where TCommand : class
+        /// <param name="attributedHandlerFactory">Factory which will provide an instance of the specified <typeparamref name="TAttributedObject"/> type.</param>
+        private static void registerMessageHandlerDelegate<TAttributedObject, TCommand>(SingleMessageHandlerRegistration registration,
+                                                                                        CommandHandlerAttributeMethod commandHandlerMethod,
+                                                                                        Func<TAttributedObject> attributedObjectFactory)
+                                                                                        where TAttributedObject : class
+                                                                                        where TCommand : class
         {
-            // Create delegate.
-            MessageHandlerDelegate<TCommand> commandHandlerDelegate = commandHandlerMethod.CreateMessageHandlerDelegate<TAttributedObject, TCommand>(attributedObjectFactory);
-
-            // Register.
-            registration.Register<TCommand>(commandHandlerDelegate);
+            // Create delegate and register.
+            registration.Register<TCommand>(commandHandlerMethod.CreateMessageHandlerDelegate<TAttributedObject, TCommand>(attributedObjectFactory));
         }
 
         #endregion Functions

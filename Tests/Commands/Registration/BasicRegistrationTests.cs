@@ -1,5 +1,5 @@
 ﻿using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.Tests.Mocks;
+using Xer.Cqrs.Tests.Entities;
 using Xer.Delegator;
 using Xer.Delegator.Registrations;
 using Xunit;
@@ -9,39 +9,39 @@ namespace Xer.Cqrs.Tests.Commands.Registration
 {
     public class BasicRegistrationTests
     {
-        #region Register Method
+        #region RegisterCommandHandlerMethod Method
 
-        public class RegisterMethod
+        public class RegisterCommandHandlerMethod
         {
-            private readonly ITestOutputHelper _testOutputHelper;
+            private readonly ITestOutputHelper _outputHelper;
 
-            public RegisterMethod(ITestOutputHelper testOutputHelper)
+            public RegisterCommandHandlerMethod(ITestOutputHelper outputHelper)
             {
-                _testOutputHelper = testOutputHelper;
+                _outputHelper = outputHelper;
             }
 
             [Fact]
             public void Should_Register_All_Command_Handlers()
             {
-                var commandHandler = new TestCommandHandler(_testOutputHelper);
+                var commandHandler = new TestCommandHandler(_outputHelper);
 
                 var registration = new SingleMessageHandlerRegistration();
-                registration.RegisterCommandHandler(() => (ICommandHandler<DoSomethingCommand>)commandHandler);
+                registration.RegisterCommandHandler(() => commandHandler.AsCommandSyncHandler<TestCommand>());
 
                 IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
 
-                MessageHandlerDelegate<DoSomethingCommand> commandHandlerDelegate = resolver.ResolveMessageHandler<DoSomethingCommand>();
+                MessageHandlerDelegate commandHandlerDelegate = resolver.ResolveMessageHandler(typeof(TestCommand));
 
                 Assert.NotNull(commandHandlerDelegate);
 
                 // Delegate should invoke the actual command handler - TestCommandHandler.
-                commandHandlerDelegate.Invoke(new DoSomethingCommand());
+                commandHandlerDelegate.Invoke(new TestCommand());
 
                 Assert.Equal(1, commandHandler.HandledCommands.Count);
-                Assert.Contains(commandHandler.HandledCommands, c => c is DoSomethingCommand);
+                Assert.Contains(commandHandler.HandledCommands, c => c is TestCommand);
             }
         }
 
-        #endregion Register Method
+        #endregion RegisterCommandHandlerMethod Method
     }
 }

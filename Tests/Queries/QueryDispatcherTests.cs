@@ -6,7 +6,7 @@ using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Dispatchers;
 using Xer.Cqrs.QueryStack.Registrations;
 using Xer.Cqrs.QueryStack.Resolvers;
-using Xer.Cqrs.Tests.Mocks;
+using Xer.Cqrs.Tests.Entities;
 using Xunit;
 using Xunit.Abstractions;
 using System.Collections.Generic;

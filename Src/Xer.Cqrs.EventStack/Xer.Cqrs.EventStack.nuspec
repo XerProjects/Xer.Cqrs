@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>Xer.Cqrs.EventStack</id>
-    <version>0.1.1</version>
+    <version>0.2.0</version>
     <title>Xer.Cqrs.EventStack</title>
     <authors>jeyjeyemem</authors>
     <owners>jeyjeyemem</owners>
@@ -12,7 +12,7 @@
     <description>A very simple library for handling events on applications based on the CQRS pattern.</description>
     <summary>A very simple library for handling events on applications based on the CQRS pattern.</summary>
     <releaseNotes>
-      - Added hosted event handlers + general cleanup
+      - Major refactor to use Xer.Delegator as base library. This resulted in many breaking changes.
     </releaseNotes>
     <copyright>Copyright 2017</copyright>
     <tags>CQRS Event Handling Library</tags>

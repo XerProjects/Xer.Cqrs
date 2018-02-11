@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>Xer.Cqrs.CommandStack</id>
-    <version>0.1.1</version>
+    <version>0.2.0</version>
     <title>Xer.Cqrs.CommandStack</title>
     <authors>jeyjeyemem</authors>
     <owners>jeyjeyemem</owners>
@@ -12,7 +12,7 @@
     <description>A very simple library for handling commands on applications based on the CQRS pattern.</description>
     <summary>A very simple library for handling commands on applications based on the CQRS pattern.</summary>
     <releaseNotes>
-      - Added hosted command handlers + general cleanup
+      - Major refactor to use Xer.Delegator as base library. This resulted in many breaking changes.
     </releaseNotes>
     <copyright>Copyright 2017</copyright>
     <tags>CQRS Command Handling Library</tags>

@@ -1,8 +1,8 @@
 using Xer.Cqrs.EventStack;
 
-namespace DomainEvents
+namespace Domain.DomainEvents
 {
-    public class ProductRegisteredEvent : IEvent
+    public class ProductRegisteredEvent : IDomainEvent
     {
         public int ProductId { get; }
         public string ProductName { get; }

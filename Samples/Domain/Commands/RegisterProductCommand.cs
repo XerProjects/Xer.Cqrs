@@ -8,7 +8,7 @@ using Xer.Cqrs.CommandStack.Attributes;
 
 namespace Domain.Commands
 {
-    public class RegisterProductCommand : Command
+    public class RegisterProductCommand
     {
         public int ProductId { get; }
         public string ProductName { get; }
@@ -24,8 +24,7 @@ namespace Domain.Commands
     /// This handler can be registered either through Container, Basic or Attribute registration.
     /// In real projects, implementing only one of the interfaces or only using the [CommandHandler] attribute should do.
     /// </summary>
-    public class RegisterProductCommandHandler : ICommandAsyncHandler<RegisterProductCommand>,
-                                                 ICommandHandler<RegisterProductCommand>
+    public class RegisterProductCommandHandler : ICommandAsyncHandler<RegisterProductCommand>
     {
         private readonly IProductRepository _productRepository;
 
@@ -34,20 +33,10 @@ namespace Domain.Commands
             _productRepository = productRepository;
         }
 
+        [CommandHandler] // To allow this method to be registered through attribute registration.
         public Task HandleAsync(RegisterProductCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
             return _productRepository.SaveAsync(new Product(command.ProductId, command.ProductName));
-        }
-
-        public void Handle(RegisterProductCommand command)
-        {
-            HandleAsync(command).GetAwaiter().GetResult();
-        }
-
-        [CommandHandler]
-        public Task HandleRegisterProductCommandAsync(RegisterProductCommand command, CancellationToken cancellationToken)
-        {
-            return HandleAsync(command, cancellationToken);
         }
     }
 }

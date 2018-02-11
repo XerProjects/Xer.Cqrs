@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Xer.Cqrs.CommandStack
 {
-    public interface ICommandAsyncHandler<TCommand> where TCommand : ICommand
+    public interface ICommandAsyncHandler<TCommand> where TCommand : class
     {
         /// <summary>
         /// Handle and process command asynchronously.

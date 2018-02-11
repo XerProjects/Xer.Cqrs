@@ -1,25 +1,33 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.IO;
 using Domain.Commands;
+using Domain.DomainEvents;
 using Domain.Repositories;
+using Infrastructure.DomainEventHandlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using ReadSide.Products;
+using ReadSide.Products.Queries;
+using ReadSide.Products.Repositories;
 using Swashbuckle.AspNetCore.Swagger;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Dispatchers;
-using Xer.Cqrs.CommandStack.Registrations;
 using Xer.Cqrs.CommandStack.Resolvers;
+using Xer.Cqrs.EventStack;
+using Xer.Cqrs.EventStack.Resolvers;
+using Xer.Cqrs.QueryStack;
+using Xer.Cqrs.QueryStack.Dispatchers;
+using Xer.Cqrs.QueryStack.Resolvers;
 
 namespace AspNetCore
 {
-    public class StartupWithContainerRegistration
+    class StartupWithContainerRegistration
     {
+        private static readonly string AspNetCoreAppXmlDocPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, 
+                                                                    $"{typeof(StartupWithContainerRegistration).Assembly.GetName().Name}.xml");
+                                                                    
         public StartupWithContainerRegistration(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -33,11 +41,17 @@ namespace AspNetCore
             // Swagger.
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new Info { Title = "AspNetCore Sample", Version = "v1" });
+                c.SwaggerDoc("v1", new Info { Title = "AspNetCore Container Registration Sample", Version = "v1" });
+                c.IncludeXmlComments(AspNetCoreAppXmlDocPath);
             });
 
-            // Repository.
-            services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+            // Write-side repository.
+            services.AddSingleton<IProductRepository>((serviceProvider) => 
+                new PublishingProductRepository(new InMemoryProductRepository(), serviceProvider.GetRequiredService<EventDelegator>())
+            );
+
+            // Read-side repository.
+            services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
 
             // Register command handlers here.
             // You can use assembly scanners to scan for handlers.
@@ -45,14 +59,36 @@ namespace AspNetCore
             services.AddTransient<ICommandAsyncHandler<ActivateProductCommand>, ActivateProductCommandHandler>();
             services.AddTransient<ICommandAsyncHandler<DeactivateProductCommand>, DeactivateProductCommandHandler>();
 
-            // Register command handler resolver. This is resolved by the CommandDispatcher.
-            services.AddTransient<ICommandHandlerResolver>(serviceProvider =>
+            // Register event handlers.
+            // You can use assembly scanners to scan for handlers.
+            services.AddTransient<IEventAsyncHandler<ProductRegisteredEvent>, ProductDomainEventsHandler>();
+            services.AddTransient<IEventAsyncHandler<ProductActivatedEvent>, ProductDomainEventsHandler>();
+            services.AddTransient<IEventAsyncHandler<ProductDeactivatedEvent>, ProductDomainEventsHandler>();
+
+            // Register query handlers.
+            // You can use assembly scanners to scan for handlers.
+            services.AddTransient<IQueryAsyncHandler<QueryAllProducts, IReadOnlyCollection<ProductReadModel>>, QueryAllProductsHandler>();
+            services.AddTransient<IQueryAsyncHandler<QueryProductById, ProductReadModel>, QueryProductByIdHandler>();
+
+            // Register service provider adapter.
+            services.AddSingleton<AspNetCoreServiceProviderAdapter>();
+
+            // Register command delegator.
+            services.AddSingleton<CommandDelegator>(serviceProvider => 
                 // This resolver only resolves async handlers. For sync handlers, ContainerCommandHandlerResolver should be used.
-                new ContainerCommandAsyncHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider))
+                new CommandDelegator(new ContainerCommandAsyncHandlerResolver(serviceProvider.GetRequiredService<AspNetCoreServiceProviderAdapter>()))
             );
 
-            // Register command dispatcher.
-            services.AddSingleton<ICommandAsyncDispatcher, CommandDispatcher>();
+            // Register event delegator.
+            services.AddSingleton<EventDelegator>(serviceProvider => 
+                new EventDelegator(new ContainerEventHandlerResolver(serviceProvider.GetRequiredService<AspNetCoreServiceProviderAdapter>()))
+            );
+
+            // Register query dispatcher.
+            services.AddSingleton<IQueryAsyncDispatcher>((serviceProvider) =>
+                // This resolver only resolves async handlers. For sync handlers, ContainerQueryHandlerResolver should be used.
+                new QueryDispatcher(new ContainerQueryAsyncHandlerResolver(serviceProvider.GetRequiredService<AspNetCoreServiceProviderAdapter>()))
+            );
 
             services.AddMvc();
         }
@@ -71,25 +107,10 @@ namespace AspNetCore
             // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "AspNetCore Sample V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "AspNetCore Container Registration Sample V1");
             });
 
             app.UseMvc();
-        }
-
-        class AspNetCoreServiceProviderAdapter : IContainerAdapter
-        {
-            private readonly IServiceProvider _serviceProvider;
-
-            public AspNetCoreServiceProviderAdapter(IServiceProvider serviceProvider)
-            {
-                _serviceProvider = serviceProvider;
-            }
-
-            public T Resolve<T>() where T : class
-            {
-                return _serviceProvider.GetService<T>();
-            }
         }
     }
 }

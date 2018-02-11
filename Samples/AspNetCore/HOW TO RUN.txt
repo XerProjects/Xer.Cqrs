@@ -1,0 +1,5 @@
+Change the Startup class to use by specifying an argument when running the sample application:
+1. dotnet run --> Will use StartupWithBasicRegistration
+2. dotnet run attribute --> Will use StartupWithAttributeRegistration
+3. dotnet run container --> Will use StartupWithContainerRegistration
+4. dotnet run mixed --> Will use StartupWithMixedRegistration

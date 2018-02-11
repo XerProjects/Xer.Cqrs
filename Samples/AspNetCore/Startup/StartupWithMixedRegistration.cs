@@ -1,25 +1,31 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.IO;
 using Domain.Commands;
 using Domain.Repositories;
+using Infrastructure.DomainEventHandlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using ReadSide.Products;
+using ReadSide.Products.Queries;
+using ReadSide.Products.Repositories;
 using Swashbuckle.AspNetCore.Swagger;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Dispatchers;
-using Xer.Cqrs.CommandStack.Registrations;
-using Xer.Cqrs.CommandStack.Resolvers;
+using Xer.Cqrs.EventStack;
+using Xer.Cqrs.QueryStack;
+using Xer.Cqrs.QueryStack.Dispatchers;
+using Xer.Cqrs.QueryStack.Resolvers;
+using Xer.Delegator.Registrations;
 
 namespace AspNetCore
 {
-    public class StartupWithMixedRegistration
+    class StartupWithMixedRegistration
     {
+        private static readonly string AspNetCoreAppXmlDocPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, 
+                                                                    $"{typeof(StartupWithMixedRegistration).Assembly.GetName().Name}.xml");
+
         public StartupWithMixedRegistration(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -33,40 +39,48 @@ namespace AspNetCore
             // Swagger.
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new Info { Title = "AspNetCore Sample", Version = "v1" });
+                c.SwaggerDoc("v1", new Info { Title = "AspNetCore Mixed Registration Sample", Version = "v1" });
+                c.IncludeXmlComments(AspNetCoreAppXmlDocPath);
             });
 
-            // Repository.
-            services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+            // Write-side repository.
+            services.AddSingleton<IProductRepository>((serviceProvider) => 
+                new PublishingProductRepository(new InMemoryProductRepository(), serviceProvider.GetRequiredService<EventDelegator>())
+            );
 
-            // Register command handlers.
-            SetupContainerRegistration(services);
-            SetupAttributeRegistration(services);
-            SetupBasicRegistration(services);
+            // Read-side repository.
+            services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
 
-            // Command dispatcher.
-            services.AddSingleton<ICommandAsyncDispatcher>(serviceProvider =>
+            // Register command delegator.
+            services.AddSingleton<CommandDelegator>((serviceProvider) =>
             {
-                // Wrap ASP NET Core service provider in a resolver.
-                ICommandHandlerResolver containerResolver = new ContainerCommandAsyncHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider));
+                // Register command handlers through basic registration.
+                var commandHandlerRegistration = new SingleMessageHandlerRegistration();
+                commandHandlerRegistration.RegisterCommandHandler(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                commandHandlerRegistration.RegisterCommandHandler(() => new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                commandHandlerRegistration.RegisterCommandHandler(() => new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
 
-                // CommandHandlerAttributeRegistration implements ICommandHandlerResolver.
-                ICommandHandlerResolver attributeResolver = serviceProvider.GetRequiredService<CommandHandlerAttributeRegistration>();
-                
-                // CommandHandlerRegistration implements ICommandHandlerResolver.
-                ICommandHandlerResolver basicResolver = serviceProvider.GetRequiredService<CommandHandlerRegistration>();
-
-                // Merge all resolvers.
-                var compositeResolver = new CompositeCommandHandlerResolver(new ICommandHandlerResolver[]
-                {
-                    // Order is followed when resolving handlers.
-                    containerResolver,
-                    attributeResolver,
-                    basicResolver
-                }, (ex) => true); // Handle any exception if exception is thrown from a resolver, we can return true to allow the dispatcher to proceed to next resolver.
-
-                return new CommandDispatcher(compositeResolver);
+                return new CommandDelegator(commandHandlerRegistration.BuildMessageHandlerResolver());
             });
+
+            // Register event delegator.
+            services.AddSingleton<EventDelegator>((serviceProvider) =>
+            {
+                // Register event handlers through attribute registration.
+                var eventHandlerRegistration = new MultiMessageHandlerRegistration();
+                eventHandlerRegistration.RegisterEventHandlerAttributes(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+
+                return new EventDelegator(eventHandlerRegistration.BuildMessageHandlerResolver());
+            });
+
+            // Register query handlers to container.
+            services.AddTransient<IQueryAsyncHandler<QueryAllProducts, IReadOnlyCollection<ProductReadModel>>, QueryAllProductsHandler>();
+            services.AddTransient<IQueryAsyncHandler<QueryProductById, ProductReadModel>, QueryProductByIdHandler>();
+
+            // Register query dispatcher.
+            services.AddSingleton<IQueryAsyncDispatcher>(serviceProvider =>
+                new QueryDispatcher(new ContainerQueryAsyncHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider)))
+            );
 
             services.AddMvc();
         }
@@ -85,57 +99,10 @@ namespace AspNetCore
             // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "AspNetCore Sample V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "AspNetCore Mixed Registration Sample V1");
             });
 
             app.UseMvc();
-        }
-
-        private static void SetupContainerRegistration(IServiceCollection services)
-        {
-            // Register handler using container.
-            // You can use assembly scanners to scan for handlers.
-            services.AddTransient<ICommandHandler<RegisterProductCommand>, RegisterProductCommandHandler>();
-        }
-
-        private static void SetupAttributeRegistration(IServiceCollection services)
-        {
-            services.AddSingleton<CommandHandlerAttributeRegistration>((serviceProvider) =>
-            {
-                // Register methods marked with [CommandHandler] attribute.
-                var attributeRegistration = new CommandHandlerAttributeRegistration();
-                attributeRegistration.Register(() => new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-
-                return attributeRegistration;
-            });
-        }
-
-        private static void SetupBasicRegistration(IServiceCollection services)
-        {
-            services.AddSingleton<CommandHandlerRegistration>((serviceProvider) =>
-            {
-                // Needed to cast to ICommandHandler because below handlers implements both ICommandAsyncHandler and ICommandHandler.
-                // The Register method accepts both interfaces so compiling is complaining that it is ambiguous.  
-                var registration = new CommandHandlerRegistration();
-                registration.Register(() => (ICommandAsyncHandler<ActivateProductCommand>)new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-
-                return registration;
-            });
-        }
-
-        class AspNetCoreServiceProviderAdapter : IContainerAdapter
-        {
-            private readonly IServiceProvider _serviceProvider;
-
-            public AspNetCoreServiceProviderAdapter(IServiceProvider serviceProvider)
-            {
-                _serviceProvider = serviceProvider;
-            }
-
-            public T Resolve<T>() where T : class
-            {
-                return _serviceProvider.GetService<T>();
-            }
         }
     }
 }

@@ -5,28 +5,28 @@
 * [Getting Started](#getting-started)
    * [Command Handling](#command-handling)
       * [Command Handler Registration](#command-handler-registration)
-      * [Command Dispatcher Usage](#command-dispatcher-usage)
+      * [Command Delegator Usage](#command-delegator-usage)
+   * [Event Handling](#event-handling)
+      * [Event Handler Registration](#event-handler-registration)
+      * [Event Delegator Usage](#event-delegator-usage)
    * [Query Handling](#query-handling)
       * [Query Handler Registration](#query-handler-registration)
       * [Query Dispatcher Usage](#query-dispatcher-usage)
-   * [Event Handling](#event-handling)
-      * [Event Handler Registration](#event-handler-registration)
-      * [Event Publisher Usage](#event-publisher-usage)
 
 # Overview
 Simple CQRS library
 
-This project composes of components for implementing the CQRS pattern (Command Handling, Query Handling, and Event Handling). This library was built with simplicity, modularity and pluggability in mind.
+This project composes of components for implementing the CQRS pattern (Command Handling, Event Handling, and Query Handling). This library was built with simplicity, modularity and pluggability in mind.
 
 ## Features
-* Dispatch commands to their registered command handler (through CommandDispatcher).
-* Dispatch queries to their registered query handler (through QueryDispatcher).
-* Dispatch events to all registered/subscribed event handlers (through EventPublisher).
-* Several ways of registering handlers:
-    * Basic handler registration (no IoC container).
-    * IoC container registration - achieved by creating implementations of IContainerAdapter or ICommandHandlerResolver/IQueryHandlerResolver/IEventHandlerResolver.
-    * Attribute registration - achieved by marking methods with [CommandHandler], [QueryHandler], and [EventHandler] attributes.
-* Provides basic abstraction for hosted handlers. They can be registered just like an in-process handler.
+* Send commands to registered command handlers.
+* Send events to registered event handlers.
+* Send queries to registered query handler.
+* Multiple ways of registering handlers:
+    * Simple handler registration (no IoC container).
+    * IoC container registration - achieved by creating implementations of IContainerAdapter.
+    * Attribute registration - achieved by marking methods with [CommandHandler], [QueryHandler], or [EventHandler] attributes.
+* Provides simple abstraction for hosted handlers which can be registered just like an in-process handler.
 
 ## Installation
 You can simply clone this repository, build the source, reference the dll from the project, and code away!
@@ -61,7 +61,7 @@ To install Nuget packages:
 
 ```csharp
 // Example command.
-public class RegisterProductCommand : Command
+public class RegisterProductCommand
 {
     public int ProductId { get; }
     public string ProductName { get; }
@@ -75,9 +75,9 @@ public class RegisterProductCommand : Command
 ```
 #### Command Handler Registration
 
-Before we can dispatch any commands, first we need to register our command handlers. There are several ways to do this:
+Before we can delegate any commands, first we need to register our command handlers. There are several ways to do this:
 
-##### 1. Basic Registration
+##### 1. Simple Registration (No IoC container)
 ```csharp
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)
@@ -86,18 +86,15 @@ public void ConfigureServices(IServiceCollection services)
     // Repository.
     services.AddSingleton<IProductRepository, InMemoryProductRepository>();
 
-    // Register command handler resolver. This is resolved by CommandDispatcher.
-    services.AddSingleton<ICommandHandlerResolver>((serviceProvider) =>
+    // Register command delegator.
+    services.AddSingleton<CommandDelegator>((serviceProvider) =>
     {
-        // This object implements ICommandHandlerResolver.
-        var registration = new CommandHandlerRegistration();
-        registration.Register(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+        // Allows registration of a single message handler per message type.
+        var registration = new SingleMessageHandlerRegistration();
+        registration.RegisterCommandHandler(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
 
-        return registration;
+        return new CommandDelegator(registration.BuildMessageHandlerResolver());
     });
-
-    // Command dispatcher.
-    services.AddSingleton<ICommandAsyncDispatcher, CommandDispatcher>();
     ...
 }
 
@@ -127,18 +124,16 @@ public void ConfigureServices(IServiceCollection services)
     // Repository.
     services.AddSingleton<IProductRepository, InMemoryProductRepository>();
 
-    // Register command handlers to the container.
-    // You can use assembly scanners to scan for handlers.
+    // Register command handlers to the container. For this example, I have used a sync command handler.
+    // Tip: You can use assembly scanners to scan for command handlers.
     services.AddTransient<ICommandHandler<RegisterProductCommand>, RegisterProductCommandHandler>();
 
     // Register command handler resolver. This is resolved by the CommandDispatcher.
-    services.AddSingleton<ICommandHandlerResolver>(serviceProvider =>
-        // This resolver only resolves sync handlers. For async handlers, ContainerCommandAsyncHandlerResolver should be used.
-        new ContainerCommandHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider))
+    services.AddSingleton<CommandDelegator>(serviceProvider =>
+        // This ContainerCommandHandlerResolver only resolves sync handlers. 
+        // For async handlers, ContainerCommandAsyncHandlerResolver should be used.
+        new CommandDelegator(new ContainerCommandHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider)))
     );
-
-    // Register command dispatcher.
-    services.AddSingleton<ICommandAsyncDispatcher, CommandDispatcher>();
     ...
 }
 
@@ -184,20 +179,16 @@ public void ConfigureServices(IServiceCollection services)
     // Repository.
     services.AddSingleton<IProductRepository, InMemoryProductRepository>();
 
-    // Register command handler resolver. This is resolved by CommandDispatcher.
-    services.AddSingleton<ICommandHandlerResolver>((serviceProvider) =>
+    // Register command delegator.
+    services.AddSingleton<CommandDelegator>((serviceProvider) =>
     {
-        // This implements ICommandHandlerResolver.
-        var attributeRegistration = new CommandHandlerAttributeRegistration();
-
+        // Allows registration of a single message handler per message type.
+        var registration = new SingleMessageHandlerRegistration();
         // Register methods with [CommandHandler] attribute.
-        attributeRegistration.Register(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+        registration.RegisterCommandHandlerAttributes(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
 
-        return attributeRegistration;
+        return new CommandDelegator(registration.BuildMessageHandlerResolver());
     });
-
-    // Command dispatcher.
-    services.AddSingleton<ICommandAsyncDispatcher, CommandDispatcher>();
     ...
 }
 
@@ -219,15 +210,15 @@ public class RegisterProductCommandHandler
 }
 ```
 
-##### Command Dispatcher Usage
-After setting up the command dispatcher with the command handler registration, commands can now be dispatched by simply doing:
+##### Command Delegator Usage
+After setting up the command delegator in the IoC container, commands can now be delegated by simply doing:
 ```csharp
 ...
-private readonly ICommandAsyncDispatcher _commandDispatcher;
+private readonly CommandDelegator _commandDelegator;
 
-public ProductsController(ICommandAsyncDispatcher commandDispatcher)
+public ProductsController(CommandDelegator commandDelegator)
 {
-    _commandDispatcher = commandDispatcher;
+    _commandDelegator = commandDelegator;
 }
 
 // POST api/products
@@ -235,8 +226,186 @@ public ProductsController(ICommandAsyncDispatcher commandDispatcher)
 public async Task<IActionResult> RegisterProduct([FromBody]RegisterProductCommandDto model)
 {
     RegisterProductCommand command = model.ToDomainCommand();
-    await _commandDispatcher.DispatchAsync(command);
-    return Ok();
+    await _commandDelegator.SendAsync(command);
+    return Accepted();
+}
+...
+```
+### Event Handling
+
+```csharp
+public class ProductRegisteredEvent
+{
+    public int ProductId { get; }
+    public string ProductName { get; }
+
+    public ProductRegisteredEvent(int productId, string productName)
+    {
+        ProductId = productId;
+        ProductName = productName;
+    }
+}
+```
+#### Event Handler Registration
+
+Before we can delegate any events, first, we need to register our event handlers. There are several ways to do this:
+
+##### 1. Simple Registration (No IoC container)
+```csharp
+// This method gets called by the runtime. Use this method to add services to the container.
+public void ConfigureServices(IServiceCollection services)
+{            
+    ...
+    // Repository.
+    services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+
+    // Register event delegator.
+    services.AddSingleton<EventDelegator>((serviceProvider) =>
+    {
+        // Allows registration of a multiple message handlers per message type.
+        var registration = new MultiMessageHandlerRegistration();
+        registration.RegisterEventHandler<ProductRegisteredEvent>(() => new ProductRegisteredEventHandler());
+        registration.RegisterEventHandler<ProductRegisteredEvent>(() => new ProductRegisteredEmailNotifier());
+        
+        return new EventDelegator(registration.BuildMessageHandlerResolver());
+    });
+    ...
+}
+
+// Sync event handler
+public class ProductRegisteredEventHandler : IEventHandler<ProductRegisteredEvent>
+{
+    public void Handle(ProductRegisteredEvent @event)
+    {
+        System.Console.WriteLine($"ProductRegisteredEventHandler handled {@event.GetType()}.");
+    }
+}
+
+// Async event handler
+public class ProductRegisteredEmailNotifier : IEventAsyncHandler<ProductRegisteredEvent>
+{
+    public Task HandleAsync(ProductRegisteredEvent @event, CancellationToken ct = default(CancellationToken))
+    {
+        System.Console.WriteLine($"Sending email notification...");
+        return Task.CompletedTask;
+    }
+}
+```
+
+##### 2. Container Registration
+```csharp
+// This method gets called by the runtime. Use this method to add services to the container.
+public void ConfigureServices(IServiceCollection services)
+{            
+    ...
+    // Repository.
+    services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+    
+    // Register event handlers to the container.
+    // Tip: You can use assembly scanners to scan for event handlers.
+    services.AddTransient<IEventHandler<ProductRegisteredEvent>, ProductRegisteredEventHandler>();
+    services.AddTransient<IEventAsyncHandler<ProductRegisteredEvent>, ProductRegisteredEmailNotifier>();
+
+    // Register event delegator.
+    services.AddSingleton<EventDelegator>((serviceProvider) =>
+        // ContainerEventHandlerResolver resolves async and sync event handlers from the container.
+        new EventDelegator(new ContainerEventHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider)))
+    );
+    ...
+}
+
+// Sync event handler 1.
+public class ProductRegisteredEventHandler : IEventHandler<ProductRegisteredEvent>
+{
+    public void Handle(ProductRegisteredEvent @event)
+    {
+        System.Console.WriteLine($"ProductRegisteredEventHandler handled {@event.GetType()}.");
+    }
+}
+
+// Async event handler 2.
+public class ProductRegisteredEmailNotifier : IEventAsyncHandler<ProductRegisteredEvent>
+{
+    public Task HandleAsync(ProductRegisteredEvent @event, CancellationToken ct = default(CancellationToken))
+    {
+        System.Console.WriteLine($"Sending email notification...");
+        return Task.CompletedTask;
+    }
+}
+
+// Container adapter.
+class AspNetCoreServiceProviderAdapter : Xer.Cqrs.EventStack.Resolvers.IContainerAdapter
+{
+    private readonly IServiceProvider _serviceProvider;
+
+    public AspNetCoreServiceProviderAdapter(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    public IEnumerable<T> ResolveMultiple<T>() where T : class;
+    {
+        return _serviceProvider.GetServices<T>();
+    }
+}
+```
+
+##### 3. Attribute Registration
+```csharp
+// This method gets called by the runtime. Use this method to add services to the container.
+public void ConfigureServices(IServiceCollection services)
+{            
+    ...
+    // Repository.
+    services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+
+    // Register event delegator.
+    services.AddSingleton<EventDelegator>((serviceProvider) =>
+    {
+        // Allows registration of a multiple message handlers per message type.
+        var registration = new MultiMessageHandlerRegistration();
+        // Register all methods with [EventHandler] attribute.
+        registration.RegisterEventHandlerAttributes(() => new ProductRegisteredEventHandlers(serviceProvider.GetRequiredService<IProductRepository>()));
+        
+        return new EventDelegator(registration.BuildMessageHandlerResolver());
+    });
+    ...
+}
+
+public class ProductRegisteredEventHandlers : IEventHandler<ProductRegisteredEvent>
+{
+    // Sync event handler.
+    [EventHandler]
+    public void Handle(ProductRegisteredEvent @event)
+    {
+        System.Console.WriteLine($"ProductRegisteredEventHandler handled {@event.GetType()}.");
+    }
+    
+    // Async event handler.
+    [EventHandler]
+    public Task SendEmailNotificationAsync(ProductRegisteredEvent @event, CancellationToken ct)
+    {
+        System.Console.WriteLine($"Sending email notification...");
+        return Task.CompletedTask;
+    }
+}
+```
+#### Event Delegator Usage
+After setting up the event delegator in the Ioc container, events can now be delegated by simply doing:
+```csharp
+...
+private readonly EventDelegator _eventDelegator;
+
+public ProductsController(EventDelegator eventDelegator)
+{
+    _eventDelegator = eventDelegator;
+}
+
+[HttpGet("{productId}")]
+public async Task<IActionResult> Notify(ProductRegisteredEventDto model)
+{
+    await _eventDelegator.SendAsync(new ProductRegisteredEvent(model.ProductId, model.ProductName))
+    return Accepted();
 }
 ...
 ```
@@ -255,11 +424,12 @@ public class QueryProductById : IQuery<Product>
     }
 }
 ```
+
 #### Query Handler Registration
 
-Before we can dispatch any commands, first, we need to register our query handlers. There are several ways to do this:
+Before we can dispatch any queries, first, we need to register our query handlers. There are several ways to do this:
 
-##### 1. Basic Registration
+##### 1. Simple Registration (No IoC container)
 ```csharp
 // This method gets called by the runtime. Use this method to add services to the container.
 public void ConfigureServices(IServiceCollection services)
@@ -268,22 +438,19 @@ public void ConfigureServices(IServiceCollection services)
     // Read-side repository.
     services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
 
-    // Register query handler resolver. This is resolved by QueryDispatcher.
-    services.AddSingleton<IQueryHandlerResolver>((serviceProvider) =>
+    // Register query dispatcher.
+    services.AddSingleton<IQueryAsyncDispatcher>((serviceProvider) =>
     {
         // This object implements IQueryHandlerResolver.
         var registration = new QueryHandlerRegistration();
         registration.Register(() => new QueryProductByIdHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
 
-        return registration;
+        return new QueryDispatcher(registration);
     });
-
-    // Query dispatcher.
-    services.AddSingleton<IQueryAsyncDispatcher, QueryDispatcher>();
     ...
 }
 
-// Query handler.
+// Async query handler.
 public class QueryProductByIdHandler : IQueryAsyncHandler<QueryProductById, Product>
 {
     private readonly IProductReadSideRepository _productRepository;
@@ -310,20 +477,19 @@ public void ConfigureServices(IServiceCollection services)
     services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
     
     // Register query handlers to the container.
-    // You can use assembly scanners to scan for handlers.
-    services.AddSingleton<IQueryHandler<QueryProductById, Product>, QueryProductByIdHandler>();
+    // Tip: You can use assembly scanners to scan for handlers.
+    services.AddTransient<IQueryHandler<QueryProductById, Product>, QueryProductByIdHandler>();
 
-    // Register query handler resolver. This is resolved by QueryDispatcher.
-    services.AddSingleton<IQueryHandlerResolver>((serviceProvider) =>
-        // This resolver only resolves sync handlers. For async handlers, ContainerQueryAsyncHandlerResolver should be used.
-        new ContainerQueryHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider))
+    // Register query dispatcher.
+    services.AddSingleton<IQueryAsyncDispatcher>((serviceProvider) =>
+        // The ContainerQueryHandlerResolver only resolves sync handlers. 
+        // For async handlers, ContainerQueryAsyncHandlerResolver should be used.
+        new QueryDispatcher(new ContainerQueryHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider)))
     );
-
-    // Query dispatcher.
-    services.AddSingleton<IQueryAsyncDispatcher, QueryDispatcher>();
     ...
 }
 
+// Sync query handler.
 public class QueryProductByIdHandler : IQueryHandler<QueryProductById, Product>
 {
     private readonly IProductReadSideRepository _productRepository;
@@ -366,21 +532,19 @@ public void ConfigureServices(IServiceCollection services)
     services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
 
     // Register query handler resolver. This is resolved by QueryDispatcher.
-    services.AddSingleton<IQueryHandlerResolver>((serviceProvider) =>
+    services.AddSingleton<IQueryAsyncDispatcher>((serviceProvider) =>
     {
         // This implements IQueryHandlerResolver.
         var attributeRegistration = new QueryHandlerAttributeRegistration();
-        // Register ALL methods with [QueryHandler] attribute.
+        // Register all methods with [QueryHandler] attribute.
         attributeRegistration.Register(() => new QueryProductByIdHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
 
-        return attributeRegistration;
+        return new QueryDispatcher(attributeRegistration);
     });
-
-    // Query dispatcher.
-    services.AddSingleton<IQueryAsyncDispatcher, QueryDispatcher>();
     ...
 }
 
+// Attributed query handler.
 public class QueryProductByIdHandler
 {
     private readonly IProductReadSideRepository _productRepository;
@@ -398,7 +562,7 @@ public class QueryProductByIdHandler
 }
 ```
 #### Query Dispatcher Usage
-After setting up the query dispatcher with the query handler registration, queries can now be dispatched by simply doing:
+After setting up the query dispatcher in the IoC container, queries can now be dispatched by simply doing:
 ```csharp
 ...
 private readonly IQueryAsyncDispatcher _queryDispatcher;
@@ -418,194 +582,6 @@ public async Task<IActionResult> GetProduct(int productId)
     }
 
     return NotFound();
-}
-...
-```
-
-### Event Handling
-
-```csharp
-public class ProductRegisteredEvent : IEvent
-{
-    public int ProductId { get; }
-    public string ProductName { get; }
-
-    public ProductRegisteredEvent(int productId, string productName)
-    {
-        ProductId = productId;
-        ProductName = productName;
-    }
-}
-```
-#### Event Handler Registration
-
-Before we can publish any events, first, we need to register our event handlers. There are several ways to do this:
-
-##### 1. Basic Registration
-```csharp
-// This method gets called by the runtime. Use this method to add services to the container.
-public void ConfigureServices(IServiceCollection services)
-{            
-    ...
-    // Repository.
-    services.AddSingleton<IProductRepository, InMemoryProductRepository>();
-
-    // Register command handler resolver. This is resolved by CommandDispatcher.
-    services.AddSingleton<IEventHandlerResolver>((serviceProvider) =>
-    {
-        // This object implements IEventHandlerResolver.
-        var basicRegistration = new EventHandlerRegistration();
-        
-        // Register any implementations of IEventAsyncHandler/IEventHandler
-        // which will be invoked when resolved by the EventPublisher.
-        basicRegistration.Register<ProductRegisteredEvent>(() => new ProductRegisteredEventHandler());
-        basicRegistration.Register<ProductRegisteredEvent>(() => new ProductRegisteredEmailNotifier());
-        return basicRegistration;
-    });
-
-    // Event publisher.
-    services.AddSingleton<IEventPublisher, EventPublisher>();
-    ...
-}
-
-public class ProductRegisteredEventHandler : IEventHandler<ProductRegisteredEvent>
-{
-    public void Handle(ProductRegisteredEvent @event)
-    {
-        System.Console.WriteLine($"ProductRegisteredEventHandler handled {@event.GetType()}.");
-    }
-}
-
-public class ProductRegisteredEmailNotifier : IEventAsyncHandler<ProductRegisteredEvent>
-{
-    public Task HandleAsync(ProductRegisteredEvent @event, CancellationToken ct = default(CancellationToken))
-    {
-        System.Console.WriteLine($"Sending email notification...");
-        return Task.CompletedTask;
-    }
-}
-```
-
-##### 2. Container Registration
-```csharp
-// This method gets called by the runtime. Use this method to add services to the container.
-public void ConfigureServices(IServiceCollection services)
-{            
-    ...
-    // Repository.
-    services.AddSingleton<IProductRepository, InMemoryProductRepository>();
-    
-    // Register event handlers to the container.
-    // You can use assembly scanners to scan for handlers.
-    services.AddTransient<IEventHandler<ProductRegisteredEvent>, ProductRegisteredEventHandler>();
-    services.AddTransient<IEventAsyncHandler<ProductRegisteredEvent>, ProductRegisteredEmailNotifier>();
-
-    // Register event handler resolver. This is resolved by EventPublisher.
-    services.AddSingleton<IEventHandlerResolver>((serviceProvider) =>
-        // This resolver retrieves all async and sync command handlers.
-        new ContainerEventHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider))
-    );
-
-    // Event publisher.
-    services.AddSingleton<IEventPublisher, EventPublisher>();
-    ...
-}
-
-// Event handler 1.
-public class ProductRegisteredEventHandler : IEventHandler<ProductRegisteredEvent>
-{
-    public void Handle(ProductRegisteredEvent @event)
-    {
-        System.Console.WriteLine($"ProductRegisteredEventHandler handled {@event.GetType()}.");
-    }
-}
-
-// Event handler 2.
-public class ProductRegisteredEmailNotifier : IEventAsyncHandler<ProductRegisteredEvent>
-{
-    public Task HandleAsync(ProductRegisteredEvent @event, CancellationToken ct = default(CancellationToken))
-    {
-        System.Console.WriteLine($"Sending email notification...");
-        return Task.CompletedTask;
-    }
-}
-
-// Container adapter.
-class AspNetCoreServiceProviderAdapter : Xer.Cqrs.EventStack.Resolvers.IContainerAdapter
-{
-    private readonly IServiceProvider _serviceProvider;
-
-    public AspNetCoreServiceProviderAdapter(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
-    public IEnumerable<T> ResolveMultiple<T>() where T : class;
-    {
-        return _serviceProvider.GetServices<T>();
-    }
-}
-```
-
-##### 3. Attribute Registration
-```csharp
-// This method gets called by the runtime. Use this method to add services to the container.
-public void ConfigureServices(IServiceCollection services)
-{            
-    ...
-    // Repository.
-    services.AddSingleton<IProductRepository, InMemoryProductRepository>();
-
-    // Register event handler resolver. This is resolved by EventPublisher.
-    services.AddSingleton<IEventHandlerResolver>((serviceProvider) =>
-    {
-        // This implements IEventHandlerResolver.
-        var attributeRegistration = new EventHandlerAttributeRegistration();
-
-        // Register ALL methods with [EventHandler] attribute.
-        attributeRegistration.Register(() => new ProductRegisteredEventHandlers(serviceProvider.GetRequiredService<IProductRepository>()));
-        return attributeRegistration;
-    });
-
-    // Event publisher.
-    services.AddSingleton<IEventPublisher, EventPublisher>();
-    ...
-}
-
-public class ProductRegisteredEventHandlers : IEventHandler<ProductRegisteredEvent>
-{
-    // Event handler 1.
-    [EventHandler]
-    public void Handle(ProductRegisteredEvent @event)
-    {
-        System.Console.WriteLine($"ProductRegisteredEventHandler handled {@event.GetType()}.");
-    }
-    
-    // Event handler 2.
-    [EventHandler]
-    public Task SendEmailNotificationAsync(ProductRegisteredEvent @event, CancellationToken ct = default(CancellationToken))
-    {
-        System.Console.WriteLine($"Sending email notification...");
-        return Task.CompletedTask;
-    }
-}
-```
-#### Event Publisher Usage
-After setting up the event publisher with the event handler registration, events can now be published by simply doing:
-```csharp
-...
-private readonly IEventPublisher _eventPublisher;
-
-public ProductsController(IEventPublisher eventPublisher)
-{
-    _eventPublisher = eventPublisher;
-}
-
-[HttpGet("{productId}")]
-public async Task<IActionResult> Notify(ProductRegisteredEventDto model)
-{
-    await _eventPublisher.PublishAsync(new ProductRegisteredEvent(model.ProductId, model.ProductName))
-    return Accepted();
 }
 ...
 ```

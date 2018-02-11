@@ -42,7 +42,7 @@ namespace ConsoleApp
 
             // Product write-side repository.
             container.RegisterSingleton<IProductRepository>(() =>
-                new PublishingProductRepository(new InMemoryProductRepository(), container.GetInstance<IEventDelegator>())
+                new PublishingProductRepository(new InMemoryProductRepository(), container.GetInstance<EventDelegator>())
             );
 
             // Product read-side repository.
@@ -61,12 +61,12 @@ namespace ConsoleApp
             container.RegisterSingleton<SimpleInjectorContainerAdapter>(() => new SimpleInjectorContainerAdapter(container));
 
             // Register command delegator.
-            container.RegisterSingleton<ICommandDelegator>(() =>
+            container.RegisterSingleton<CommandDelegator>(() =>
                 new CommandDelegator(new ContainerCommandAsyncHandlerResolver(container.GetInstance<SimpleInjectorContainerAdapter>()))
             );
 
             // Register event delegator.
-            container.RegisterSingleton<IEventDelegator>(() =>
+            container.RegisterSingleton<EventDelegator>(() =>
                 new EventDelegator(new ContainerEventHandlerResolver(container.GetInstance<SimpleInjectorContainerAdapter>(), 
                                                                      yieldExecutionOfSyncHandlers: true))
             );

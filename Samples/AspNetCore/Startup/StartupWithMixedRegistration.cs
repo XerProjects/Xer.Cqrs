@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Domain.Commands;
 using Domain.Repositories;
 using Infrastructure.DomainEventHandlers;
@@ -10,21 +8,16 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using ReadSide.Products;
 using ReadSide.Products.Queries;
 using ReadSide.Products.Repositories;
 using Swashbuckle.AspNetCore.Swagger;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Resolvers;
 using Xer.Cqrs.EventStack;
 using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Dispatchers;
 using Xer.Cqrs.QueryStack.Resolvers;
-using Xer.Delegator;
 using Xer.Delegator.Registrations;
-using Xer.Delegator.Resolvers;
 
 namespace AspNetCore
 {
@@ -52,14 +45,14 @@ namespace AspNetCore
 
             // Write-side repository.
             services.AddSingleton<IProductRepository>((serviceProvider) => 
-                new PublishingProductRepository(new InMemoryProductRepository(), serviceProvider.GetRequiredService<IEventDelegator>())
+                new PublishingProductRepository(new InMemoryProductRepository(), serviceProvider.GetRequiredService<EventDelegator>())
             );
 
             // Read-side repository.
             services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
 
             // Register command delegator.
-            services.AddSingleton<ICommandDelegator>((serviceProvider) =>
+            services.AddSingleton<CommandDelegator>((serviceProvider) =>
             {
                 // Register command handlers through basic registration.
                 var commandHandlerRegistration = new SingleMessageHandlerRegistration();
@@ -71,7 +64,7 @@ namespace AspNetCore
             });
 
             // Register event delegator.
-            services.AddSingleton<IEventDelegator>((serviceProvider) =>
+            services.AddSingleton<EventDelegator>((serviceProvider) =>
             {
                 // Register event handlers through attribute registration.
                 var eventHandlerRegistration = new MultiMessageHandlerRegistration();

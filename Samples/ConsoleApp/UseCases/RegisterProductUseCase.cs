@@ -10,15 +10,13 @@ namespace ConsoleApp.UseCases
 {
     public class RegisterProductUseCase : UseCaseBase
     {
-        private readonly ICommandDelegator _commandDelegator;
-        private readonly IEventDelegator _eventDelegator;
+        private readonly CommandDelegator _commandDelegator;
 
         public override string Name => "RegisterProduct";
 
-        public RegisterProductUseCase(ICommandDelegator commandDispatcher, IEventDelegator eventDelegator)
+        public RegisterProductUseCase(CommandDelegator commandDispatcher)
         {
             _commandDelegator = commandDispatcher;
-            _eventDelegator = eventDelegator;
         }
 
         public override async Task ExecuteAsync(CancellationToken cancellationToken = default(CancellationToken))

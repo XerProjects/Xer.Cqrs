@@ -20,8 +20,6 @@ using Xer.Cqrs.EventStack.Resolvers;
 using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Dispatchers;
 using Xer.Cqrs.QueryStack.Resolvers;
-using Xer.Delegator;
-using Xer.Delegator.Resolvers;
 
 namespace AspNetCore
 {
@@ -49,7 +47,7 @@ namespace AspNetCore
 
             // Write-side repository.
             services.AddSingleton<IProductRepository>((serviceProvider) => 
-                new PublishingProductRepository(new InMemoryProductRepository(), serviceProvider.GetRequiredService<IEventDelegator>())
+                new PublishingProductRepository(new InMemoryProductRepository(), serviceProvider.GetRequiredService<EventDelegator>())
             );
 
             // Read-side repository.
@@ -76,13 +74,13 @@ namespace AspNetCore
             services.AddSingleton<AspNetCoreServiceProviderAdapter>();
 
             // Register command delegator.
-            services.AddSingleton<ICommandDelegator>(serviceProvider => 
+            services.AddSingleton<CommandDelegator>(serviceProvider => 
                 // This resolver only resolves async handlers. For sync handlers, ContainerCommandHandlerResolver should be used.
                 new CommandDelegator(new ContainerCommandAsyncHandlerResolver(serviceProvider.GetRequiredService<AspNetCoreServiceProviderAdapter>()))
             );
 
             // Register event delegator.
-            services.AddSingleton<IEventDelegator>(serviceProvider => 
+            services.AddSingleton<EventDelegator>(serviceProvider => 
                 new EventDelegator(new ContainerEventHandlerResolver(serviceProvider.GetRequiredService<AspNetCoreServiceProviderAdapter>()))
             );
 

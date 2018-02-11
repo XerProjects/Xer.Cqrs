@@ -8,11 +8,11 @@ namespace ConsoleApp.UseCases
 {
     public class DeactivateProductUseCase : UseCaseBase
     {
-        private readonly ICommandDelegator _commandDelegator;
+        private readonly CommandDelegator _commandDelegator;
 
         public override string Name => "DeactivateProduct";
 
-        public DeactivateProductUseCase(ICommandDelegator commandDispatcher)
+        public DeactivateProductUseCase(CommandDelegator commandDispatcher)
         {
             _commandDelegator = commandDispatcher;    
         }

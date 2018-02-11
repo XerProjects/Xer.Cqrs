@@ -9,10 +9,10 @@ namespace Domain.Repositories
 {
     public class PublishingProductRepository : IProductRepository
     {
-        private readonly IEventDelegator _eventDelegator;
+        private readonly EventDelegator _eventDelegator;
         private readonly IProductRepository _inner;
 
-        public PublishingProductRepository(IProductRepository inner, IEventDelegator eventDelegator)
+        public PublishingProductRepository(IProductRepository inner, EventDelegator eventDelegator)
         {
             _inner = inner ?? throw new System.ArgumentNullException(nameof(inner));
             _eventDelegator = eventDelegator ?? throw new System.ArgumentNullException(nameof(eventDelegator));

@@ -9,7 +9,7 @@ namespace Xer.Cqrs.CommandStack
     /// <summary>
     /// Represents an object that delegates commands to a command handler.
     /// </summary>
-    public class CommandDelegator : MessageDelegator, ICommandDelegator
+    public class CommandDelegator : MessageDelegator
     {
         /// <summary>
         /// Constructor.

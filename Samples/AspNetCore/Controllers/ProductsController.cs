@@ -22,7 +22,7 @@ namespace AspNetCore.Controllers
     [Route("api/[controller]")]
     public class ProductsController : Controller
     {
-        private readonly IMessageDelegator _commandDelegator;
+        private readonly CommandDelegator _commandDelegator;
         private readonly IQueryAsyncDispatcher _queryDispatcher;
         
         /// <summary>
@@ -30,7 +30,7 @@ namespace AspNetCore.Controllers
         /// </summary>
         /// <param name="commandDelegator">Command delegator.</param>
         /// <param name="queryDispatcher">Query dispatcher.</param>;
-        public ProductsController(ICommandDelegator commandDelegator, IQueryAsyncDispatcher queryDispatcher)
+        public ProductsController(CommandDelegator commandDelegator, IQueryAsyncDispatcher queryDispatcher)
         {
             _commandDelegator = commandDelegator;
             _queryDispatcher = queryDispatcher;

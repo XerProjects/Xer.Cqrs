@@ -9,11 +9,11 @@ namespace ConsoleApp.UseCases
 {
     public class ActivateProductUseCase : UseCaseBase
     {
-        private readonly ICommandDelegator _commandDelegator;
+        private readonly CommandDelegator _commandDelegator;
 
         public override string Name => "ActivateProduct";
 
-        public ActivateProductUseCase(ICommandDelegator commandDispatcher)
+        public ActivateProductUseCase(CommandDelegator commandDispatcher)
         {
             _commandDelegator = commandDispatcher;    
         }

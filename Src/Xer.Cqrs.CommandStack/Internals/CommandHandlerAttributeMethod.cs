@@ -13,10 +13,31 @@ namespace Xer.Cqrs.CommandStack
     {
         #region Properties
 
+        /// <summary>
+        /// Method's declaring type.
+        /// </summary>
+        /// <returns></returns>
         public Type DeclaringType { get; }
+
+        /// <summary>
+        /// Type of command handled by the method.
+        /// </summary>
+        /// <returns></returns>
         public Type CommandType { get; }
+        
+        /// <summary>
+        /// Method info.
+        /// </summary>
         public MethodInfo MethodInfo { get; }
+
+        /// <summary>
+        /// Indicates if method is an asynchronous method.
+        /// </summary>
         public bool IsAsync { get; }
+
+        /// <summary>
+        /// Indicates if method supports cancellation.
+        /// </summary>
         public bool SupportsCancellation { get; }
 
         #endregion Properties
@@ -50,7 +71,7 @@ namespace Xer.Cqrs.CommandStack
         /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerDelegate.</typeparam>
         /// <param name="attributedObjectFactory">Factory which returns an instance of the object with methods that are marked with CommandHandlerAttribute.</param>
         /// <returns>Instance of CommandHandlerDelegate.</returns>
-        public MessageHandlerDelegate<TCommand> CreateMessageHandlerDelegate<TAttributedObject, TCommand>(Func<TAttributedObject> attributedObjectFactory) 
+        public Func<TCommand, CancellationToken, Task> CreateMessageHandlerDelegate<TAttributedObject, TCommand>(Func<TAttributedObject> attributedObjectFactory) 
             where TAttributedObject : class
             where TCommand : class
         {
@@ -106,7 +127,7 @@ namespace Xer.Cqrs.CommandStack
             CommandHandlerAttribute commandHandlerAttribute = methodInfo.GetCustomAttribute<CommandHandlerAttribute>();
             if (commandHandlerAttribute == null)
             {
-                throw new InvalidOperationException("Method info is not marked with [CommandHandler] attribute.");
+                throw new InvalidOperationException($"Method info is not marked with [CommandHandler] attribute: See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
             }
 
             // Get all method parameters.
@@ -117,7 +138,7 @@ namespace Xer.Cqrs.CommandStack
             if (commandParameter == null)
             {
                 // Method has no parameter.
-                throw new InvalidOperationException($"Method info does not accept any parameters.");
+                throw new InvalidOperationException($"Method info does not accept any parameters: See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
             }
             
             // Set command type.
@@ -140,14 +161,14 @@ namespace Xer.Cqrs.CommandStack
             else
             {
                 // Return type is not Task/void. Invalid.
-                throw new InvalidOperationException($"Method marked with [CommandHandler] can only have void or a Task as return value: {methodInfo.Name}");
+                throw new InvalidOperationException($"Method marked with [CommandHandler] can only have void or a Task as return value: See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
             }
 
             bool supportsCancellation = methodParameters.Any(p => p.ParameterType == typeof(CancellationToken));
 
             if (!isAsyncMethod && supportsCancellation)
             {
-                throw new InvalidOperationException("Cancellation token support is only available for async methods (Methods returning a Task).");
+                throw new InvalidOperationException("Cancellation token support is only available for async methods (Methods returning a Task): See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
             }
 
             return new CommandHandlerAttributeMethod(methodInfo, commandType, isAsyncMethod, supportsCancellation);
@@ -158,14 +179,14 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <param name="methodInfos">Method infos that have CommandHandlerAttribute custom attributes.</param>
         /// <returns>Instances of CommandHandlerAttributeMethod.</returns>
-        public static List<CommandHandlerAttributeMethod> FromMethodInfos(IEnumerable<MethodInfo> methodInfos)
+        public static IEnumerable<CommandHandlerAttributeMethod> FromMethodInfos(IEnumerable<MethodInfo> methodInfos)
         {
             if (methodInfos == null)
             {
                 throw new ArgumentNullException(nameof(methodInfos));
             }
 
-            return methodInfos.Select(m => FromMethodInfo(m)).ToList();
+            return methodInfos.Select(m => FromMethodInfo(m));
         }
 
         /// <summary>
@@ -173,7 +194,7 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <param name="type">Type to scan for methods marked with the [CommandHandler] attribute.</param>
         /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
-        public static List<CommandHandlerAttributeMethod> FromType(Type type)
+        public static IEnumerable<CommandHandlerAttributeMethod> FromType(Type type)
         {
             if (type == null)
             {
@@ -191,14 +212,14 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <param name="types">Types to scan for methods marked with the [CommandHandler] attribute.</param>
         /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
-        public static List<CommandHandlerAttributeMethod> FromTypes(IEnumerable<Type> types)
+        public static IEnumerable<CommandHandlerAttributeMethod> FromTypes(IEnumerable<Type> types)
         {
             if (types == null)
             {
                 throw new ArgumentNullException(nameof(types));
             }
 
-            return types.SelectMany(t => FromType(t)).ToList();
+            return types.SelectMany(t => FromType(t));
         }
 
         /// <summary>
@@ -206,7 +227,7 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <param name="commandHandlerAssembly">Assembly to scan for methods marked with the [CommandHandler] attribute.</param>
         /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
-        public static List<CommandHandlerAttributeMethod> FromAssembly(Assembly commandHandlerAssembly)
+        public static IEnumerable<CommandHandlerAttributeMethod> FromAssembly(Assembly commandHandlerAssembly)
         {
             if (commandHandlerAssembly == null)
             {
@@ -225,14 +246,14 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <param name="commandHandlerAssemblies">Assemblies to scan for methods marked with the [CommandHandler] attribute.</param>
         /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
-        public static List<CommandHandlerAttributeMethod> FromAssemblies(IEnumerable<Assembly> commandHandlerAssemblies)
+        public static IEnumerable<CommandHandlerAttributeMethod> FromAssemblies(IEnumerable<Assembly> commandHandlerAssemblies)
         {
             if (commandHandlerAssemblies == null)
             {
                 throw new ArgumentNullException(nameof(commandHandlerAssemblies));
             }
 
-            return commandHandlerAssemblies.SelectMany(a => FromAssembly(a)).ToList();
+            return commandHandlerAssemblies.SelectMany(a => FromAssembly(a));
         }
 
         #endregion Methods
@@ -246,7 +267,7 @@ namespace Xer.Cqrs.CommandStack
         /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerDelegate.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
         /// <returns>Instance of CommandHandlerDelegate.</returns>
-        private MessageHandlerDelegate<TCommand> createWrappedSyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) 
+        private Func<TCommand, CancellationToken, Task> createWrappedSyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) 
             where TAttributed : class
             where TCommand : class
         {
@@ -262,13 +283,13 @@ namespace Xer.Cqrs.CommandStack
         /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerDelegate.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
         /// <returns>Instance of CommandHandlerDelegate.</returns>
-        private MessageHandlerDelegate<TCommand> createCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) 
+        private Func<TCommand, CancellationToken, Task> createCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) 
             where TAttributed : class
             where TCommand : class
         {
-            Func<TAttributed, TCommand, CancellationToken, Task> cancellableAsyncAction = (Func<TAttributed, TCommand, CancellationToken, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, CancellationToken, Task>));
+            Func<TAttributed, TCommand, CancellationToken, Task> cancellableAsyncDelegate = (Func<TAttributed, TCommand, CancellationToken, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, CancellationToken, Task>));
 
-            return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, cancellableAsyncAction);
+            return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, cancellableAsyncDelegate);
         }
 
         /// <summary>
@@ -278,13 +299,13 @@ namespace Xer.Cqrs.CommandStack
         /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerDelegate.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
         /// <returns>Instance of CommandHandlerDelegate.</returns>
-        private MessageHandlerDelegate<TCommand> createNonCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) 
+        private Func<TCommand, CancellationToken, Task> createNonCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) 
             where TAttributed : class
             where TCommand : class
         {
-            Func<TAttributed, TCommand, Task> asyncAction = (Func<TAttributed, TCommand, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, Task>));
+            Func<TAttributed, TCommand, Task> asyncDelegate = (Func<TAttributed, TCommand, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, Task>));
 
-            return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, asyncAction);
+            return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, asyncDelegate);
         }
 
         #endregion Functions

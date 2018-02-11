@@ -1,25 +1,38 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Domain.Commands;
+using Domain.DomainEvents;
 using Domain.Repositories;
+using Infrastructure.DomainEventHandlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ReadSide.Products.Queries;
+using ReadSide.Products.Repositories;
 using Swashbuckle.AspNetCore.Swagger;
 using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.CommandStack.Resolvers;
+using Xer.Cqrs.EventStack;
+using Xer.Cqrs.QueryStack;
+using Xer.Cqrs.QueryStack.Dispatchers;
+using Xer.Cqrs.QueryStack.Registrations;
 using Xer.Delegator;
 using Xer.Delegator.Registrations;
+using Xer.Delegator.Resolvers;
 
 namespace AspNetCore
 {
-    public class StartupWithBasicRegistration
+    class StartupWithBasicRegistration
     {
+        private static readonly string AspNetCoreAppXmlDocPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, 
+                                                                    $"{typeof(StartupWithBasicRegistration).Assembly.GetName().Name}.xml");
+                                                                    
         public StartupWithBasicRegistration(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -34,29 +47,51 @@ namespace AspNetCore
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Info { Title = "AspNetCore Basic Registration Sample", Version = "v1" });
+                c.IncludeXmlComments(AspNetCoreAppXmlDocPath);
             });
 
-            // Repository.
-            services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+            // Write-side repository.
+            services.AddSingleton<IProductRepository>((serviceProvider) => 
+                new PublishingProductRepository(new InMemoryProductRepository(), serviceProvider.GetRequiredService<IEventDelegator>())
+            );
 
-            // Register command handler resolver. This is resolved by CommandDispatcher.
-            services.AddSingleton<IMessageHandlerResolver>((serviceProvider) =>
+            // Read-side repository.
+            services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
+
+            // Register command delegator.
+            services.AddSingleton<ICommandDelegator>(serviceProvider => 
             {
-                var registration = new SingleMessageHandlerRegistration();
-                
-                // Needed to cast to ICommandHandler because below handlers implements both ICommandAsyncHandler and ICommandHandler.
-                // The Register method accepts both interfaces so compiling is complaining that it is ambiguous.  
-                // We could also cast to ICommandAsyncHandler instead but decided to go with this 
-                // because I already did the ICommandAsyncHandler in the container registration sample.
-                registration.RegisterCommandHandler(() => (ICommandAsyncHandler<RegisterProductCommand>)new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-                registration.RegisterCommandHandler(() => (ICommandAsyncHandler<ActivateProductCommand>)new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-                registration.RegisterCommandHandler(() => (ICommandAsyncHandler<DeactivateProductCommand>)new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                 // Register command handlers.
+                var commandHandlerRegistration = new SingleMessageHandlerRegistration();
+                commandHandlerRegistration.RegisterCommandHandler(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                commandHandlerRegistration.RegisterCommandHandler(() => new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                commandHandlerRegistration.RegisterCommandHandler(() => new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
 
-                return registration.BuildMessageHandlerResolver();
+                return new CommandDelegator(commandHandlerRegistration.BuildMessageHandlerResolver());
             });
 
-            // Command dispatcher.
-            services.AddSingleton<IMessageDelegator, MessageDelegator>();
+            // Register event delegator.
+            services.AddSingleton<IEventDelegator>((serviceProvider) =>
+            {
+                // Register event handlers.
+                var eventHandlerRegistration = new MultiMessageHandlerRegistration();
+                eventHandlerRegistration.RegisterEventHandler<ProductRegisteredEvent>(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+                eventHandlerRegistration.RegisterEventHandler<ProductActivatedEvent>(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+                eventHandlerRegistration.RegisterEventHandler<ProductDeactivatedEvent>(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+
+                return new EventDelegator(eventHandlerRegistration.BuildMessageHandlerResolver());
+            });
+
+            // Register query dispatcher.
+            services.AddSingleton<IQueryAsyncDispatcher>(serviceProvider =>
+            {
+                // Register query handlers.
+                var registration = new QueryHandlerRegistration();
+                registration.Register(() => new QueryAllProductsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+                registration.Register(() => new QueryProductByIdHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+
+                return new QueryDispatcher(registration);
+            });
 
             services.AddMvc();
         }

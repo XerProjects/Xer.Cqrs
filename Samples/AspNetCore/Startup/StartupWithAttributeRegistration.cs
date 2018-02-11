@@ -1,25 +1,30 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.IO;
 using Domain.Commands;
 using Domain.Repositories;
+using Infrastructure.DomainEventHandlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using ReadSide.Products.Queries;
+using ReadSide.Products.Repositories;
 using Swashbuckle.AspNetCore.Swagger;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Resolvers;
+using Xer.Cqrs.EventStack;
+using Xer.Cqrs.QueryStack;
+using Xer.Cqrs.QueryStack.Dispatchers;
+using Xer.Cqrs.QueryStack.Registrations;
 using Xer.Delegator;
 using Xer.Delegator.Registrations;
+using Xer.Delegator.Resolvers;
 
 namespace AspNetCore
 {
-    public class StartupWithAttributeRegistration
+    class StartupWithAttributeRegistration
     {
+        private static readonly string AspNetCoreAppXmlDocPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, 
+                                                                    $"{typeof(StartupWithAttributeRegistration).Assembly.GetName().Name}.xml");
         public StartupWithAttributeRegistration(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -33,28 +38,50 @@ namespace AspNetCore
             // Swagger.
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new Info { Title = "AspNetCore Sample", Version = "v1" });
+                c.SwaggerDoc("v1", new Info { Title = "AspNetCore Attribute Registration Sample", Version = "v1" });
+                c.IncludeXmlComments(AspNetCoreAppXmlDocPath);
             });
 
-            // Repository.
-            services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+            // Write-side repository.
+            services.AddSingleton<IProductRepository>((serviceProvider) => 
+                new PublishingProductRepository(new InMemoryProductRepository(), serviceProvider.GetRequiredService<IEventDelegator>())
+            );
 
-            // Register command handler resolver. This is resolved by CommandDispatcher.
-            services.AddSingleton<IMessageHandlerResolver>((serviceProvider) =>
+            // Read-side repository.
+            services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
+
+            // Register command delegator.
+            services.AddSingleton<ICommandDelegator>((serviceProvider) =>
             {
-                // This implements ICommandHandlerResolver.
-                var attributeRegistration = new SingleMessageHandlerRegistration();
-
                 // Register methods with [CommandHandler] attribute.
-                attributeRegistration.RegisterCommandHandlerAttributes(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-                attributeRegistration.RegisterCommandHandlerAttributes(() => new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-                attributeRegistration.RegisterCommandHandlerAttributes(() => new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                var commandHandlerAttributeRegistration = new SingleMessageHandlerRegistration();
+                commandHandlerAttributeRegistration.RegisterCommandHandlerAttributes(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                commandHandlerAttributeRegistration.RegisterCommandHandlerAttributes(() => new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                commandHandlerAttributeRegistration.RegisterCommandHandlerAttributes(() => new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
 
-                return attributeRegistration.BuildMessageHandlerResolver();
+                return new CommandDelegator(commandHandlerAttributeRegistration.BuildMessageHandlerResolver());
             });
 
-            // Command dispatcher.
-            services.AddSingleton<IMessageDelegator, MessageDelegator>();
+            // Register event delegator.
+            services.AddSingleton<IEventDelegator>((serviceProvider) =>
+            {
+                // Register methods with [EventHandler] attribute.
+                var eventHandlerAttributeRegistration = new MultiMessageHandlerRegistration();
+                eventHandlerAttributeRegistration.RegisterEventHandlerAttributes(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+            
+                return new EventDelegator(eventHandlerAttributeRegistration.BuildMessageHandlerResolver());
+            });
+
+            // Register query dispatcher.
+            services.AddSingleton<IQueryAsyncDispatcher>((serviceProvider) =>
+            {
+                // Register methods with [QueryHandler] attribute.
+                var attributeRegistration = new QueryHandlerAttributeRegistration();
+                attributeRegistration.Register(() => new QueryAllProductsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+                attributeRegistration.Register(() => new QueryProductByIdHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+
+                return new QueryDispatcher(attributeRegistration);
+            });
 
             services.AddMvc();
         }
@@ -73,7 +100,7 @@ namespace AspNetCore
             // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "AspNetCore Sample V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "AspNetCore Attribute Registration Sample V1");
             });
 
             app.UseMvc();

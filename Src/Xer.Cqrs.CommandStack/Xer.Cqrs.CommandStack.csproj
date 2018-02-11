@@ -5,7 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Xer.Delegator" Version="0.2.2" />
+    <PackageReference Include="Xer.Delegator" Version="0.3.0" />
+    <PackageReference Include="Xer.Messaginator" Version="0.1.1" />
   </ItemGroup>
 
 </Project>

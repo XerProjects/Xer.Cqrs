@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xer.Cqrs.EventStack;
 using Xer.Cqrs.EventStack.Attributes;
-using Xer.Cqrs.EventStack.Registrations;
-using Xer.Cqrs.Tests.Mocks;
+using Xer.Cqrs.Tests.Entities;
+using Xer.Delegator;
+using Xer.Delegator.Registrations;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -11,47 +13,50 @@ namespace Xer.Cqrs.Tests.Events.Registration
 {
     public class AttributeRegistrationTests
     {
-        #region Register Method
+        #region RegisterEventHandlerAttributes Method
 
-        public class RegisterMethod
+        public class RegisterEventHandlerAttributesMethod
         {
-            private readonly ITestOutputHelper _testOutputHelper;
+            private readonly ITestOutputHelper _outputHelper;
 
-            public RegisterMethod(ITestOutputHelper testOutputHelper)
+            public RegisterEventHandlerAttributesMethod(ITestOutputHelper outputHelper)
             {
-                _testOutputHelper = testOutputHelper;
+                _outputHelper = outputHelper;
             }
 
             [Fact]
-            public void Should_Store_All_Event_Attributed_Handlers()
+            public async Task Should_Register_All_Event_Attributed_Handlers()
             {
-                var attributedHandler1 = new TestAttributedEventHandler1(_testOutputHelper);
-                var attributedHandler2 = new TestAttributedEventHandler2(_testOutputHelper);
-                var attributedHandler3 = new TestAttributedEventHandler3(_testOutputHelper);
+                var attributedHandler1 = new TestAttributedEventHandler(_outputHelper);
+                var attributedHandler2 = new TestAttributedEventHandler(_outputHelper);
+                var attributedHandler3 = new TestAttributedEventHandler(_outputHelper);
 
-                var registration = new EventHandlerAttributeRegistration();
-                registration.Register(() => attributedHandler1);
-                registration.Register(() => attributedHandler2);
-                registration.Register(() => attributedHandler3);
+                var registration = new MultiMessageHandlerRegistration();
+                registration.RegisterEventHandlerAttributes(() => attributedHandler1);
+                registration.RegisterEventHandlerAttributes(() => attributedHandler2);
+                registration.RegisterEventHandlerAttributes(() => attributedHandler3);
+                
+                IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
 
-                IEnumerable<EventHandlerDelegate> eventHandlerDelegates = registration.ResolveEventHandlers<TestEvent1>();
+                MessageHandlerDelegate eventHandlerDelegate = resolver.ResolveMessageHandler(typeof(TestEvent1));
 
                 // Get all methods marked with [EventHandler] and receiving TestEvent as parameter.
-                int eventHandler1MethodCount = attributedHandler1.GetType().GetMethods().Count(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(EventHandlerAttribute)) &&
-                  m.GetParameters().Any(p => p.ParameterType == typeof(TestEvent1)));
-
-                int eventHandler2MethodCount = attributedHandler2.GetType().GetMethods().Count(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(EventHandlerAttribute)) &&
-                  m.GetParameters().Any(p => p.ParameterType == typeof(TestEvent1)));
-
-                int eventHandler3MethodCount = attributedHandler3.GetType().GetMethods().Count(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(EventHandlerAttribute)) &&
-                  m.GetParameters().Any(p => p.ParameterType == typeof(TestEvent1)));
+                int eventHandler1MethodCount = TestAttributedEventHandler.GetEventHandlerAttributeCountFor<TestEvent1>();
+                int eventHandler2MethodCount = TestAttributedEventHandler.GetEventHandlerAttributeCountFor<TestEvent1>();
+                int eventHandler3MethodCount = TestAttributedEventHandler.GetEventHandlerAttributeCountFor<TestEvent1>();
 
                 int totalEventHandlerMethodCount = eventHandler1MethodCount + eventHandler2MethodCount + eventHandler3MethodCount;
 
-                Assert.Equal(totalEventHandlerMethodCount, eventHandlerDelegates.Count());
+                await eventHandlerDelegate.Invoke(new TestEvent1());
+
+                int handledCount = attributedHandler1.HandledEvents.Count + 
+                                   attributedHandler2.HandledEvents.Count + 
+                                   attributedHandler3.HandledEvents.Count;
+
+                Assert.Equal(totalEventHandlerMethodCount, handledCount);
             }
         }
 
-        #endregion Register Method
+        #endregion RegisterEventHandlerAttributes Method
     }
 }

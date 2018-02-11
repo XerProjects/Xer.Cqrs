@@ -1,6 +1,6 @@
 ﻿using System;
 using Xer.Cqrs.QueryStack.Registrations;
-using Xer.Cqrs.Tests.Mocks;
+using Xer.Cqrs.Tests.Entities;
 using Xunit;
 using Xunit.Abstractions;
 

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Xer.Cqrs.EventStack.Attributes
 {
@@ -14,5 +12,10 @@ namespace Xer.Cqrs.EventStack.Attributes
     [AttributeUsage(AttributeTargets.Method)]
     public class EventHandlerAttribute : Attribute
     {
+        /// <summary>
+        /// True if synchronous method execution should be yielded. Otherwise, false.
+        /// </summary>
+        /// <remarks>This option is only applicable to synchronous methods.</remarks>
+        public bool YieldSynchronousExecution { get; set; }
     }
 }

@@ -10,18 +10,42 @@ using Microsoft.Extensions.Logging;
 
 namespace AspNetCore
 {
-    public class Program
+    class Program
     {
-        public static void Main(string[] args)
-        {
+        static void Main(string[] args)
+        {                
             BuildWebHost(args).Run();
         }
 
-        public static IWebHost BuildWebHost(string[] args) =>
-            WebHost.CreateDefaultBuilder(args)
-                // I have prepare multiple Startup classes to demonstrate different ways to register handlers.
-                // Check them out at Startup folder. You can specify a different Startup here to test it.
-                .UseStartup<StartupWithContainerRegistration>()
-                .Build();
+        static IWebHost BuildWebHost(string[] args)
+        {
+            // I have prepare multiple Startup classes to demonstrate different ways to register handlers.
+            // Check them out at Startup folder. You can specify a different Startup here to test it.
+            string startupSelection = args.FirstOrDefault();
+            
+            if (string.Equals(startupSelection, "attribute", StringComparison.OrdinalIgnoreCase))
+            {
+                return WebHost.CreateDefaultBuilder(args.Skip(1).ToArray())
+                              .UseStartup<StartupWithAttributeRegistration>()
+                              .Build();
+            }
+            else if (string.Equals(startupSelection, "container", StringComparison.OrdinalIgnoreCase))
+            {
+                return WebHost.CreateDefaultBuilder(args.Skip(1).ToArray())
+                              .UseStartup<StartupWithContainerRegistration>()
+                              .Build();
+            }
+            else if (string.Equals(startupSelection, "mixed", StringComparison.OrdinalIgnoreCase))
+            {
+                return WebHost.CreateDefaultBuilder(args.Skip(1).ToArray())
+                              .UseStartup<StartupWithMixedRegistration>()
+                              .Build();
+            }
+
+            // Basic as default.
+            return WebHost.CreateDefaultBuilder(args.Skip(1).ToArray())
+                            .UseStartup<StartupWithBasicRegistration>()
+                            .Build();
+        }
     }
 }

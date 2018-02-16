@@ -1,9 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using Xer.Cqrs.CommandStack;
 
 namespace Xer.Delegator.Registrations
@@ -27,11 +24,11 @@ namespace Xer.Delegator.Registrations
         /// <para>Task HandleCommandAsync(TCommand command);</para>
         /// <para>Task HandleCommandAsync(TCommand command, CancellationToken cancellationToken);</para>
         /// </summary>
-        /// <typeparam name="TAttributedObject">Type of the object which contains the methods marked with the [CommandHandler] attribute.</typeparam>
-        /// <param name="attributedHandlerFactory">Factory which will provide an instance of the specified <typeparamref name="TAttributed"/> type.</param>
-        public static void RegisterCommandHandlerAttributes<TAttributedObject>(this SingleMessageHandlerRegistration registration, 
-                                                                               Func<TAttributedObject> attributedObjectFactory) 
-                                                                               where TAttributedObject : class
+        /// <remarks>This will try to retrieve an instance from <paramref name="attributedObjectFactory"/> to validate.</remarks>
+        /// <param name="registration">Message handler registration.</param>
+        /// <param name="attributedObjectFactory">Factory which provides an instance of a class that contains methods marked with [CommandHandler] attribute.</param>
+        public static void RegisterCommandHandlerAttributes(this SingleMessageHandlerRegistration registration,
+                                                            Func<object> attributedObjectFactory)
         {
             if (registration == null)
             {
@@ -43,14 +40,17 @@ namespace Xer.Delegator.Registrations
                 throw new ArgumentNullException(nameof(attributedObjectFactory));
             }
 
+            // Will throw if no instance was retrieved.
+            Type attributedObjectType = getInstanceType(attributedObjectFactory);
+
             // Get all methods marked with CommandHandler attribute and register.
-            foreach (CommandHandlerAttributeMethod commandHandlerMethod in CommandHandlerAttributeMethod.FromType(typeof(TAttributedObject)).ToList())
+            foreach (CommandHandlerAttributeMethod commandHandlerMethod in CommandHandlerAttributeMethod.FromType(attributedObjectType).ToArray())
             {
                 // Create method and register to registration.
                 RegisterMessageHandlerDelegateOpenGenericMethodInfo
-                    .MakeGenericMethod(commandHandlerMethod.DeclaringType, commandHandlerMethod.CommandType)
+                    .MakeGenericMethod(commandHandlerMethod.CommandType)
                     // Null because this is static method.
-                    .Invoke(null, new object[] 
+                    .Invoke(null, new object[]
                     {
                         registration,
                         commandHandlerMethod,
@@ -66,19 +66,45 @@ namespace Xer.Delegator.Registrations
         /// <summary>
         /// Create message handler delegate from CommandHandlerAttributeMethod and register to SingleMessageHandlerRegistration.
         /// </summary>
-        /// <typeparam name="TAttributedObject">Type of the object which contains the methods marked with the [CommandHandler] attribute.</typeparam>
         /// <typeparam name="TEvent">Type of event.</typeparam>
         /// <param name="registration">Message handler registration.</param>
-        /// <param name="commandHandlerMethod">Command handler method object built from methods marked with [CommandHandler] attribute.</param>
-        /// <param name="attributedHandlerFactory">Factory which will provide an instance of the specified <typeparamref name="TAttributedObject"/> type.</param>
-        private static void registerMessageHandlerDelegate<TAttributedObject, TCommand>(SingleMessageHandlerRegistration registration,
-                                                                                        CommandHandlerAttributeMethod commandHandlerMethod,
-                                                                                        Func<TAttributedObject> attributedObjectFactory)
-                                                                                        where TAttributedObject : class
-                                                                                        where TCommand : class
+        /// <param name="commandHandlerMethod">Command handler method object built from a method marked with [CommandHandler] attribute.</param>
+        /// <param name="attributedObjectFactory">Factory which provides an instance of a class that contains methods marked with [CommandHandler] attribute.</param>
+        private static void registerMessageHandlerDelegate<TCommand>(SingleMessageHandlerRegistration registration,
+                                                                     CommandHandlerAttributeMethod commandHandlerMethod,
+                                                                     Func<object> attributedObjectFactory)
+                                                                     where TCommand : class
         {
             // Create delegate and register.
-            registration.Register<TCommand>(commandHandlerMethod.CreateMessageHandlerDelegate<TAttributedObject, TCommand>(attributedObjectFactory));
+            registration.Register<TCommand>(commandHandlerMethod.CreateCommandHandlerDelegate<TCommand>(attributedObjectFactory));
+        }
+
+        /// <summary>
+        /// Vaidate and get the type if the instance produced by the instance factory delegate.
+        /// </summary>
+        /// <param name="attributedObjectFactory">Factory which provides an instance of a class that contains methods marked with [CommandHandler] attribute.</param>
+        /// <returns>Type of the instance returned by the instance factory delegate.</returns>
+        private static Type getInstanceType(Func<object> attributedObjectFactory)
+        {
+            Type attributedObjectType;
+
+            try
+            {
+                var instance = attributedObjectFactory.Invoke();
+                if (instance == null)
+                {
+                    throw new ArgumentException($"Failed to retrieve an instance from the provided instance factory delegate. Please check registration configuration.");
+                }
+
+                // Get actual type.
+                attributedObjectType = instance.GetType();
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException($"Error occurred while trying to retrieve an instance from the provided instance factory delegate. Please check registration configuration.", ex);
+            }
+
+            return attributedObjectType;
         }
 
         #endregion Functions

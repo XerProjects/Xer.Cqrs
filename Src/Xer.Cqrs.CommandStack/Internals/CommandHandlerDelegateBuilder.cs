@@ -99,10 +99,9 @@ namespace Xer.Cqrs.CommandStack
 
         #region From Delegate
         
-        internal static Func<TCommand, CancellationToken, Task> FromDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, 
-                                                                                                    Func<TAttributed, TCommand, Task> asyncDelegate)
-                                                                                                    where TAttributed : class
-                                                                                                    where TCommand : class
+        internal static Func<TCommand, CancellationToken, Task> FromDelegate<TCommand>(Func<object> attributedObjectFactory, 
+                                                                                       Func<object, TCommand, Task> asyncDelegate)
+                                                                                       where TCommand : class
         {
             if (attributedObjectFactory == null)
             {
@@ -116,7 +115,7 @@ namespace Xer.Cqrs.CommandStack
 
             return (inputCommand, ct) =>
             {
-                if(!TryGetInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                if(!TryGetInstanceFromFactory(attributedObjectFactory, out var instance, out Exception exception))
                 {
                     // Exception occurred or null is returned by factory.
                     return TaskUtility.FromException(exception);
@@ -126,10 +125,9 @@ namespace Xer.Cqrs.CommandStack
             };
         }
 
-        internal static Func<TCommand, CancellationToken, Task> FromDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, 
-                                                                                                    Func<TAttributed, TCommand, CancellationToken, Task> cancellableAsyncDelegate)
-                                                                                                    where TAttributed : class
-                                                                                                    where TCommand : class
+        internal static Func<TCommand, CancellationToken, Task> FromDelegate<TCommand>(Func<object> attributedObjectFactory, 
+                                                                                       Func<object, TCommand, CancellationToken, Task> cancellableAsyncDelegate)
+                                                                                       where TCommand : class
         {
             if (attributedObjectFactory == null)
             {
@@ -143,7 +141,7 @@ namespace Xer.Cqrs.CommandStack
 
             return (inputCommand, cancellationToken) =>
             {
-                if (!TryGetInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                if (!TryGetInstanceFromFactory(attributedObjectFactory, out var instance, out Exception exception))
                 {
                     // Exception occurred or null is returned by factory.
                     return TaskUtility.FromException(exception);
@@ -153,10 +151,9 @@ namespace Xer.Cqrs.CommandStack
             };
         }
 
-        internal static Func<TCommand, CancellationToken, Task> FromDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory, 
-                                                                                                    Action<TAttributed, TCommand> action)
-                                                                                                    where TAttributed : class
-                                                                                                    where TCommand : class
+        internal static Func<TCommand, CancellationToken, Task> FromDelegate<TCommand>(Func<object> attributedObjectFactory, 
+                                                                                       Action<object, TCommand> action)
+                                                                                       where TCommand : class
         {
             if (attributedObjectFactory == null)
             {
@@ -172,7 +169,7 @@ namespace Xer.Cqrs.CommandStack
             {
                 try
                 {
-                    if(!TryGetInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                    if(!TryGetInstanceFromFactory(attributedObjectFactory, out var instance, out Exception exception))
                     {
                         // Exception occurred or null is returned by factory.
                         return TaskUtility.FromException(exception);
@@ -226,7 +223,7 @@ namespace Xer.Cqrs.CommandStack
         
         private static InvalidOperationException FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(Exception ex = null)
         {
-            return new InvalidOperationException($"Failed to retrieve an instance of {typeof(TInstance).Name} from the registered factory delegate. Please check registration configuration.", ex);
+            return new InvalidOperationException($"Failed to retrieve an instance of {typeof(TInstance).Name} from the instance factory delegate. Please check registration configuration.", ex);
         }
 
         #endregion Functions

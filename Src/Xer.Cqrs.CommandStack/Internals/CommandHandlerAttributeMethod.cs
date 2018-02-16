@@ -1,16 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.CommandStack.Attributes;
-using Xer.Delegator;
 
 namespace Xer.Cqrs.CommandStack
 {
     internal class CommandHandlerAttributeMethod
     {
+        #region Static Declarations
+        
+        private static readonly ParameterExpression InstanceParameterExpression = Expression.Parameter(typeof(object), "instance");
+        private static readonly ParameterExpression CancellationTokenParameterExpression = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
+
+        #endregion Static Declarations
+
         #region Properties
 
         /// <summary>
@@ -67,23 +74,14 @@ namespace Xer.Cqrs.CommandStack
         /// <summary>
         /// Create a CommandHandlerDelegate based on the internal method info.
         /// </summary>
-        /// <typeparam name="TAttributedObject">Type of object that contains methods marked with [CommandHandler].</typeparam>
+        /// <remarks>This will try to retrieve an instance from <paramref name="attributedObjectFactory"/> to validate.</remarks>
         /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerDelegate.</typeparam>
-        /// <param name="attributedObjectFactory">Factory which returns an instance of the object with methods that are marked with CommandHandlerAttribute.</param>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a class that contains [CommandHandler] methods.</param>
         /// <returns>Instance of CommandHandlerDelegate.</returns>
-        public Func<TCommand, CancellationToken, Task> CreateMessageHandlerDelegate<TAttributedObject, TCommand>(Func<TAttributedObject> attributedObjectFactory) 
-            where TAttributedObject : class
+        public Func<TCommand, CancellationToken, Task> CreateCommandHandlerDelegate<TCommand>(Func<object> attributedObjectFactory) 
             where TCommand : class
         {
-            if (attributedObjectFactory == null)
-            {
-                throw new ArgumentNullException(nameof(attributedObjectFactory));
-            }
-
-            if(typeof(TAttributedObject) != DeclaringType)
-            {
-                throw new ArgumentException($"{typeof(TAttributedObject)} generic parameter does not match command handler method's declaring type.");
-            }
+            validateInstanceFactory(attributedObjectFactory);
 
             try
             {
@@ -91,21 +89,21 @@ namespace Xer.Cqrs.CommandStack
                 {
                     if (SupportsCancellation)
                     {
-                        return createCancellableAsyncDelegate<TAttributedObject, TCommand>(attributedObjectFactory);
+                        return createCancellableAsyncDelegate<TCommand>(attributedObjectFactory);
                     }
                     else
                     {
-                        return createNonCancellableAsyncDelegate<TAttributedObject, TCommand>(attributedObjectFactory);
+                        return createNonCancellableAsyncDelegate<TCommand>(attributedObjectFactory);
                     }
                 }
                 else
                 {
-                    return createWrappedSyncDelegate<TAttributedObject, TCommand>(attributedObjectFactory);
+                    return createWrappedSyncDelegate<TCommand>(attributedObjectFactory);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                throw new InvalidOperationException($"Failed to create message handler delegate for {DeclaringType.Name}'s {MethodInfo.ToString()} method. Check the methods parameters.", ex);
+                throw new InvalidOperationException($"Failed to create command handler delegate for {DeclaringType.Name}'s {MethodInfo.ToString()} method.", ex);
             }
         }
 
@@ -261,33 +259,27 @@ namespace Xer.Cqrs.CommandStack
         #region Functions
 
         /// <summary>
-        /// Create a delegate from a synchronous action.
-        /// </summary>
-        /// <typeparam name="TAttributed">Type of object that contains methods marked with [CommandHandler].</typeparam>
-        /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerDelegate.</typeparam>
-        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
-        /// <returns>Instance of CommandHandlerDelegate.</returns>
-        private Func<TCommand, CancellationToken, Task> createWrappedSyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) 
-            where TAttributed : class
-            where TCommand : class
-        {
-            Action<TAttributed, TCommand> action = (Action<TAttributed, TCommand>)MethodInfo.CreateDelegate(typeof(Action<TAttributed, TCommand>));
-
-            return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, action);
-        }
-
-        /// <summary>
         /// Create a delegate from an asynchronous (cancellable) action.
         /// </summary>
-        /// <typeparam name="TAttributed">Type of object that contains methods marked with [CommandHandler].</typeparam>
         /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerDelegate.</typeparam>
-        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a class that contains [CommandHandler] methods.</param>
         /// <returns>Instance of CommandHandlerDelegate.</returns>
-        private Func<TCommand, CancellationToken, Task> createCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) 
-            where TAttributed : class
+        private Func<TCommand, CancellationToken, Task> createCancellableAsyncDelegate<TCommand>(Func<object> attributedObjectFactory) 
             where TCommand : class
         {
-            Func<TAttributed, TCommand, CancellationToken, Task> cancellableAsyncDelegate = (Func<TAttributed, TCommand, CancellationToken, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, CancellationToken, Task>));
+            // Create an expression that will invoke the command handler method of a given instance.
+            var commandParameterExpression = Expression.Parameter(CommandType, "command");
+            var convertToTypeExpression = Expression.Convert(InstanceParameterExpression, DeclaringType);
+            var callExpression = Expression.Call(convertToTypeExpression, MethodInfo, commandParameterExpression, CancellationTokenParameterExpression);
+
+            // Lambda signature:
+            // (instance, command, cancallationToken) => ((ActualType)instance).HandleCommandAsync(command, cancellationToken);
+            var cancellableAsyncDelegate = Expression.Lambda<Func<object, TCommand, CancellationToken, Task>>(callExpression, new[] 
+            {  
+                InstanceParameterExpression,
+                commandParameterExpression,
+                CancellationTokenParameterExpression
+            }).Compile();
 
             return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, cancellableAsyncDelegate);
         }
@@ -295,17 +287,83 @@ namespace Xer.Cqrs.CommandStack
         /// <summary>
         /// Create a delegate from an asynchronous (non-cancellable) action.
         /// </summary>
-        /// <typeparam name="TAttributed">Type of object that contains methods marked with [CommandHandler].</typeparam>
         /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerDelegate.</typeparam>
-        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of <typeparamref name="TAttributed"/>.</param>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a class that contains [CommandHandler] methods.</param>
         /// <returns>Instance of CommandHandlerDelegate.</returns>
-        private Func<TCommand, CancellationToken, Task> createNonCancellableAsyncDelegate<TAttributed, TCommand>(Func<TAttributed> attributedObjectFactory) 
-            where TAttributed : class
+        private Func<TCommand, CancellationToken, Task> createNonCancellableAsyncDelegate<TCommand>(Func<object> attributedObjectFactory) 
             where TCommand : class
         {
-            Func<TAttributed, TCommand, Task> asyncDelegate = (Func<TAttributed, TCommand, Task>)MethodInfo.CreateDelegate(typeof(Func<TAttributed, TCommand, Task>));
+            // Create an expression that will invoke the command handler method of a given instance.
+            var commandParameterExpression = Expression.Parameter(CommandType, "command");
+            var convertToTypeExpression = Expression.Convert(InstanceParameterExpression, DeclaringType);
+            var callMethodExpression = Expression.Call(convertToTypeExpression, MethodInfo, commandParameterExpression);
+            
+            // Lambda signature:
+            // (instance, command) => ((ActualType)instance).HandleCommandAsync(command);
+            var nonCancellableAsyncDelegate = Expression.Lambda<Func<object, TCommand, Task>>(callMethodExpression, new[] 
+            {  
+                InstanceParameterExpression,
+                commandParameterExpression
+            }).Compile();
 
-            return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, asyncDelegate);
+            return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, nonCancellableAsyncDelegate);
+        }
+
+        /// <summary>
+        /// Create a delegate from a synchronous action.
+        /// </summary>
+        /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerDelegate.</typeparam>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a class that contains [CommandHandler] methods.</param>
+        /// <returns>Instance of CommandHandlerDelegate.</returns>
+        private Func<TCommand, CancellationToken, Task> createWrappedSyncDelegate<TCommand>(Func<object> attributedObjectFactory) 
+            where TCommand : class
+        {
+            // Create an expression that will invoke the command handler method of a given instance.
+            var commandParameterExpression = Expression.Parameter(CommandType, "command");
+            var convertToTypeExpression = Expression.Convert(InstanceParameterExpression, DeclaringType);
+            var callExpression = Expression.Call(convertToTypeExpression, MethodInfo, commandParameterExpression);
+
+            // Lambda signature:
+            // (instance, command) => ((ActualType)instance).HandleCommand(command);
+            var action = Expression.Lambda<Action<object, TCommand>>(callExpression, new[] 
+            {  
+                InstanceParameterExpression,
+                commandParameterExpression
+            }).Compile();
+
+            return CommandHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, action);
+        }
+
+        /// <summary>
+        /// Validate that the instance factory returns a valid instance.
+        /// </summary>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a class that contains [CommandHandler] methods.</param>
+        private void validateInstanceFactory(Func<object> attributedObjectFactory)
+        {
+            if (attributedObjectFactory == null)
+            {
+                throw new ArgumentNullException(nameof(attributedObjectFactory));
+            }
+
+            try
+            {
+                var instance = attributedObjectFactory.Invoke();
+                if (instance == null)
+                {
+                    throw new ArgumentException($"Failed to retrieve an instance from the provided instance factory delegate. Please check registration configuration.");
+                }
+                
+                Type instanceType = instance.GetType();
+                if (instanceType != DeclaringType)
+                {
+                    // Instance does not match this method's declaring type.
+                    throw new ArgumentException($"Expected an instance of {DeclaringType} but instance factory provided instance of type {instanceType}.");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException($"Error occurred while trying to retrieve an instance from the provided instance factory delegate. Please check registration configuration.", ex);
+            }
         }
 
         #endregion Functions

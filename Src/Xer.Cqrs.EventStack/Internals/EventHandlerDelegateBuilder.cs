@@ -205,10 +205,9 @@ namespace Xer.Cqrs.EventStack
 
         #region From Delegate
 
-        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory, 
-                                                                                                Func<TAttributed, TEvent, Task> asyncAction)
-                                                                                                where TAttributed : class
-                                                                                                where TEvent : class
+        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TEvent>(Func<object> attributedObjectFactory, 
+                                                                                   Func<object, TEvent, Task> asyncAction)
+                                                                                   where TEvent : class
         {
             if (attributedObjectFactory == null)
             {
@@ -222,7 +221,7 @@ namespace Xer.Cqrs.EventStack
 
             return (inputEvent, ct) =>
             {
-                if (!TryGetInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                if (!TryGetInstanceFromFactory(attributedObjectFactory, out var instance, out Exception exception))
                 {
                     // Exception occurred or null is returned by factory.
                     return TaskUtility.FromException(exception);
@@ -232,10 +231,9 @@ namespace Xer.Cqrs.EventStack
             };
         }
 
-        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory, 
-                                                                                                Func<TAttributed, TEvent, CancellationToken, Task> cancellableAsyncAction)
-                                                                                                where TAttributed : class
-                                                                                                where TEvent : class
+        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TEvent>(Func<object> attributedObjectFactory, 
+                                                                                   Func<object, TEvent, CancellationToken, Task> cancellableAsyncAction)
+                                                                                   where TEvent : class
         {
             if (attributedObjectFactory == null)
             {
@@ -249,7 +247,7 @@ namespace Xer.Cqrs.EventStack
 
             return (inputEvent, ct) =>
             {
-                if (!TryGetInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                if (!TryGetInstanceFromFactory(attributedObjectFactory, out var instance, out Exception exception))
                 {
                     // Exception occurred or null is returned by factory.
                     return TaskUtility.FromException(exception);
@@ -259,11 +257,10 @@ namespace Xer.Cqrs.EventStack
             };
         }
 
-        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TAttributed, TEvent>(Func<TAttributed> attributedObjectFactory, 
-                                                                                                Action<TAttributed, TEvent> action, 
-                                                                                                bool yieldExecution = false)
-                                                                                                where TAttributed : class
-                                                                                                where TEvent : class
+        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TEvent>(Func<object> attributedObjectFactory, 
+                                                                                   Action<object, TEvent> action, 
+                                                                                   bool yieldExecution = false)
+                                                                                   where TEvent : class
         {
             if (attributedObjectFactory == null)
             {
@@ -283,7 +280,7 @@ namespace Xer.Cqrs.EventStack
                     // This will allow other handlers to start execution.
                     await Task.Yield();
 
-                    if (!TryGetInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                    if (!TryGetInstanceFromFactory(attributedObjectFactory, out var instance, out Exception exception))
                     {
                         // Exception occurred or null is returned by factory.
                         throw exception;
@@ -297,7 +294,7 @@ namespace Xer.Cqrs.EventStack
             {
                 try
                 {
-                    if (!TryGetInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                    if (!TryGetInstanceFromFactory(attributedObjectFactory, out var instance, out Exception exception))
                     {
                         // Exception occurred or null is returned by factory.
                         return TaskUtility.FromException(exception);
@@ -344,9 +341,9 @@ namespace Xer.Cqrs.EventStack
             }
         }
 
-        private static InvalidOperationException FailedToRetrieveInstanceFromFactoryDelegateException<T>(Exception innerException = null)
+        private static InvalidOperationException FailedToRetrieveInstanceFromFactoryDelegateException<T>(Exception ex = null)
         {
-            return new InvalidOperationException($"Failed to retrieve an event handler instance from the registered factory for {typeof(T).Name}.", innerException);
+            return new InvalidOperationException($"Failed to retrieve an instance of {typeof(T).Name} from the instance factory delegate. Please check registration configuration.", ex);
         }
 
         #endregion Functions

@@ -1,7 +1,6 @@
 ﻿using SimpleInjector;
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.EventStack;
 using Xer.Cqrs.EventStack.Resolvers;
@@ -11,7 +10,6 @@ using Xunit.Abstractions;
 using Xer.Delegator.Registrations;
 using Xer.Delegator;
 using System.Linq;
-using Xer.Delegator.Exceptions;
 
 namespace Xer.Cqrs.Tests.Events
 {
@@ -278,11 +276,11 @@ namespace Xer.Cqrs.Tests.Events
             [Fact]
             public Task Should_Throw_If_Attributed_Event_Handler_Factory_Produces_Null_Instance()
             {
-                return Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                return Assert.ThrowsAsync<ArgumentException>(async () =>
                 {
                     var registration = new MultiMessageHandlerRegistration();
                     // Produces null.
-                    registration.RegisterEventHandlerAttributes<TestAttributedEventHandler>(() => null);
+                    registration.RegisterEventHandlerAttributes(() => null);
 
                     var delegator = new EventDelegator(registration.BuildMessageHandlerResolver());
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.Tests.Entities;
 using Xer.Delegator;
@@ -24,7 +25,7 @@ namespace Xer.Cqrs.Tests.Commands.Registration
             }
 
             [Fact]
-            public void Should_Register_All_Command_Handlers_Methods()
+            public async Task Should_Register_All_Command_Handlers_Methods()
             {
                 var commandHandler = new TestAttributedCommandHandler(_outputHelper);
 
@@ -38,29 +39,32 @@ namespace Xer.Cqrs.Tests.Commands.Registration
                 Assert.NotNull(commandHandlerDelegate);
 
                 // Delegate should invoke the actual command handler - TestAttributedCommandHandler.
-                commandHandlerDelegate.Invoke(new TestCommand());
+                await commandHandlerDelegate.Invoke(new TestCommand());
 
                 Assert.Equal(1, commandHandler.HandledCommands.Count);
                 Assert.Contains(commandHandler.HandledCommands, c => c is TestCommand);
             }
 
-            // [Fact]
-            // public void Should_Not_Allow_Async_Void_CommandHandler_Methods()
-            // {
-            //     Assert.Throws<InvalidOperationException>(() =>
-            //     {
-            //         try
-            //         {
-            //             var registration = new SingleMessageHandlerRegistration();
-            //             registration.RegisterCommandHandlerAttributes(() => new TestAttributedCommandHandlerWithAsyncVoid(_outputHelper));
-            //         }
-            //         catch (Exception ex)
-            //         {
-            //             _outputHelper.WriteLine(ex.ToString());
-            //             throw;
-            //         }
-            //     });
-            // }
+            [Fact]
+            public async Task Should_Register_All_Command_Handlers_Method_Registrations()
+            {
+                var commandHandler = new TestAttributedCommandHandler(_outputHelper);
+
+                var registration = new SingleMessageHandlerRegistration();
+                registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeRegistration.ForType(() => commandHandler));
+
+                IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
+
+                MessageHandlerDelegate commandHandlerDelegate = resolver.ResolveMessageHandler(typeof(TestCommand));
+
+                Assert.NotNull(commandHandlerDelegate);
+
+                // Delegate should invoke the actual command handler - TestAttributedCommandHandler.
+                await commandHandlerDelegate.Invoke(new TestCommand());
+
+                Assert.Equal(1, commandHandler.HandledCommands.Count);
+                Assert.Contains(commandHandler.HandledCommands, c => c is TestCommand);
+            }
 
             [Fact]
             public void Should_Not_Allow_Sync_Methods_With_Cancellation_Token()

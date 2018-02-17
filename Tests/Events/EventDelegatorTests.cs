@@ -274,13 +274,13 @@ namespace Xer.Cqrs.Tests.Events
             }
 
             [Fact]
-            public Task Should_Throw_If_Attributed_Event_Handler_Factory_Produces_Null_Instance()
+            public Task Should_Throw_If_Instance_Factory_Produces_Null()
             {
-                return Assert.ThrowsAsync<ArgumentException>(async () =>
+                return Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 {
                     var registration = new MultiMessageHandlerRegistration();
                     // Produces null.
-                    registration.RegisterEventHandlerAttributes(() => null);
+                    registration.RegisterEventHandlerAttributes<TestAttributedEventHandler>(() => null);
 
                     var delegator = new EventDelegator(registration.BuildMessageHandlerResolver());
 
@@ -291,6 +291,76 @@ namespace Xer.Cqrs.Tests.Events
                     catch(Exception ex)
                     {
                         _outputHelper.WriteLine(ex.Message);
+                        throw;
+                    }
+                });
+            }
+
+            [Fact]
+            public Task Should_Throw_If_Registration_Instance_Factory_Produces_Null()
+            {
+                return Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    var commandHandler = new TestAttributedEventHandler(_outputHelper);
+
+                    var registration = new MultiMessageHandlerRegistration();
+                    registration.RegisterEventHandlerAttributes(EventHandlerAttributeRegistration.ForType<TestAttributedEventHandler>(() => null));
+
+                    try
+                    {
+                        var delegator = new EventDelegator(registration.BuildMessageHandlerResolver());
+                        await delegator.SendAsync(new TestEvent1());
+                    }
+                    catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            [Fact]
+            public Task Should_Throw_If_Instance_From_Factory_Does_Not_Match_Registration_Type()
+            {
+                return Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    var commandHandler = new TestAttributedEventHandler(_outputHelper);
+
+                    var registration = new MultiMessageHandlerRegistration();
+                    registration.RegisterEventHandlerAttributes(EventHandlerAttributeRegistration.ForType(typeof(TestAttributedEventHandler), 
+                                                                                                          () => new TestCommandHandler(_outputHelper)));
+
+                    try
+                    {
+                        var delegator = new EventDelegator(registration.BuildMessageHandlerResolver());
+                        await delegator.SendAsync(new TestEvent1());
+                    }
+                    catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            [Fact]
+            public Task Should_Propagate_If_Registration_Instance_Factory_Throws_An_Exception()
+            {
+                return Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    var commandHandler = new TestAttributedEventHandler(_outputHelper);
+
+                    var registration = new MultiMessageHandlerRegistration();
+                    registration.RegisterEventHandlerAttributes(EventHandlerAttributeRegistration.ForType<TestAttributedEventHandler>(() => throw new Exception("Intentional exception.")));
+
+                    try
+                    {
+                        var delegator = new EventDelegator(registration.BuildMessageHandlerResolver());
+                        await delegator.SendAsync(new TestEvent1());
+                    }
+                    catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
                         throw;
                     }
                 });

@@ -24,27 +24,44 @@ namespace Xer.Delegator.Registrations
         /// <para>Task HandleCommandAsync(TCommand command);</para>
         /// <para>Task HandleCommandAsync(TCommand command, CancellationToken cancellationToken);</para>
         /// </summary>
-        /// <remarks>This will try to retrieve an instance from <paramref name="attributedObjectFactory"/> to validate.</remarks>
+        /// <typeparam name="TAttributed">Type to search for methods marked with [CommandHandler] attribute.</param>
+        /// <remarks>
+        /// This method will search for the methods marked with [CommandHandler] from the type specified in type parameter.
+        /// The type parameter should be the actual type that contains [CommandHandler] methods.
+        /// </remarks>
         /// <param name="registration">Message handler registration.</param>
-        /// <param name="attributedObjectFactory">Factory which provides an instance of a class that contains methods marked with [CommandHandler] attribute.</param>
+        /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [CommandHandler] attribute.</param>
+        public static void RegisterCommandHandlerAttributes<TAttributed>(this SingleMessageHandlerRegistration registration,
+                                                                         Func<TAttributed> attributedObjectFactory)
+                                                                         where TAttributed : class
+        {
+            RegisterCommandHandlerAttributes(registration, CommandHandlerAttributeRegistration.ForType<TAttributed>(attributedObjectFactory));
+        }
+
+        /// <summary>
+        /// Register methods marked with the [CommandHandler] attribute as command handlers.
+        /// <para>Supported signatures for methods marked with [CommandHandler] are: (Methods can be named differently)</para>
+        /// <para>void HandleCommand(TCommand command);</para>
+        /// <para>Task HandleCommandAsync(TCommand command);</para>
+        /// <para>Task HandleCommandAsync(TCommand command, CancellationToken cancellationToken);</para>
+        /// </summary>
+        /// <param name="registration">Message handler registration.</param>
+        /// <param name="registrationInfo">Registration which provides info on a class that contains methods marked with [CommandHandler] attribute.</param>
         public static void RegisterCommandHandlerAttributes(this SingleMessageHandlerRegistration registration,
-                                                            Func<object> attributedObjectFactory)
+                                                            CommandHandlerAttributeRegistration registrationInfo)
         {
             if (registration == null)
             {
                 throw new ArgumentNullException(nameof(registration));
             }
 
-            if (attributedObjectFactory == null)
+            if (registrationInfo == null)
             {
-                throw new ArgumentNullException(nameof(attributedObjectFactory));
+                throw new ArgumentNullException(nameof(registrationInfo));
             }
 
-            // Will throw if no instance was retrieved.
-            Type attributedObjectType = getInstanceType(attributedObjectFactory);
-
             // Get all methods marked with CommandHandler attribute and register.
-            foreach (CommandHandlerAttributeMethod commandHandlerMethod in CommandHandlerAttributeMethod.FromType(attributedObjectType).ToArray())
+            foreach (CommandHandlerAttributeMethod commandHandlerMethod in CommandHandlerAttributeMethod.FromType(registrationInfo.Type).ToArray())
             {
                 // Create method and register to registration.
                 RegisterMessageHandlerDelegateOpenGenericMethodInfo
@@ -54,7 +71,7 @@ namespace Xer.Delegator.Registrations
                     {
                         registration,
                         commandHandlerMethod,
-                        attributedObjectFactory
+                        registrationInfo.InstanceFactory
                     });
             }
         }
@@ -76,37 +93,55 @@ namespace Xer.Delegator.Registrations
                                                                      where TCommand : class
         {
             // Create delegate and register.
-            registration.Register<TCommand>(commandHandlerMethod.CreateCommandHandlerDelegate<TCommand>(attributedObjectFactory));
-        }
-
-        /// <summary>
-        /// Vaidate and get the type if the instance produced by the instance factory delegate.
-        /// </summary>
-        /// <param name="attributedObjectFactory">Factory which provides an instance of a class that contains methods marked with [CommandHandler] attribute.</param>
-        /// <returns>Type of the instance returned by the instance factory delegate.</returns>
-        private static Type getInstanceType(Func<object> attributedObjectFactory)
-        {
-            Type attributedObjectType;
-
-            try
-            {
-                var instance = attributedObjectFactory.Invoke();
-                if (instance == null)
-                {
-                    throw new ArgumentException($"Failed to retrieve an instance from the provided instance factory delegate. Please check registration configuration.");
-                }
-
-                // Get actual type.
-                attributedObjectType = instance.GetType();
-            }
-            catch (Exception ex)
-            {
-                throw new ArgumentException($"Error occurred while trying to retrieve an instance from the provided instance factory delegate. Please check registration configuration.", ex);
-            }
-
-            return attributedObjectType;
+            registration.Register<TCommand>(commandHandlerMethod.CreateCommandHandlerDelegate(attributedObjectFactory));
         }
 
         #endregion Functions
+    }
+
+    public class CommandHandlerAttributeRegistration
+    {
+        /// <summary>
+        /// Type to search for methods marked with [CommandHandler] attribute.
+        /// </summary>
+        public Type Type { get; }
+
+        /// <summary>
+        /// Factory delegate that provides an instance of the specified type in the Type property.
+        /// </summary>
+        public Func<object> InstanceFactory { get; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="type">Type to search for methods marked with [CommandHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the specified type.</param>
+        private CommandHandlerAttributeRegistration(Type type, Func<object> instanceFactory)
+        {
+            Type = type;
+            InstanceFactory = instanceFactory;
+        }      
+
+        /// <summary>
+        /// Create registration info for type.
+        /// </summary>
+        /// <param name="type">Type to search for methods marked with [EventHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the specified type.</param>
+        /// <returns>Irstance of EventHandlerAttributeRegistration for the specified type.</returns>
+        public static CommandHandlerAttributeRegistration ForType(Type type, Func<object> instanceFactory)
+        {
+            return new CommandHandlerAttributeRegistration(type, instanceFactory);
+        }
+
+        /// <summary>
+        /// Create registration info for type.
+        /// </summary>
+        /// <typeparam name="T">Type to search for methods marked with [EventHandler] attribute.</typeparam>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the specified type.</param>
+        /// <returns>Irstance of EventHandlerAttributeRegistration for the specified type.</returns>
+        public static CommandHandlerAttributeRegistration ForType<T>(Func<T> instanceFactory) where T : class
+        {
+            return new CommandHandlerAttributeRegistration(typeof(T), instanceFactory);
+        }
     }
 }

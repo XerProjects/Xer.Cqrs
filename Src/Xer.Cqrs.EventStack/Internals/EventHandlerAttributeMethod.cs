@@ -13,8 +13,10 @@ namespace Xer.Cqrs.EventStack
     {
         #region Static Declarations
         
-        private static readonly ParameterExpression InstanceParameterExpression = Expression.Parameter(typeof(object), "instance");
         private static readonly ParameterExpression CancellationTokenParameterExpression = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
+        private static readonly MethodInfo CreateWrappedSyncDelegateOpenGenericMethodInfo = typeof(EventHandlerAttributeMethod).GetTypeInfo().GetDeclaredMethod(nameof(createWrappedSyncDelegate));
+        private static readonly MethodInfo CreateCancellableAsyncDelegateOpenGenericMethodInfo = typeof(EventHandlerAttributeMethod).GetTypeInfo().GetDeclaredMethod(nameof(createCancellableAsyncDelegate));
+        private static readonly MethodInfo CreateNonCancellableAsyncDelegateOpenGenericMethodInfo = typeof(EventHandlerAttributeMethod).GetTypeInfo().GetDeclaredMethod(nameof(createNonCancellableAsyncDelegate));
 
         #endregion Static Declarations
         
@@ -80,16 +82,16 @@ namespace Xer.Cqrs.EventStack
         #region Methods
 
         /// <summary>
-        /// Create a EventHandlerDelegate based on the internal method info.
+        /// Create a delegate based on the internal method info.
         /// </summary>
-        /// <remarks>This will try to retrieve an instance from <paramref name="attributedObjectFactory"/> to validate.</remarks>
-        /// <typeparam name="TEvent">Type of event that is handled by the EventHandlerDelegate.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [EventHandler] attribute.</param>
-        /// <returns>Instance of MessageHandlerDelegate.</returns>
-        public Func<TEvent, CancellationToken, Task> CreateEventHandlerDelegate<TEvent>(Func<object> attributedObjectFactory) 
-            where TEvent : class
+        /// <returns>Delegate that handles an event.</returns>
+        public Func<object, CancellationToken, Task> CreateEventHandlerDelegate(Func<object> attributedObjectFactory)
         {
-            validateInstanceFactory(attributedObjectFactory);
+            if (attributedObjectFactory == null)
+            {
+                throw new ArgumentNullException(nameof(attributedObjectFactory));
+            }
 
             try
             {
@@ -97,16 +99,25 @@ namespace Xer.Cqrs.EventStack
                 {
                     if (SupportsCancellation)
                     {
-                        return createCancellableAsyncDelegate<TEvent>(attributedObjectFactory);
+                        // Invoke createCancellableAsyncDelegate<TDeclaringType, TEvent>(attributedObjectFactory)
+                        return (Func<object, CancellationToken, Task>)CreateCancellableAsyncDelegateOpenGenericMethodInfo
+                            .MakeGenericMethod(DeclaringType, EventType)
+                            .Invoke(this, new[] {  attributedObjectFactory });
                     }
                     else
                     {
-                        return createNonCancellableAsyncDelegate<TEvent>(attributedObjectFactory);
+                        // Invoke createNonCancellableAsyncDelegate<TDeclaringType, TEvent>(attributedObjectFactory)
+                        return (Func<object, CancellationToken, Task>)CreateNonCancellableAsyncDelegateOpenGenericMethodInfo
+                            .MakeGenericMethod(DeclaringType, EventType)
+                            .Invoke(this, new[] {  attributedObjectFactory });
                     }
                 }
                 else
                 {
-                    return createWrappedSyncDelegate<TEvent>(attributedObjectFactory);
+                    // Invoke createWrappedSyncDelegate<TDeclaringType, TEvent>(attributedObjectFactory)
+                    return (Func<object, CancellationToken, Task>)CreateWrappedSyncDelegateOpenGenericMethodInfo
+                        .MakeGenericMethod(DeclaringType, EventType)
+                        .Invoke(this, new[] {  attributedObjectFactory });
                 }
             }
             catch(Exception ex)
@@ -264,7 +275,7 @@ namespace Xer.Cqrs.EventStack
         /// Detect methods marked with [CommandHandler] attribute and translate to CommandHandlerAttributeMethod instances.
         /// </summary>
         /// <param name="eventHandlerAssemblies">Assemblies to scan for methods marked with the [CommandHandler] attribute.</param>
-        /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
+        /// <returns>List of all EventHandlerAttributeMethod detected.</returns>
         public static IEnumerable<EventHandlerAttributeMethod> FromAssemblies(IEnumerable<Assembly> eventHandlerAssemblies)
         {
             if (eventHandlerAssemblies == null)
@@ -282,110 +293,113 @@ namespace Xer.Cqrs.EventStack
         /// <summary>
         /// Create a delegate from an asynchronous (cancellable) action.
         /// </summary>
-        /// <typeparam name="TAttributed">Type of object that contains methods marked with [EventHandler].</typeparam>
-        /// <typeparam name="TEvent">Type of event that is handled by the EventHandlerDelegate.</typeparam>
+        /// <typeparam name="TAttributed">Type that contains [EventHandler] methods. This should match DeclaringType property.</typeparam>
+        /// <typeparam name="TEvent">Type of command that is handled by the EventHandlerAttributeMethod. This should match EventType property.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [EventHandler] attribute.</param>
-        /// <returns>Instance of MessageHandlerDelegate.</returns>
-        private Func<TEvent, CancellationToken, Task> createCancellableAsyncDelegate<TEvent>(Func<object> attributedObjectFactory)
+        /// <returns>Delegate that handles an event.</returns>
+        private Func<object, CancellationToken, Task> createCancellableAsyncDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory)
+            where TAttributed : class
             where TEvent : class
         {
             // Create an expression that will invoke the command handler method of a given instance.
-            var commandParameterExpression = Expression.Parameter(EventType, "event");
-            var convertToTypeExpression = Expression.Convert(InstanceParameterExpression, DeclaringType);
-            var callExpression = Expression.Call(convertToTypeExpression, MethodInfo, commandParameterExpression, CancellationTokenParameterExpression);
+            var instanceParameterExpression = Expression.Parameter(typeof(TAttributed), "instance");
+            var eventParameterExpression = Expression.Parameter(typeof(TEvent), "event");
+            var callExpression = Expression.Call(instanceParameterExpression, MethodInfo, eventParameterExpression, CancellationTokenParameterExpression);
 
             // Lambda signature:
-            // (instance, command, cancallationToken) => ((ActualType)instance).HandleCommandAsync(command, cancellationToken);
-            var cancellableAsyncDelegate = Expression.Lambda<Func<object, TEvent, CancellationToken, Task>>(callExpression, new[] 
+            // (instance, command, cancallationToken) => instance.HandleCommandAsync(command, cancellationToken);
+            var cancellableAsyncDelegate = Expression.Lambda<Func<TAttributed, TEvent, CancellationToken, Task>>(callExpression, new[] 
             {  
-                InstanceParameterExpression,
-                commandParameterExpression,
+                instanceParameterExpression,
+                eventParameterExpression,
                 CancellationTokenParameterExpression
             }).Compile();
 
-            return EventHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, cancellableAsyncDelegate);
+            Func<TEvent, CancellationToken, Task> genericDelegate = EventHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, cancellableAsyncDelegate);
+
+            return (obj, cancellationToken) => 
+            {
+                if (obj is TEvent @event)
+                {
+                    return genericDelegate.Invoke(@event, cancellationToken);
+                }
+
+                throw new ArgumentException($"Invalid event. Expected event of type {typeof(TEvent).Name} but was given {obj.GetType().Name}.", nameof(obj));
+            };
         }
 
         /// <summary>
         /// Create a delegate from an asynchronous (non-cancellable) action.
         /// </summary>
-        /// <typeparam name="TAttributed">Type of object that contains methods marked with [EventHandler].</typeparam>
-        /// <typeparam name="TEvent">Type of event that is handled by the EventHandlerDelegate.</typeparam>
+        /// <typeparam name="TAttributed">Type that contains [EventHandler] methods. This should match DeclaringType property.</typeparam>
+        /// <typeparam name="TEvent">Type of command that is handled by the EventHandlerAttributeMethod. This should match EventType property.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [EventHandler] attribute.</param>
-        /// <returns>Instance of MessageHandlerDelegate.</returns>
-        private Func<TEvent, CancellationToken, Task> createNonCancellableAsyncDelegate<TEvent>(Func<object> attributedObjectFactory)
+        /// <returns>Delegate that handles an event.</returns>
+        private Func<object, CancellationToken, Task> createNonCancellableAsyncDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory)
+            where TAttributed : class
             where TEvent : class
         {
             // Create an expression that will invoke the command handler method of a given instance.
-            var commandParameterExpression = Expression.Parameter(EventType, "event");
-            var convertToTypeExpression = Expression.Convert(InstanceParameterExpression, DeclaringType);
-            var callExpression = Expression.Call(convertToTypeExpression, MethodInfo, commandParameterExpression);
+            var instanceParameterExpression = Expression.Parameter(typeof(TAttributed), "instance");
+            var eventParameterExpression = Expression.Parameter(typeof(TEvent), "event");
+            var callExpression = Expression.Call(instanceParameterExpression, MethodInfo, eventParameterExpression);
 
             // Lambda signature:
-            // (instance, command) => ((ActualType)instance).HandleCommandAsync(command);
-            var nonCancellableAsyncDelegate = Expression.Lambda<Func<object, TEvent, Task>>(callExpression, new[] 
+            // (instance, command) => instance.HandleCommandAsync(command);
+            var nonCancellableAsyncDelegate = Expression.Lambda<Func<TAttributed, TEvent, Task>>(callExpression, new[] 
             {  
-                InstanceParameterExpression,
-                commandParameterExpression
+                instanceParameterExpression,
+                eventParameterExpression
             }).Compile();
 
-            return EventHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, nonCancellableAsyncDelegate);
+            Func<TEvent, CancellationToken, Task> genericDelegate = EventHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, nonCancellableAsyncDelegate);
+
+            return (obj, cancellationToken) => 
+            {
+                if (obj is TEvent @event)
+                {
+                    return genericDelegate.Invoke(@event, cancellationToken);
+                }
+
+                throw new ArgumentException($"Invalid event. Expected event of type {typeof(TEvent).Name} but was given {obj.GetType().Name}.", nameof(obj));
+            };
         }
 
         /// <summary>
         /// Create a delegate from a synchronous action.
         /// </summary>
-        /// <typeparam name="TEvent">Type of event that is handled by the EventHandlerDelegate.</typeparam>
+        /// <typeparam name="TAttributed">Type that contains [EventHandler] methods. This should match DeclaringType property.</typeparam>
+        /// <typeparam name="TEvent">Type of command that is handled by the EventHandlerAttributeMethod. This should match EventType property.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [EventHandler] attribute.</param>
-        /// <returns>Instance of MessageHandlerDelegate.</returns>
-        private Func<TEvent, CancellationToken, Task> createWrappedSyncDelegate<TEvent>(Func<object> attributedObjectFactory)
+        /// <returns>Delegate that handles an event.</returns>
+        private Func<object, CancellationToken, Task> createWrappedSyncDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory)
+            where TAttributed : class
             where TEvent : class
         {
             // Create an expression that will invoke the command handler method of a given instance.
-            var commandParameterExpression = Expression.Parameter(EventType, "event");
-            var convertToTypeExpression = Expression.Convert(InstanceParameterExpression, DeclaringType);
-            var callExpression = Expression.Call(convertToTypeExpression, MethodInfo, commandParameterExpression);
+            var instanceParameterExpression = Expression.Parameter(typeof(TAttributed), "instance");
+            var eventParameterExpression = Expression.Parameter(typeof(TEvent), "event");
+            var callExpression = Expression.Call(instanceParameterExpression, MethodInfo, eventParameterExpression);
 
             // Lambda signature:
-            // (instance, command) => ((ActualType)instance).HandleCommand(command);
-            var action = Expression.Lambda<Action<object, TEvent>>(callExpression, new[] 
+            // (instance, command) => instance.HandleCommand(command);
+            var action = Expression.Lambda<Action<TAttributed, TEvent>>(callExpression, new[] 
             {  
-                InstanceParameterExpression,
-                commandParameterExpression
+                instanceParameterExpression,
+                eventParameterExpression
             }).Compile();
+            
+            Func<TEvent, CancellationToken, Task> genericDelegate = EventHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, action, yieldSynchronousExecution: YieldSynchronousExecution);
 
-            return EventHandlerDelegateBuilder.FromDelegate(attributedObjectFactory, action, yieldExecution: YieldSynchronousExecution);
-        }
-
-        /// <summary>
-        /// Validate that the instance factory returns a valid instance.
-        /// </summary>
-        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a class that contains [EventHandler] methods.</param>
-        private void validateInstanceFactory(Func<object> attributedObjectFactory)
-        {
-            if (attributedObjectFactory == null)
+            return (obj, cancellationToken) => 
             {
-                throw new ArgumentNullException(nameof(attributedObjectFactory));
-            }
-
-            try
-            {
-                var instance = attributedObjectFactory.Invoke();
-                if (instance == null)
+                if (obj is TEvent @event)
                 {
-                    throw new ArgumentException($"Failed to retrieve an instance from the provided instance factory delegate. Please check registration configuration.");
+                    return genericDelegate.Invoke(@event, cancellationToken);
                 }
 
-                Type instanceType = instance.GetType();
-                if (instanceType != DeclaringType)
-                {
-                    throw new ArgumentException($"Expected an instance of {DeclaringType} but instance factory provided instance of type {instanceType}.");
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new ArgumentException($"Error occurred while trying to retrieve an instance from the provided instance factory delegate. Please check registration configuration.", ex);
-            }
+                throw new ArgumentException($"Invalid event. Expected event of type {typeof(TEvent).Name} but was given {obj.GetType().Name}.", nameof(obj));
+            };
         }
 
         #endregion Functions

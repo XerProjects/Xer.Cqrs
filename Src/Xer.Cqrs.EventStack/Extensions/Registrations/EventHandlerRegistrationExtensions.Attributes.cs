@@ -7,9 +7,9 @@ namespace Xer.Delegator.Registrations
 {
     public static partial class EventHandlerRegistrationExtensions
     {
-        private static readonly MethodInfo CreateAndRegisterMessageHandlerDelegateOpenGenericMethodInfo = typeof(EventHandlerRegistrationExtensions)
+        private static readonly MethodInfo RegisterMessageHandlerDelegateOpenGenericMethodInfo = typeof(EventHandlerRegistrationExtensions)
                                                                                                             .GetTypeInfo()
-                                                                                                            .GetDeclaredMethod(nameof(createMessageHandlerDelegate));
+                                                                                                            .GetDeclaredMethod(nameof(registerMessageHandlerDelegate));
 
         #region IMessageHandlerRegistration Extensions
 
@@ -20,37 +20,54 @@ namespace Xer.Delegator.Registrations
         /// <para>Task HandleEventAsync(TEvent event);</para>
         /// <para>Task HandleEventAsync(TEvent event, CancellationToken cancellationToken);</para>
         /// </summary>
-        /// <remarks>This will try to retrieve an instance from <paramref name="attributedObjectFactory"/> to validate.</remarks>
+        /// <typeparam name="TAttributed">Type to search for methods marked with [EventHandler] attribute.</param>
+        /// <remarks>
+        /// This method will search for the methods marked with [EventHandler] in the type specified in type parameter.
+        /// The type parameter should be the actual type that contains [EventHandler] methods.
+        /// </remarks>
         /// <param name="registration">Message handler registration.</param>
         /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [EventHandler] attribute.</param>
+        public static void RegisterEventHandlerAttributes<TAttributed>(this MultiMessageHandlerRegistration registration,
+                                                                       Func<TAttributed> attributedObjectFactory)
+                                                                       where TAttributed : class
+        {
+            RegisterEventHandlerAttributes(registration, EventHandlerAttributeRegistration.ForType<TAttributed>(attributedObjectFactory));
+        }
+        
+        /// <summary>
+        /// Register methods marked with the [EventHandler] attribute as event handlers.
+        /// <para>Supported signatures for methods marked with [EventHandler] are: (Methods can be named differently)</para>
+        /// <para>void HandleEvent(TEvent event);</para>
+        /// <para>Task HandleEventAsync(TEvent event);</para>
+        /// <para>Task HandleEventAsync(TEvent event, CancellationToken cancellationToken);</para>
+        /// </summary>
+        /// <param name="registration">Message handler registration.</param>
+        /// <param name="registrationInfo">Registration which provides info about a class that contains methods marked with [EventHandler] attribute.</param>
         public static void RegisterEventHandlerAttributes(this MultiMessageHandlerRegistration registration,
-                                                          Func<object> attributedObjectFactory)
+                                                          EventHandlerAttributeRegistration registrationInfo)
         {
             if (registration == null)
             {
                 throw new ArgumentNullException(nameof(registration));
             }
 
-            if (attributedObjectFactory == null)
+            if (registrationInfo == null)
             {
-                throw new ArgumentNullException(nameof(attributedObjectFactory));
+                throw new ArgumentNullException(nameof(registrationInfo));
             }
 
-            // Will throw if no instance was retrieved.
-            Type attributedObjectType = getInstanceType(attributedObjectFactory);
-
             // Get all methods marked with EventHandler attribute and register.
-            foreach (EventHandlerAttributeMethod eventHandlerMethod in EventHandlerAttributeMethod.FromType(attributedObjectType).ToArray())
+            foreach (EventHandlerAttributeMethod eventHandlerMethod in EventHandlerAttributeMethod.FromType(registrationInfo.Type).ToArray())
             {
                 // Create method and register to registration.
-                CreateAndRegisterMessageHandlerDelegateOpenGenericMethodInfo
+                RegisterMessageHandlerDelegateOpenGenericMethodInfo
                     .MakeGenericMethod(eventHandlerMethod.EventType)
                     // Null because this is static method.
                     .Invoke(null, new object[] 
                     {
                         registration,
                         eventHandlerMethod,
-                        attributedObjectFactory
+                        registrationInfo.InstanceFactory
                     });
             }
         }
@@ -66,43 +83,61 @@ namespace Xer.Delegator.Registrations
         /// <param name="registration">Message handler registration.</param>
         /// <param name="eventHandlerMethod">Event handler method object built from methods marked with [EventHandler] attribute.</param>
         /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [EventHandler] attribute.</param>
-        private static void createMessageHandlerDelegate<TEvent>(MultiMessageHandlerRegistration registration,
+        private static void registerMessageHandlerDelegate<TEvent>(MultiMessageHandlerRegistration registration,
                                                                  EventHandlerAttributeMethod eventHandlerMethod,
                                                                  Func<object> attributedObjectFactory)
                                                                  where TEvent : class
         {
             // Create delegate and register.
-            registration.Register<TEvent>(eventHandlerMethod.CreateEventHandlerDelegate<TEvent>(attributedObjectFactory));
-        }
-
-        /// <summary>
-        /// Vaidate and get the type if the instance produced by the instance factory delegate.
-        /// </summary>
-        /// <param name="attributedObjectFactory">Factory which provides an instance of a class that contains methods marked with [CommandHandler] attribute.</param>
-        /// <returns>Type of the instance returned by the instance factory delegate.</returns>
-        private static Type getInstanceType(Func<object> attributedObjectFactory)
-        {
-            Type attributedObjectType;
-
-            try
-            {
-                var instance = attributedObjectFactory.Invoke();
-                if (instance == null)
-                {
-                    throw new ArgumentException($"Failed to retrieve an instance from the provided instance factory delegate. Please check registration configuration.");
-                }
-
-                // Get actual type.
-                attributedObjectType = instance.GetType();
-            }
-            catch (Exception ex)
-            {
-                throw new ArgumentException($"Error occurred while trying to retrieve an instance from the provided instance factory delegate. Please check registration configuration.", ex);
-            }
-
-            return attributedObjectType;
+            registration.Register<TEvent>(eventHandlerMethod.CreateEventHandlerDelegate(attributedObjectFactory));
         }
 
         #endregion Functions
+    }
+
+    public class EventHandlerAttributeRegistration
+    {
+        /// <summary>
+        /// Type to search for methods marked with [EventHandler] attribute.
+        /// </summary>
+        public Type Type { get; }
+
+        /// <summary>
+        /// Factory delegate that provides an instance of the specified type in the Type property.
+        /// </summary>
+        public Func<object> InstanceFactory { get; }
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="type">Type to search for methods marked with [EventHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the specified type.</param>
+        private EventHandlerAttributeRegistration(Type type, Func<object> instanceFactory)
+        {
+            Type = type;
+            InstanceFactory = instanceFactory;
+        }
+
+        /// <summary>
+        /// Create registration info for type.
+        /// </summary>
+        /// <param name="type">Type to search for methods marked with [EventHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the specified type.</param>
+        /// <returns>Irstance of EventHandlerAttributeRegistration for the specified type.</returns>
+        public static EventHandlerAttributeRegistration ForType(Type type, Func<object> instanceFactory)
+        {
+            return new EventHandlerAttributeRegistration(type, instanceFactory);
+        }
+
+        /// <summary>
+        /// Create registration info for type.
+        /// </summary>
+        /// <typeparam name="T">Type to search for methods marked with [EventHandler] attribute.</typeparam>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the specified type.</param>
+        /// <returns>Irstance of EventHandlerAttributeRegistration for the specified type.</returns>
+        public static EventHandlerAttributeRegistration ForType<T>(Func<T> instanceFactory) where T : class
+        {
+            return new EventHandlerAttributeRegistration(typeof(T), instanceFactory);
+        }
     }
 }

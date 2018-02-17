@@ -65,13 +65,13 @@ namespace Xer.Cqrs.Tests.Commands
             }
 
             [Fact]
-            public Task Should_Throw_When_No_Registered_Command_Handler_Is_Found()
+            public Task Should_Throw_If_No_Registered_Command_Handler_Is_Found()
             {
                 return Assert.ThrowsAsync<NoMessageHandlerResolvedException>(async () =>
                 {
                     var registration = new SingleMessageHandlerRegistration();
                     IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
-                    var delegator = new CommandDelegator(new RequiredMessageHandlerResolver(resolver));
+                    var delegator = new CommandDelegator(resolver);
 
                     try
                     {
@@ -106,34 +106,84 @@ namespace Xer.Cqrs.Tests.Commands
             }
 
             [Fact]
-            public async Task Should_Command_To_Registered_Attributed_Command_Handler_With_Cancellation()
+            public async Task Should_Send_Command_To_Registered_Attributed_Command_Handler_With_Cancellation()
             {
                 var commandHandler = new TestAttributedCommandHandler(_outputHelper);
                 var registration = new SingleMessageHandlerRegistration();
                 registration.RegisterCommandHandlerAttributes(() => commandHandler);
 
-                var cts = new CancellationTokenSource();
-
                 IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
 
                 var delegator = new CommandDelegator(resolver);
-                await delegator.SendAsync(new CancellableTestCommand(), cts.Token);
+                using (var cts = new CancellationTokenSource())
+                {
+                    await delegator.SendAsync(new CancellableTestCommand(), cts.Token);
+                }
 
                 Assert.Equal(1, commandHandler.HandledCommands.Count);
                 Assert.Contains(commandHandler.HandledCommands, c => c is CancellableTestCommand);
             }
 
             [Fact]
-            public Task Should_Throw_When_No_Registered_Attribute_Command_Handler_Is_Found()
+            public Task Should_Throw_If_Registration_Instance_Factory_Produces_Null()
             {
-                return Assert.ThrowsAsync<NoMessageHandlerResolvedException>(async () =>
+                return Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 {
+                    var commandHandler = new TestAttributedCommandHandler(_outputHelper);
+
                     var registration = new SingleMessageHandlerRegistration();
-                    IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
+                    registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeRegistration.ForType<TestAttributedCommandHandler>(() => null));
 
                     try
                     {
-                        var delegator = new CommandDelegator(new RequiredMessageHandlerResolver(resolver));
+                        var delegator = new CommandDelegator(registration.BuildMessageHandlerResolver());
+                        await delegator.SendAsync(new TestCommand());
+                    }
+                    catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            [Fact]
+            public Task Should_Throw_If_Instance_From_Factory_Does_Not_Match_Registration_Type()
+            {
+                return Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    var commandHandler = new TestAttributedCommandHandler(_outputHelper);
+
+                    var registration = new SingleMessageHandlerRegistration();
+                    registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeRegistration.ForType(typeof(TestAttributedCommandHandler), 
+                                                                                                              () => new TestEventHandler(_outputHelper)));
+
+                    try
+                    {
+                        var delegator = new CommandDelegator(registration.BuildMessageHandlerResolver());
+                        await delegator.SendAsync(new TestCommand());
+                    }
+                    catch (Exception ex)
+                    {
+                        _outputHelper.WriteLine(ex.ToString());
+                        throw;
+                    }
+                });
+            }
+
+            [Fact]
+            public Task Should_Propagate_If_Registration_Instance_Factory_Throws_An_Exception()
+            {
+                return Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    var commandHandler = new TestAttributedCommandHandler(_outputHelper);
+
+                    var registration = new SingleMessageHandlerRegistration();
+                    registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeRegistration.ForType<TestAttributedCommandHandler>(() => throw new Exception("Intentional exception.")));
+
+                    try
+                    {
+                        var delegator = new CommandDelegator(registration.BuildMessageHandlerResolver());
                         await delegator.SendAsync(new TestCommand());
                     }
                     catch (Exception ex)

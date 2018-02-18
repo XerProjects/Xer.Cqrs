@@ -265,3 +265,4 @@ __pycache__/
 
 tools/**
 !tools/packages.config
+BuildArtifacts/**

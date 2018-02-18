@@ -1,0 +1,117 @@
+{
+  "runtimeTarget": {
+    "name": ".NETStandard,Version=v2.0/",
+    "signature": "4957d40a8004adbf77bdede581e867b7e2e2e3eb"
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETStandard,Version=v2.0": {},
+    ".NETStandard,Version=v2.0/": {
+      "Domain/1.0.0": {
+        "dependencies": {
+          "NETStandard.Library": "2.0.1",
+          "Xer.Cqrs.CommandStack": "1.0.0",
+          "Xer.Cqrs.EventStack": "1.0.0",
+          "Xer.Cqrs.QueryStack": "1.0.0"
+        },
+        "runtime": {
+          "Domain.dll": {}
+        }
+      },
+      "Microsoft.NETCore.Platforms/1.1.0": {},
+      "NETStandard.Library/2.0.1": {
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "1.1.0"
+        }
+      },
+      "Xer.Delegator/0.3.0": {
+        "runtime": {
+          "lib/netstandard1.0/Xer.Delegator.dll": {}
+        }
+      },
+      "Xer.Messaginator/0.1.1": {
+        "runtime": {
+          "lib/netstandard1.0/Xer.Messaginator.dll": {}
+        }
+      },
+      "Xer.Cqrs.CommandStack/1.0.0": {
+        "dependencies": {
+          "NETStandard.Library": "2.0.1",
+          "Xer.Delegator": "0.3.0",
+          "Xer.Messaginator": "0.1.1"
+        },
+        "runtime": {
+          "Xer.Cqrs.CommandStack.dll": {}
+        }
+      },
+      "Xer.Cqrs.EventStack/1.0.0": {
+        "dependencies": {
+          "NETStandard.Library": "2.0.1",
+          "Xer.Delegator": "0.3.0",
+          "Xer.Messaginator": "0.1.1"
+        },
+        "runtime": {
+          "Xer.Cqrs.EventStack.dll": {}
+        }
+      },
+      "Xer.Cqrs.QueryStack/1.0.0": {
+        "dependencies": {
+          "NETStandard.Library": "2.0.1"
+        },
+        "runtime": {
+          "Xer.Cqrs.QueryStack.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.NETCore.Platforms/1.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-kz0PEW2lhqygehI/d6XsPCQzD7ff7gUJaVGPVETX611eadGsA3A877GdSlU0LRVMCTH/+P3o2iDTak+S08V2+A==",
+      "path": "microsoft.netcore.platforms/1.1.0",
+      "hashPath": "microsoft.netcore.platforms.1.1.0.nupkg.sha512"
+    },
+    "NETStandard.Library/2.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-oA6nwv9MhEKYvLpjZ0ggSpb1g4CQViDVQjLUcDWg598jtvJbpfeP2reqwI1GLW2TbxC/Ml7xL6BBR1HmKPXlTg==",
+      "path": "netstandard.library/2.0.1",
+      "hashPath": "netstandard.library.2.0.1.nupkg.sha512"
+    },
+    "Xer.Delegator/0.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-XN7Lvhw1P+4jgbr7SOoGtgtmxnjNY42iXsPtGVN4fF8di9ZHM6LD5HbVSDHNBLq7OnqQhS6+ID4ESacJoBBh0w==",
+      "path": "xer.delegator/0.3.0",
+      "hashPath": "xer.delegator.0.3.0.nupkg.sha512"
+    },
+    "Xer.Messaginator/0.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-P86MPTH0HN/RHezV6g5JmuhBiGpboZ8gFYcS+bImpuHLB5wkBgBL+Cs2aCxAtekJFm93m+hG8n6rkdWwsX58FQ==",
+      "path": "xer.messaginator/0.1.1",
+      "hashPath": "xer.messaginator.0.1.1.nupkg.sha512"
+    },
+    "Xer.Cqrs.CommandStack/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Xer.Cqrs.EventStack/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Xer.Cqrs.QueryStack/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

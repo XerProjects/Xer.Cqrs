@@ -1,0 +1,184 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v2.0",
+    "signature": "5fec6c31af405825f8eb1509f353136c8f2582e5"
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v2.0": {
+      "ConsoleApp/1.0.0": {
+        "dependencies": {
+          "Domain": "1.0.0",
+          "Infrastructure": "1.0.0",
+          "ReadSide": "1.0.0",
+          "SimpleInjector": "4.0.12",
+          "Xer.Cqrs.CommandStack": "1.0.0",
+          "Xer.Cqrs.EventStack": "1.0.0",
+          "Xer.Cqrs.QueryStack": "1.0.0"
+        },
+        "runtime": {
+          "ConsoleApp.dll": {}
+        }
+      },
+      "Microsoft.NETCore.Targets/1.0.1": {},
+      "SimpleInjector/4.0.12": {
+        "dependencies": {
+          "System.ComponentModel": "4.0.1"
+        },
+        "runtime": {
+          "lib/netstandard1.3/SimpleInjector.dll": {}
+        }
+      },
+      "System.ComponentModel/4.0.1": {
+        "dependencies": {
+          "System.Runtime": "4.1.0"
+        }
+      },
+      "System.Runtime/4.1.0": {
+        "dependencies": {
+          "Microsoft.NETCore.Targets": "1.0.1"
+        }
+      },
+      "Xer.Delegator/0.3.0": {
+        "runtime": {
+          "lib/netstandard1.0/Xer.Delegator.dll": {}
+        }
+      },
+      "Xer.Messaginator/0.1.1": {
+        "runtime": {
+          "lib/netstandard1.0/Xer.Messaginator.dll": {}
+        }
+      },
+      "Domain/1.0.0": {
+        "dependencies": {
+          "Xer.Cqrs.CommandStack": "1.0.0",
+          "Xer.Cqrs.EventStack": "1.0.0",
+          "Xer.Cqrs.QueryStack": "1.0.0"
+        },
+        "runtime": {
+          "Domain.dll": {}
+        }
+      },
+      "Infrastructure/1.0.0": {
+        "dependencies": {
+          "Domain": "1.0.0",
+          "ReadSide": "1.0.0",
+          "Xer.Cqrs.EventStack": "1.0.0"
+        },
+        "runtime": {
+          "Infrastructure.dll": {}
+        }
+      },
+      "ReadSide/1.0.0": {
+        "dependencies": {
+          "Xer.Cqrs.QueryStack": "1.0.0"
+        },
+        "runtime": {
+          "ReadSide.dll": {}
+        }
+      },
+      "Xer.Cqrs.CommandStack/1.0.0": {
+        "dependencies": {
+          "Xer.Delegator": "0.3.0",
+          "Xer.Messaginator": "0.1.1"
+        },
+        "runtime": {
+          "Xer.Cqrs.CommandStack.dll": {}
+        }
+      },
+      "Xer.Cqrs.EventStack/1.0.0": {
+        "dependencies": {
+          "Xer.Delegator": "0.3.0",
+          "Xer.Messaginator": "0.1.1"
+        },
+        "runtime": {
+          "Xer.Cqrs.EventStack.dll": {}
+        }
+      },
+      "Xer.Cqrs.QueryStack/1.0.0": {
+        "runtime": {
+          "Xer.Cqrs.QueryStack.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "ConsoleApp/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.NETCore.Targets/1.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-rkn+fKobF/cbWfnnfBOQHKVKIOpxMZBvlSHkqDWgBpwGDcLRduvs3D9OLGeV6GWGvVwNlVi2CBbTjuPmtHvyNw==",
+      "path": "microsoft.netcore.targets/1.0.1",
+      "hashPath": "microsoft.netcore.targets.1.0.1.nupkg.sha512"
+    },
+    "SimpleInjector/4.0.12": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-10Qj1UiitErW7ktN13sYxg9vrbHClJ7ThXj6n/27bKAO4V+bIcRRSJDGbMYz54x290Q/ELFJOu9Q/3KicqivTg==",
+      "path": "simpleinjector/4.0.12",
+      "hashPath": "simpleinjector.4.0.12.nupkg.sha512"
+    },
+    "System.ComponentModel/4.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-oBZFnm7seFiVfugsIyOvQCWobNZs7FzqDV/B7tx20Ep/l3UUFCPDkdTnCNaJZTU27zjeODmy2C/cP60u3D4c9w==",
+      "path": "system.componentmodel/4.0.1",
+      "hashPath": "system.componentmodel.4.0.1.nupkg.sha512"
+    },
+    "System.Runtime/4.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-v6c/4Yaa9uWsq+JMhnOFewrYkgdNHNG2eMKuNqRn8P733rNXeRCGvV5FkkjBXn2dbVkPXOsO0xjsEeM1q2zC0g==",
+      "path": "system.runtime/4.1.0",
+      "hashPath": "system.runtime.4.1.0.nupkg.sha512"
+    },
+    "Xer.Delegator/0.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-XN7Lvhw1P+4jgbr7SOoGtgtmxnjNY42iXsPtGVN4fF8di9ZHM6LD5HbVSDHNBLq7OnqQhS6+ID4ESacJoBBh0w==",
+      "path": "xer.delegator/0.3.0",
+      "hashPath": "xer.delegator.0.3.0.nupkg.sha512"
+    },
+    "Xer.Messaginator/0.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-P86MPTH0HN/RHezV6g5JmuhBiGpboZ8gFYcS+bImpuHLB5wkBgBL+Cs2aCxAtekJFm93m+hG8n6rkdWwsX58FQ==",
+      "path": "xer.messaginator/0.1.1",
+      "hashPath": "xer.messaginator.0.1.1.nupkg.sha512"
+    },
+    "Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Infrastructure/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "ReadSide/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Xer.Cqrs.CommandStack/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Xer.Cqrs.EventStack/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Xer.Cqrs.QueryStack/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

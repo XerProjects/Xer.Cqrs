@@ -262,3 +262,6 @@ __pycache__/
 
 # VS Code
 .vscode/
+
+tools/**
+!tools/packages.config

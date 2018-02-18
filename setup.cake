@@ -9,7 +9,8 @@ BuildParameters.SetParameters(context: Context,
                             repositoryOwner: "XerProjects",
                             repositoryName: "Xer.Cqrs",
                             appVeyorAccountName: "mvput",
-                            shouldRunDupFinder: false);
+                            shouldRunDupFinder: false,
+                            shouldRunDotNetCorePack: true);
 
 BuildParameters.PrintParameters(Context);
 

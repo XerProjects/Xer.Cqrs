@@ -51,7 +51,7 @@ namespace Xer.Cqrs.Tests.Commands.Registration
                 var commandHandler = new TestAttributedCommandHandler(_outputHelper);
 
                 var registration = new SingleMessageHandlerRegistration();
-                registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeRegistration.ForType(() => commandHandler));
+                registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeMethod.FromType(() => commandHandler));
 
                 IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
 

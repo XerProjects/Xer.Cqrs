@@ -177,7 +177,7 @@ namespace Xer.Cqrs.Tests.Entities
             typeof(TestAttributedEventHandler)
                 .GetTypeInfo()
                 .DeclaredMethods
-                .Count(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(EventHandlerAttribute)) &&
+                .Count(m => m.GetCustomAttributes(typeof(EventHandlerAttribute), true).Any() &&
                             m.GetParameters().Any(p => p.ParameterType == typeof(TEvent)));
     }
 

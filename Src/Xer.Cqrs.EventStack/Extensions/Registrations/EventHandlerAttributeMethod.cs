@@ -5,11 +5,19 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Xer.Cqrs.EventStack;
 using Xer.Cqrs.EventStack.Attributes;
 
-namespace Xer.Cqrs.EventStack
+namespace Xer.Delegator.Registrations
 {
-    internal class EventHandlerAttributeMethod
+    /// <summary>
+    /// Represents a single method that is marked with an [EventHandler] attribute.
+    /// <para>Supported signatures for methods marked with [EventHandler] are: (Methods can be named differently)</para>
+    /// <para>- void HandleEvent(TEvent event);</para>
+    /// <para>- Task HandleEventAsync(TEvent event);</para>
+    /// <para>- Task HandleEventAsync(TEvent event, CancellationToken cancellationToken);</para>
+    /// </summary>
+    public class EventHandlerAttributeMethod
     {
         #region Static Declarations
         
@@ -26,6 +34,11 @@ namespace Xer.Cqrs.EventStack
         /// Method's declaring type.
         /// </summary>
         public Type DeclaringType { get; }
+        
+        /// <summary>
+        /// Factory delegate that provides an instance of this method's declaring type.
+        /// </summary>
+        public Func<object> InstanceFactory { get; }
         
         /// <summary>
         /// Type of event handled by the method.
@@ -64,14 +77,16 @@ namespace Xer.Cqrs.EventStack
         /// </summary>
         /// <param name="methodInfo">Method info.</param>
         /// <param name="eventType">Type of event that is accepted by this method.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the method info's declaring type.</param>
         /// <param name="isAsync">Is method an async method?</param>
         /// <param name="supportsCancellation">Does method supports cancellation?</param>
         /// <param name="yieldSynchronousExecution">Should yield synchronous method execution?</param>
-        private EventHandlerAttributeMethod(MethodInfo methodInfo, Type eventType, bool isAsync, bool supportsCancellation, bool yieldSynchronousExecution = false)
+        private EventHandlerAttributeMethod(MethodInfo methodInfo, Type eventType, Func<object> instanceFactory, bool isAsync, bool supportsCancellation, bool yieldSynchronousExecution = false)
         {
             MethodInfo = methodInfo ?? throw new ArgumentNullException(nameof(methodInfo));
             DeclaringType = methodInfo.DeclaringType;
             EventType = eventType ?? throw new ArgumentNullException(nameof(eventType));
+            InstanceFactory = instanceFactory;
             IsAsync = isAsync;
             SupportsCancellation = supportsCancellation;
             YieldSynchronousExecution = !isAsync && yieldSynchronousExecution;
@@ -82,17 +97,11 @@ namespace Xer.Cqrs.EventStack
         #region Methods
 
         /// <summary>
-        /// Create a delegate based on the internal method info.
+        /// Create a delegate that handles an event that is specified in <see cref="Xer.Delegator.Registrations.EventHandlerAttributeMethod.EventType"/>.
         /// </summary>
-        /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [EventHandler] attribute.</param>
-        /// <returns>Delegate that handles an event.</returns>
-        public Func<object, CancellationToken, Task> CreateEventHandlerDelegate(Func<object> attributedObjectFactory)
+        /// <returns>Delegate that handles an event that is specified in <see cref="Xer.Delegator.Registrations.EventHandlerAttributeMethod.EventType"/>.</returns>
+        public Func<object, CancellationToken, Task> CreateEventHandlerDelegate()
         {
-            if (attributedObjectFactory == null)
-            {
-                throw new ArgumentNullException(nameof(attributedObjectFactory));
-            }
-
             try
             {
                 if (IsAsync)
@@ -102,14 +111,14 @@ namespace Xer.Cqrs.EventStack
                         // Invoke createCancellableAsyncDelegate<TDeclaringType, TEvent>(attributedObjectFactory)
                         return (Func<object, CancellationToken, Task>)CreateCancellableAsyncDelegateOpenGenericMethodInfo
                             .MakeGenericMethod(DeclaringType, EventType)
-                            .Invoke(this, new[] {  attributedObjectFactory });
+                            .Invoke(this, new[] {  InstanceFactory });
                     }
                     else
                     {
                         // Invoke createNonCancellableAsyncDelegate<TDeclaringType, TEvent>(attributedObjectFactory)
                         return (Func<object, CancellationToken, Task>)CreateNonCancellableAsyncDelegateOpenGenericMethodInfo
                             .MakeGenericMethod(DeclaringType, EventType)
-                            .Invoke(this, new[] {  attributedObjectFactory });
+                            .Invoke(this, new[] {  InstanceFactory });
                     }
                 }
                 else
@@ -117,7 +126,7 @@ namespace Xer.Cqrs.EventStack
                     // Invoke createWrappedSyncDelegate<TDeclaringType, TEvent>(attributedObjectFactory)
                     return (Func<object, CancellationToken, Task>)CreateWrappedSyncDelegateOpenGenericMethodInfo
                         .MakeGenericMethod(DeclaringType, EventType)
-                        .Invoke(this, new[] {  attributedObjectFactory });
+                        .Invoke(this, new[] {  InstanceFactory });
                 }
             }
             catch(Exception ex)
@@ -130,8 +139,9 @@ namespace Xer.Cqrs.EventStack
         /// Create EventHandlerAttributeMethod from the method info.
         /// </summary>
         /// <param name="methodInfo">Method info that has EventHandlerAttribute custom attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the method info's declaring type.</param>
         /// <returns>Instance of EventHandlerAttributeMethod.</returns>
-        public static EventHandlerAttributeMethod FromMethodInfo(MethodInfo methodInfo)
+        public static EventHandlerAttributeMethod FromMethodInfo(MethodInfo methodInfo, Func<object> instanceFactory)
         {
             Type eventType;
             bool isAsyncMethod;
@@ -144,7 +154,7 @@ namespace Xer.Cqrs.EventStack
             EventHandlerAttribute eventHandlerAttribute = methodInfo.GetCustomAttribute<EventHandlerAttribute>();
             if (eventHandlerAttribute == null)
             {
-                throw new InvalidOperationException($"Method info is not marked with [EventHandler] attribute: See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
+                throw new InvalidOperationException($"Method is not marked with [EventHandler] attribute. {createCheckMethodMessage(methodInfo)}.");
             }
 
             // Get all method parameters.
@@ -155,18 +165,18 @@ namespace Xer.Cqrs.EventStack
             if (eventParameter != null)
             {
                 // Check if parameter is a class.
-                if(!eventParameter.ParameterType.GetTypeInfo().IsClass)
+                if (!eventParameter.ParameterType.GetTypeInfo().IsClass)
                 {
-                    throw new InvalidOperationException($"First parameter in method info is not a reference type, only reference type events are supported: See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
+                    throw new InvalidOperationException($"Method's event parameter is not a reference type, only reference type events are supported. {createCheckMethodMessage(methodInfo)}.");
                 }
                            
-                // Set command type.
+                // Set event type.
                 eventType = eventParameter.ParameterType;
             }
             else
             {                
                 // Method has no parameter.
-                throw new InvalidOperationException($"Method info does not accept any parameters: See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
+                throw new InvalidOperationException($"Method must accept an event object as a parameter. {createCheckMethodMessage(methodInfo)}.");
             }
 
             // Only valid return types are Task/void.
@@ -186,104 +196,164 @@ namespace Xer.Cqrs.EventStack
             else
             {
                 // Return type is not Task/void. Invalid.
-                throw new InvalidOperationException($"Method marked with [CommandHandler] can only have void or a Task as return value: See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
+                throw new InvalidOperationException($"Method marked with [EventHandler] can only have void or a Task as return value. {createCheckMethodMessage(methodInfo)}.");
             }
 
             bool supportsCancellation = methodParameters.Any(p => p.ParameterType == typeof(CancellationToken));
 
             if (!isAsyncMethod && supportsCancellation)
             {
-                throw new InvalidOperationException($"Cancellation token support is only available for async methods (Methods returning a Task): See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
+                throw new InvalidOperationException($"Cancellation token support is only available for async methods (methods returning a Task). {createCheckMethodMessage(methodInfo)}.");
             }
 
             // Instantiate.
             return new EventHandlerAttributeMethod(methodInfo, 
-                                                   eventType, 
+                                                   eventType,
+                                                   instanceFactory,
                                                    isAsyncMethod, 
                                                    supportsCancellation, 
                                                    eventHandlerAttribute.YieldSynchronousExecution);
+            
+            // Local function.
+            string createCheckMethodMessage(MethodInfo method) => $"Check {method.DeclaringType.Name}'s {method.ToString()} method";
         }
 
         /// <summary>
         /// Create EventHandlerAttributeMethod from the method info.
         /// </summary>
         /// <param name="methodInfos">Method infos that have EventHandlerAttribute custom attributes.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of a method info's declaring type.</param>
         /// <returns>Instances of EventHandlerAttributeMethod.</returns>
-        public static IEnumerable<EventHandlerAttributeMethod> FromMethodInfos(IEnumerable<MethodInfo> methodInfos)
+        public static IEnumerable<EventHandlerAttributeMethod> FromMethodInfos(IEnumerable<MethodInfo> methodInfos, Func<Type, object> instanceFactory)
         {
             if (methodInfos == null)
             {
                 throw new ArgumentNullException(nameof(methodInfos));
             }
 
-            return methodInfos.Select(m => FromMethodInfo(m));
+            return methodInfos.Select(method => FromMethodInfo(method, () => instanceFactory.Invoke(method.DeclaringType)));
         }
 
         /// <summary>
         /// Detect methods marked with [EventHandler] attribute and translate to EventHandlerAttributeMethod instances.
         /// </summary>
         /// <param name="type">Type to scan for methods marked with the [EventHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the specified type.</param>
         /// <returns>List of all EventHandlerAttributeMethod detected.</returns>
-        public static IEnumerable<EventHandlerAttributeMethod> FromType(Type type)
+        public static IEnumerable<EventHandlerAttributeMethod> FromType<T>(Func<T> instanceFactory) where T : class
+        {
+            return FromType(typeof(T), instanceFactory);
+        }
+
+        /// <summary>
+        /// Detect methods marked with [EventHandler] attribute and translate to EventHandlerAttributeMethod instances.
+        /// </summary>
+        /// <param name="type">Type to scan for methods marked with the [EventHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the specified type.</param>
+        /// <returns>List of all EventHandlerAttributeMethod detected.</returns>
+        public static IEnumerable<EventHandlerAttributeMethod> FromType(Type type, Func<object> instanceFactory)
         {
             if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
-            IEnumerable<MethodInfo> methods = type.GetRuntimeMethods()
-                                                  .Where(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(EventHandlerAttribute)));
+            IEnumerable<MethodInfo> methods = type.GetTypeInfo().DeclaredMethods
+                                                  .Where(m => m.GetCustomAttributes(typeof(EventHandlerAttribute), true).Any());
 
-            return FromMethodInfos(methods);
+            return FromMethodInfos(methods, _ => instanceFactory.Invoke());
         }
 
         /// <summary>
         /// Detect methods marked with [EventHandler] attribute and translate to EventHandlerAttributeMethod instances.
         /// </summary>
         /// <param name="types">Types to scan for methods marked with the [EventHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of a given type.</param>
         /// <returns>List of all EventHandlerAttributeMethod detected.</returns>
-        public static IEnumerable<EventHandlerAttributeMethod> FromTypes(IEnumerable<Type> types)
+        public static IEnumerable<EventHandlerAttributeMethod> FromTypes(IEnumerable<Type> types, Func<Type, object> instanceFactory)
         {
             if (types == null)
             {
                 throw new ArgumentNullException(nameof(types));
             }
 
-            return types.SelectMany(t => FromType(t));
+            return types.SelectMany(type => FromType(type, () => instanceFactory.Invoke(type)));
         }
 
         /// <summary>
         /// Detect methods marked with [EventHandler] attribute and translate to EventHandlerAttributeMethod instances.
         /// </summary>
         /// <param name="eventHandlerAssembly">Assembly to scan for methods marked with the [EventHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of a type that has methods marked with [EventHandler] attribute.</param>
         /// <returns>List of all EventHandlerAttributeMethod detected.</returns>
-        public static IEnumerable<EventHandlerAttributeMethod> FromAssembly(Assembly eventHandlerAssembly)
+        public static IEnumerable<EventHandlerAttributeMethod> FromAssembly(Assembly eventHandlerAssembly, Func<Type, object> instanceFactory)
         {
             if (eventHandlerAssembly == null)
             {
                 throw new ArgumentNullException(nameof(eventHandlerAssembly));
             }
 
-            IEnumerable<MethodInfo> eventHandlerMethods = eventHandlerAssembly.DefinedTypes.SelectMany(t => 
-                                                                t.DeclaredMethods.Where(m => 
-                                                                    m.CustomAttributes.Any(a => a.AttributeType == typeof(EventHandlerAttribute))));
+            IEnumerable<MethodInfo> eventHandlerMethods = eventHandlerAssembly.DefinedTypes.SelectMany(type => 
+                                                                type.DeclaredMethods.Where(method => 
+                                                                    method.GetCustomAttributes(typeof(EventHandlerAttribute), true).Any()));
             
-            return FromMethodInfos(eventHandlerMethods);
+            return FromMethodInfos(eventHandlerMethods, instanceFactory);
         }
 
         /// <summary>
-        /// Detect methods marked with [CommandHandler] attribute and translate to CommandHandlerAttributeMethod instances.
+        /// Detect methods marked with [EventHandler] attribute and translate to EventHandlerAttributeMethod instances.
         /// </summary>
-        /// <param name="eventHandlerAssemblies">Assemblies to scan for methods marked with the [CommandHandler] attribute.</param>
+        /// <param name="eventHandlerAssemblies">Assemblies to scan for methods marked with the [EventHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of a type that has methods marked with [EventHandler] attribute.</param>
         /// <returns>List of all EventHandlerAttributeMethod detected.</returns>
-        public static IEnumerable<EventHandlerAttributeMethod> FromAssemblies(IEnumerable<Assembly> eventHandlerAssemblies)
+        public static IEnumerable<EventHandlerAttributeMethod> FromAssemblies(IEnumerable<Assembly> eventHandlerAssemblies, Func<Type, object> instanceFactory)
         {
             if (eventHandlerAssemblies == null)
             {
                 throw new ArgumentNullException(nameof(eventHandlerAssemblies));
             }
 
-            return eventHandlerAssemblies.SelectMany(a => FromAssembly(a));
+            return eventHandlerAssemblies.SelectMany(assembly => FromAssembly(assembly, instanceFactory));
+        }
+
+        /// <summary>
+        /// Check if a method marked with [EventHandler] attribute is found in the specified type.
+        /// </summary>
+        /// <param name="type">Type to search for methods marked with [EventHandler] attribute.</param>
+        /// <returns>True if atleast on method is found. Otherwise, false.</returns>
+        public static bool IsFoundInType(Type type)
+        {
+            return IsFoundInType(type.GetTypeInfo());
+        }
+
+        /// <summary>
+        /// Check if a method marked with [EventHandler] attribute is found in the specified type.
+        /// </summary>
+        /// <param name="typeInfo">Type to search for methods marked with [EventHandler] attribute.</param>
+        /// <returns>True if atleast on method is found. Otherwise, false.</returns>
+        public static bool IsFoundInType(TypeInfo typeInfo)
+        {
+            if (typeInfo == null)
+            {
+                throw new ArgumentNullException(nameof(typeInfo));
+            }
+
+            return typeInfo.DeclaredMethods.Any(method => IsValid(method));
+        }
+
+        /// <summary>
+        /// Check if method is marked with [EventHandler] attribute.
+        /// </summary>
+        /// <param name="methodInfo">Method to search for a [EventHandler] attribute.</param>
+        /// <returns>True if attribute is found. Otherwise, false.</returns>
+        public static bool IsValid(MethodInfo methodInfo)
+        {
+            if (methodInfo == null)
+            {
+                throw new ArgumentNullException(nameof(methodInfo));
+            }
+
+            return methodInfo.GetCustomAttributes(typeof(EventHandlerAttribute), true).Any();
         }
 
         #endregion Methods
@@ -294,20 +364,20 @@ namespace Xer.Cqrs.EventStack
         /// Create a delegate from an asynchronous (cancellable) action.
         /// </summary>
         /// <typeparam name="TAttributed">Type that contains [EventHandler] methods. This should match DeclaringType property.</typeparam>
-        /// <typeparam name="TEvent">Type of command that is handled by the EventHandlerAttributeMethod. This should match EventType property.</typeparam>
+        /// <typeparam name="TEvent">Type of event that is handled by the EventHandlerAttributeMethod. This should match EventType property.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [EventHandler] attribute.</param>
         /// <returns>Delegate that handles an event.</returns>
         private Func<object, CancellationToken, Task> createCancellableAsyncDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory)
             where TAttributed : class
             where TEvent : class
         {
-            // Create an expression that will invoke the command handler method of a given instance.
+            // Create an expression that will invoke the event handler method of a given instance.
             var instanceParameterExpression = Expression.Parameter(typeof(TAttributed), "instance");
             var eventParameterExpression = Expression.Parameter(typeof(TEvent), "event");
             var callExpression = Expression.Call(instanceParameterExpression, MethodInfo, eventParameterExpression, CancellationTokenParameterExpression);
 
             // Lambda signature:
-            // (instance, command, cancallationToken) => instance.HandleCommandAsync(command, cancellationToken);
+            // (instance, @event, cancallationToken) => instance.HandleEventAsync(@event, cancellationToken);
             var cancellableAsyncDelegate = Expression.Lambda<Func<TAttributed, TEvent, CancellationToken, Task>>(callExpression, new[] 
             {  
                 instanceParameterExpression,
@@ -332,20 +402,20 @@ namespace Xer.Cqrs.EventStack
         /// Create a delegate from an asynchronous (non-cancellable) action.
         /// </summary>
         /// <typeparam name="TAttributed">Type that contains [EventHandler] methods. This should match DeclaringType property.</typeparam>
-        /// <typeparam name="TEvent">Type of command that is handled by the EventHandlerAttributeMethod. This should match EventType property.</typeparam>
+        /// <typeparam name="TEvent">Type of event that is handled by the EventHandlerAttributeMethod. This should match EventType property.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [EventHandler] attribute.</param>
         /// <returns>Delegate that handles an event.</returns>
         private Func<object, CancellationToken, Task> createNonCancellableAsyncDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory)
             where TAttributed : class
             where TEvent : class
         {
-            // Create an expression that will invoke the command handler method of a given instance.
+            // Create an expression that will invoke the event handler method of a given instance.
             var instanceParameterExpression = Expression.Parameter(typeof(TAttributed), "instance");
             var eventParameterExpression = Expression.Parameter(typeof(TEvent), "event");
             var callExpression = Expression.Call(instanceParameterExpression, MethodInfo, eventParameterExpression);
 
             // Lambda signature:
-            // (instance, command) => instance.HandleCommandAsync(command);
+            // (instance, @event) => instance.HandleEventAsync(@event);
             var nonCancellableAsyncDelegate = Expression.Lambda<Func<TAttributed, TEvent, Task>>(callExpression, new[] 
             {  
                 instanceParameterExpression,
@@ -369,20 +439,20 @@ namespace Xer.Cqrs.EventStack
         /// Create a delegate from a synchronous action.
         /// </summary>
         /// <typeparam name="TAttributed">Type that contains [EventHandler] methods. This should match DeclaringType property.</typeparam>
-        /// <typeparam name="TEvent">Type of command that is handled by the EventHandlerAttributeMethod. This should match EventType property.</typeparam>
+        /// <typeparam name="TEvent">Type of event that is handled by the EventHandlerAttributeMethod. This should match EventType property.</typeparam>
         /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [EventHandler] attribute.</param>
         /// <returns>Delegate that handles an event.</returns>
         private Func<object, CancellationToken, Task> createWrappedSyncDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory)
             where TAttributed : class
             where TEvent : class
         {
-            // Create an expression that will invoke the command handler method of a given instance.
+            // Create an expression that will invoke the event handler method of a given instance.
             var instanceParameterExpression = Expression.Parameter(typeof(TAttributed), "instance");
             var eventParameterExpression = Expression.Parameter(typeof(TEvent), "event");
             var callExpression = Expression.Call(instanceParameterExpression, MethodInfo, eventParameterExpression);
 
             // Lambda signature:
-            // (instance, command) => instance.HandleCommand(command);
+            // (instance, @event) => instance.HandleEvent(@event);
             var action = Expression.Lambda<Action<TAttributed, TEvent>>(callExpression, new[] 
             {  
                 instanceParameterExpression,

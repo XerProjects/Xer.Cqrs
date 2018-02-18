@@ -5,11 +5,19 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.CommandStack.Attributes;
 
-namespace Xer.Cqrs.CommandStack
+namespace Xer.Delegator.Registrations
 {
-    internal class CommandHandlerAttributeMethod
+    /// <summary>
+    /// Represents a single method that is marked with an [CommandHandler] attribute.
+    /// <para>Supported signatures for methods marked with [CommandHandler] are: (Methods can be named differently)</para>
+    /// <para>- void HandleCommand(TCommand command);</para>
+    /// <para>- Task HandleCommandAsync(TCommand command);</para>
+    /// <para>- Task HandleCommandAsync(TCommand command, CancellationToken cancellationToken);</para>
+    /// </summary>
+    public class CommandHandlerAttributeMethod
     {
         #region Static Declarations
         
@@ -27,6 +35,11 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <returns></returns>
         public Type DeclaringType { get; }
+
+        /// <summary>
+        /// Factory delegate that provides an instance of this method's declaring type.
+        /// </summary>
+        public Func<object> InstanceFactory { get; }
 
         /// <summary>
         /// Type of command handled by the method.
@@ -58,13 +71,15 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <param name="methodInfo">Method info.</param>
         /// <param name="commandType">Type of command that is accepted by this method.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the method info's declaring type.</param>
         /// <param name="isAsync">Is method an async method?</param>
         /// <param name="supportsCancellation">Does method supports cancellation?</param>
-        private CommandHandlerAttributeMethod(MethodInfo methodInfo, Type commandType, bool isAsync, bool supportsCancellation)
+        private CommandHandlerAttributeMethod(MethodInfo methodInfo, Type commandType, Func<object> instanceFactory, bool isAsync, bool supportsCancellation)
         {
             MethodInfo = methodInfo ?? throw new ArgumentNullException(nameof(methodInfo));
             DeclaringType = methodInfo.DeclaringType;
             CommandType = commandType ?? throw new ArgumentNullException(nameof(commandType));
+            InstanceFactory = instanceFactory;
             IsAsync = isAsync;
             SupportsCancellation = supportsCancellation;
         }
@@ -74,11 +89,10 @@ namespace Xer.Cqrs.CommandStack
         #region Methods
 
         /// <summary>
-        /// Create a delegate based on the internal method info.
+        /// Create a delegate that handles a command that is specified in <see cref="Xer.Delegator.Registrations.CommandHandlerAttributeMethod.CommandType"/>.
         /// </summary>
-        /// <param name="attributedObjectFactory">Factory delegate which provides an instance of a class that contains methods marked with [CommandHandler] attribute.</param>
-        /// <returns>Delegate that handles a command.</returns>
-        public Func<object, CancellationToken, Task> CreateCommandHandlerDelegate(Func<object> attributedObjectFactory)
+        /// <returns>Delegate that handles a command that is specified in <see cref="Xer.Delegator.Registrations.CommandHandlerAttributeMethod.CommandType"/>.</returns>
+        public Func<object, CancellationToken, Task> CreateCommandHandlerDelegate()
         {
             try
             {
@@ -89,7 +103,7 @@ namespace Xer.Cqrs.CommandStack
                         // Invoke createCancellableAsyncDelegate<TDeclaringType, TCommand>(attributedObjectFactory)
                         return (Func<object, CancellationToken, Task>)CreateCancellableAsyncDelegateOpenGenericMethodInfo
                             .MakeGenericMethod(DeclaringType, CommandType)
-                            .Invoke(this, new object[] { attributedObjectFactory });
+                            .Invoke(this, new object[] { InstanceFactory });
                     }
                     else
                     {
@@ -97,7 +111,7 @@ namespace Xer.Cqrs.CommandStack
                         // Invoke createNonCancellableAsyncDelegate<TDeclaringType, TCommand>(attributedObjectFactory)
                         return (Func<object, CancellationToken, Task>)CreateNonCancellableAsyncDelegateOpenGenericMethodInfo
                             .MakeGenericMethod(DeclaringType,CommandType)
-                            .Invoke(this, new object[] { attributedObjectFactory });
+                            .Invoke(this, new object[] { InstanceFactory });
                     }
                 }
                 else
@@ -105,7 +119,7 @@ namespace Xer.Cqrs.CommandStack
                     // Invoke createWrappedSyncDelegate<TDeclaringType, TCommand>(attributedObjectFactory)
                     return (Func<object, CancellationToken, Task>)CreateWrappedSyncDelegateOpenGenericMethodInfo
                         .MakeGenericMethod(DeclaringType, CommandType)
-                        .Invoke(this, new object[] { attributedObjectFactory });
+                        .Invoke(this, new object[] { InstanceFactory });
                 }
             }
             catch (Exception ex)
@@ -118,8 +132,9 @@ namespace Xer.Cqrs.CommandStack
         /// Create CommandHandlerAttributeMethod from the method info.
         /// </summary>
         /// <param name="methodInfo">Method info that has CommandHandlerAttribute custom attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the method info's declaring type.</param>
         /// <returns>Instance of CommandHandlerAttributeMethod.</returns>
-        public static CommandHandlerAttributeMethod FromMethodInfo(MethodInfo methodInfo)
+        public static CommandHandlerAttributeMethod FromMethodInfo(MethodInfo methodInfo, Func<object> instanceFactory)
         {
             Type commandType;
             bool isAsyncMethod;
@@ -129,25 +144,32 @@ namespace Xer.Cqrs.CommandStack
                 throw new ArgumentNullException(nameof(methodInfo));
             }
 
-            CommandHandlerAttribute commandHandlerAttribute = methodInfo.GetCustomAttribute<CommandHandlerAttribute>();
-            if (commandHandlerAttribute == null)
+            if (!IsValid(methodInfo))
             {
-                throw new InvalidOperationException($"Method info is not marked with [CommandHandler] attribute: See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
+                throw new InvalidOperationException($"Method is not marked with [CommandHandler] attribute. {createCheckMethodMessage(methodInfo)}.");
             }
 
             // Get all method parameters.
             ParameterInfo[] methodParameters = methodInfo.GetParameters();
 
             // Get first method parameter that is a class (not struct). This assumes that the first parameter is the command.
-            ParameterInfo commandParameter = methodParameters.FirstOrDefault(p => p.ParameterType.GetTypeInfo().IsClass);
-            if (commandParameter == null)
+            ParameterInfo commandParameter = methodParameters.FirstOrDefault();
+            if (commandParameter != null)
             {
-                // Method has no parameter.
-                throw new InvalidOperationException($"Method info does not accept any parameters: See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
+                // Check if parameter is a class.
+                if (!commandParameter.ParameterType.GetTypeInfo().IsClass)
+                {
+                    throw new InvalidOperationException($"Method's command parameter is not a reference type, only reference type commands are supported. {createCheckMethodMessage(methodInfo)}.");
+                }
+                           
+                // Set command type.
+                commandType = commandParameter.ParameterType;
             }
-            
-            // Set command type.
-            commandType = commandParameter.ParameterType;
+            else
+            {                
+                // Method has no parameter.
+                throw new InvalidOperationException($"Method must accept a command object as a parameter. {createCheckMethodMessage(methodInfo)}.");
+            }
 
             // Only valid return types are Task/void.
             if (methodInfo.ReturnType == typeof(Task))
@@ -166,99 +188,158 @@ namespace Xer.Cqrs.CommandStack
             else
             {
                 // Return type is not Task/void. Invalid.
-                throw new InvalidOperationException($"Method marked with [CommandHandler] can only have void or a Task as return value: See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
+                throw new InvalidOperationException($"Method marked with [CommandHandler] can only have void or a Task as return value. {createCheckMethodMessage(methodInfo)}.");
             }
 
             bool supportsCancellation = methodParameters.Any(p => p.ParameterType == typeof(CancellationToken));
 
             if (!isAsyncMethod && supportsCancellation)
             {
-                throw new InvalidOperationException("Cancellation token support is only available for async methods (Methods returning a Task): See {methodInfo.ToString()} method of {methodInfo.DeclaringType.Name}.");
+                throw new InvalidOperationException($"Cancellation token support is only available for async methods (methods returning a Task). {createCheckMethodMessage(methodInfo)}.");
             }
 
-            return new CommandHandlerAttributeMethod(methodInfo, commandType, isAsyncMethod, supportsCancellation);
+            return new CommandHandlerAttributeMethod(methodInfo, commandType, instanceFactory, isAsyncMethod, supportsCancellation);
+
+            // Local function.
+            string createCheckMethodMessage(MethodInfo method) => $"Check {methodInfo.DeclaringType.Name}'s {methodInfo.ToString()} method";
         }
 
         /// <summary>
         /// Create CommandHandlerAttributeMethod from the method info.
         /// </summary>
         /// <param name="methodInfos">Method infos that have CommandHandlerAttribute custom attributes.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of a method info's declaring type.</param>
         /// <returns>Instances of CommandHandlerAttributeMethod.</returns>
-        public static IEnumerable<CommandHandlerAttributeMethod> FromMethodInfos(IEnumerable<MethodInfo> methodInfos)
+        public static IEnumerable<CommandHandlerAttributeMethod> FromMethodInfos(IEnumerable<MethodInfo> methodInfos, Func<Type, object> instanceFactory)
         {
             if (methodInfos == null)
             {
                 throw new ArgumentNullException(nameof(methodInfos));
             }
 
-            return methodInfos.Select(m => FromMethodInfo(m));
+            return methodInfos.Select(m => FromMethodInfo(m, () => instanceFactory.Invoke(m.DeclaringType)));
+        }
+
+        /// <summary>
+        /// Detect methods marked with [CommandHandler] attribute and translate to CommandHandlerAttributeMethod instances.
+        /// </summary>
+        /// <typeparam name="T">Type to scan for methods marked with the [CommandHandler] attribute.</typeparam>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the specified type.</param>
+        /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
+        public static IEnumerable<CommandHandlerAttributeMethod> FromType<T>(Func<T> instanceFactory) where T : class
+        {
+            return FromType(typeof(T), instanceFactory);
         }
 
         /// <summary>
         /// Detect methods marked with [CommandHandler] attribute and translate to CommandHandlerAttributeMethod instances.
         /// </summary>
         /// <param name="type">Type to scan for methods marked with the [CommandHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of the specified type.</param>
         /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
-        public static IEnumerable<CommandHandlerAttributeMethod> FromType(Type type)
+        public static IEnumerable<CommandHandlerAttributeMethod> FromType(Type type, Func<object> instanceFactory)
         {
             if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
-            IEnumerable<MethodInfo> methods = type.GetRuntimeMethods()
-                                                  .Where(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute)));
+            IEnumerable<MethodInfo> methods = type.GetTypeInfo().DeclaredMethods.Where(m => IsValid(m));
 
-            return FromMethodInfos(methods);
+            return FromMethodInfos(methods, _ => instanceFactory.Invoke());
         }
 
         /// <summary>
         /// Detect methods marked with [CommandHandler] attribute and translate to CommandHandlerAttributeMethod instances.
         /// </summary>
         /// <param name="types">Types to scan for methods marked with the [CommandHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of a given type.</param>
         /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
-        public static IEnumerable<CommandHandlerAttributeMethod> FromTypes(IEnumerable<Type> types)
+        public static IEnumerable<CommandHandlerAttributeMethod> FromTypes(IEnumerable<Type> types, Func<Type, object> instanceFactory)
         {
             if (types == null)
             {
                 throw new ArgumentNullException(nameof(types));
             }
 
-            return types.SelectMany(t => FromType(t));
+            return types.SelectMany(type => FromType(type, () => instanceFactory.Invoke(type)));
         }
 
         /// <summary>
         /// Detect methods marked with [CommandHandler] attribute and translate to CommandHandlerAttributeMethod instances.
         /// </summary>
         /// <param name="commandHandlerAssembly">Assembly to scan for methods marked with the [CommandHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of a type that has methods marked with [CommandHandler] attribute.</param>
         /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
-        public static IEnumerable<CommandHandlerAttributeMethod> FromAssembly(Assembly commandHandlerAssembly)
+        public static IEnumerable<CommandHandlerAttributeMethod> FromAssembly(Assembly commandHandlerAssembly, Func<Type, object> instanceFactory)
         {
             if (commandHandlerAssembly == null)
             {
                 throw new ArgumentNullException(nameof(commandHandlerAssembly));
             }
 
-            IEnumerable<MethodInfo> commandHandlerMethods = commandHandlerAssembly.DefinedTypes.SelectMany(t => 
-                                                                t.DeclaredMethods.Where(m => 
-                                                                    m.CustomAttributes.Any(a => a.AttributeType == typeof(CommandHandlerAttribute))));
+            IEnumerable<MethodInfo> commandHandlerMethods = commandHandlerAssembly.DefinedTypes
+                                                                .Where(typeInfo => IsFoundInType(typeInfo))
+                                                                .SelectMany(typeInfo => typeInfo.DeclaredMethods.Where(method => 
+                                                                    IsValid(method)));
             
-            return FromMethodInfos(commandHandlerMethods);
+            return FromMethodInfos(commandHandlerMethods, instanceFactory);
         }
 
         /// <summary>
         /// Detect methods marked with [CommandHandler] attribute and translate to CommandHandlerAttributeMethod instances.
         /// </summary>
         /// <param name="commandHandlerAssemblies">Assemblies to scan for methods marked with the [CommandHandler] attribute.</param>
+        /// <param name="instanceFactory">Factory delegate that provides an instance of a type that has methods marked with [CommandHandler] attribute.</param>
         /// <returns>List of all CommandHandlerAttributeMethod detected.</returns>
-        public static IEnumerable<CommandHandlerAttributeMethod> FromAssemblies(IEnumerable<Assembly> commandHandlerAssemblies)
+        public static IEnumerable<CommandHandlerAttributeMethod> FromAssemblies(IEnumerable<Assembly> commandHandlerAssemblies, Func<Type, object> instanceFactory)
         {
             if (commandHandlerAssemblies == null)
             {
                 throw new ArgumentNullException(nameof(commandHandlerAssemblies));
             }
 
-            return commandHandlerAssemblies.SelectMany(a => FromAssembly(a));
+            return commandHandlerAssemblies.SelectMany(assembly => FromAssembly(assembly, instanceFactory));
+        }
+
+        /// <summary>
+        /// Check if a method marked with [CommandHandler] attribute is found in the specified type.
+        /// </summary>
+        /// <param name="type">Type to search for methods marked with [CommandHandler] attribute.</param>
+        /// <returns>True if atleast on method is found. Otherwise, false.</returns>
+        public static bool IsFoundInType(Type type)
+        {
+            return IsFoundInType(type.GetTypeInfo());
+        }
+
+        /// <summary>
+        /// Check if a method marked with [CommandHandler] attribute is found in the specified type.
+        /// </summary>
+        /// <param name="typeInfo">Type to search for methods marked with [CommandHandler] attribute.</param>
+        /// <returns>True if atleast on method is found. Otherwise, false.</returns>
+        public static bool IsFoundInType(TypeInfo typeInfo)
+        {
+            if (typeInfo == null)
+            {
+                throw new ArgumentNullException(nameof(typeInfo));
+            }
+
+            return typeInfo.DeclaredMethods.Any(method => IsValid(method));
+        }
+
+        /// <summary>
+        /// Check if method is marked with [CommandHandler] attribute.
+        /// </summary>
+        /// <param name="methodInfo">Method to search for a [CommandHandler] attribute.</param>
+        /// <returns>True if attribute is found. Otherwise, false.</returns>
+        public static bool IsValid(MethodInfo methodInfo)
+        {
+            if (methodInfo == null)
+            {
+                throw new ArgumentNullException(nameof(methodInfo));
+            }
+
+            return methodInfo.GetCustomAttributes(typeof(CommandHandlerAttribute), true).Any();
         }
 
         #endregion Methods
@@ -270,7 +351,7 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <typeparam name="TAttributed">Type that contains [CommandHandler] methods. This should match DeclaringType property.</typeparam>
         /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerAttributeMethod. This should match CommandType property.</typeparam>
-        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a class that contains methods marked with [CommandHandler] attributes.</param>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a given type.</param>
         /// <returns>Delegate that handles a command.</returns>
         private Func<object, CancellationToken, Task> createCancellableAsyncDelegate<TAttributed, TCommand>(Func<object> attributedObjectFactory) 
             where TAttributed : class
@@ -308,7 +389,7 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <typeparam name="TAttributed">Type that contains [CommandHandler] methods. This should match DeclaringType property.</typeparam>
         /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerAttributeMethod. This should match CommandType property.</typeparam>
-        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a class that contains methods marked with [CommandHandler] attributes.</param>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a given type.</param>
         /// <returns>Delegate that handles a command.</returns>
         private Func<object, CancellationToken, Task> createNonCancellableAsyncDelegate<TAttributed, TCommand>(Func<object> attributedObjectFactory) 
             where TAttributed : class
@@ -345,7 +426,7 @@ namespace Xer.Cqrs.CommandStack
         /// </summary>
         /// <typeparam name="TAttributed">Type that contains [CommandHandler] methods. This should match DeclaringType property.</typeparam>
         /// <typeparam name="TCommand">Type of command that is handled by the CommandHandlerAttributeMethod. This should match CommandType property.</typeparam>
-        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a class that contains methods marked with [CommandHandler] attributes.</param>
+        /// <param name="attributedObjectFactory">Factory delegate which produces an instance of a given type.</param>
         /// <returns>Delegate that handles a command.</returns>
         private Func<object, CancellationToken, Task> createWrappedSyncDelegate<TAttributed, TCommand>(Func<object> attributedObjectFactory) 
             where TAttributed : class

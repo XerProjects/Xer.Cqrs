@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>Xer.Cqrs.EventStack</id>
-    <version>0.2.2</version>
+    <version>0.2.3</version>
     <title>Xer.Cqrs.EventStack</title>
     <authors>jeyjeyemem</authors>
     <owners>jeyjeyemem</owners>
@@ -12,8 +12,8 @@
     <description>A very simple library for handling events on applications based on the CQRS pattern.</description>
     <summary>A very simple library for handling events on applications based on the CQRS pattern.</summary>
     <releaseNotes>
-      - Removed checking of instance from factory provided in RegisterEventHandlerAttributes.
-      - Added new RegisterEventHandlerAttributes overload to register event handlers. 
+      - Added more RegisterEventHandlerAttributes overload to register event handlers. 
+      - Exposed EventHandlerAttributeMethod class.
     </releaseNotes>
     <copyright>Copyright 2017</copyright>
     <tags>CQRS Event Handling Library</tags>

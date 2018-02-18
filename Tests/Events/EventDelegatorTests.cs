@@ -304,7 +304,7 @@ namespace Xer.Cqrs.Tests.Events
                     var commandHandler = new TestAttributedEventHandler(_outputHelper);
 
                     var registration = new MultiMessageHandlerRegistration();
-                    registration.RegisterEventHandlerAttributes(EventHandlerAttributeRegistration.ForType<TestAttributedEventHandler>(() => null));
+                    registration.RegisterEventHandlerAttributes(EventHandlerAttributeMethod.FromType<TestAttributedEventHandler>(() => null));
 
                     try
                     {
@@ -327,8 +327,8 @@ namespace Xer.Cqrs.Tests.Events
                     var commandHandler = new TestAttributedEventHandler(_outputHelper);
 
                     var registration = new MultiMessageHandlerRegistration();
-                    registration.RegisterEventHandlerAttributes(EventHandlerAttributeRegistration.ForType(typeof(TestAttributedEventHandler), 
-                                                                                                          () => new TestCommandHandler(_outputHelper)));
+                    registration.RegisterEventHandlerAttributes(EventHandlerAttributeMethod.FromType(typeof(TestAttributedEventHandler), 
+                                                                                                     () => new TestCommandHandler(_outputHelper)));
 
                     try
                     {
@@ -351,7 +351,7 @@ namespace Xer.Cqrs.Tests.Events
                     var commandHandler = new TestAttributedEventHandler(_outputHelper);
 
                     var registration = new MultiMessageHandlerRegistration();
-                    registration.RegisterEventHandlerAttributes(EventHandlerAttributeRegistration.ForType<TestAttributedEventHandler>(() => throw new Exception("Intentional exception.")));
+                    registration.RegisterEventHandlerAttributes(EventHandlerAttributeMethod.FromType<TestAttributedEventHandler>(() => throw new Exception("Intentional exception.")));
 
                     try
                     {

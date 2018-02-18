@@ -57,7 +57,7 @@ namespace Xer.Cqrs.CommandStack
 
             return (inputCommand, cancellationToken) =>
             {
-                if(!TryGetInstanceFromFactory(commandHandlerFactory, out ICommandAsyncHandler<TCommand> instance, out Exception exception))
+                if (!TryGetInstanceFromFactory(commandHandlerFactory, out ICommandAsyncHandler<TCommand> instance, out Exception exception))
                 {
                     // Exception occurred or null is returned by factory.
                     return TaskUtility.FromException(exception);
@@ -79,7 +79,7 @@ namespace Xer.Cqrs.CommandStack
             {
                 try
                 {                    
-                    if(!TryGetInstanceFromFactory(commandHandlerFactory, out ICommandHandler<TCommand> instance, out Exception exception))
+                    if (!TryGetInstanceFromFactory(commandHandlerFactory, out ICommandHandler<TCommand> instance, out Exception exception))
                     {
                         // Exception occurred or null is returned by factory.
                         return TaskUtility.FromException(exception);
@@ -114,9 +114,9 @@ namespace Xer.Cqrs.CommandStack
                 throw new ArgumentNullException(nameof(nonCancellableAsyncDelegate));
             }
 
-            return (inputCommand, ct) =>
+            return (inputCommand, cancellationToken) =>
             {
-                if(!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                if (!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
                 {
                     // Exception occurred or null is returned by factory.
                     return TaskUtility.FromException(exception);
@@ -168,11 +168,11 @@ namespace Xer.Cqrs.CommandStack
                 throw new ArgumentNullException(nameof(action));
             }
 
-            return (inputCommand, ct) =>
+            return (inputCommand, cancellationToken) =>
             {
                 try
                 {
-                    if(!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
+                    if (!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
                     {
                         // Exception occurred or null is returned by factory.
                         return TaskUtility.FromException(exception);
@@ -191,6 +191,27 @@ namespace Xer.Cqrs.CommandStack
         #endregion From Delegate
 
         #region Functions
+
+        private static bool TryGetExpectedInstanceFromFactory<TExpectedInstance>(Func<object> factory, out TExpectedInstance instance, out Exception exception) 
+            where TExpectedInstance : class
+        {            
+            // Defaults.
+            instance = null;
+
+            if(TryGetInstanceFromFactory(factory, out var factoryInstance, out exception))
+            {
+                instance = factoryInstance as TExpectedInstance;
+                if (instance == null)
+                {
+                    exception = InvalidInstanceFromFactoryDelegateException(typeof(TExpectedInstance), factoryInstance.GetType());
+                    return false;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
 
         private static bool TryGetInstanceFromFactory<T>(Func<T> factory, out T instance, out Exception exception) 
             where T : class
@@ -213,7 +234,7 @@ namespace Xer.Cqrs.CommandStack
                     exception = FailedToRetrieveInstanceFromFactoryDelegateException<T>();
                     return false;
                 }
-                
+
                 return true;
             }
             catch (Exception ex)
@@ -222,28 +243,6 @@ namespace Xer.Cqrs.CommandStack
                 exception = FailedToRetrieveInstanceFromFactoryDelegateException<T>(ex);
                 return false;
             }
-        }
-
-        private static bool TryGetExpectedInstanceFromFactory<TExpectedInstance>(Func<object> factory, out TExpectedInstance instance, out Exception exception) 
-            where TExpectedInstance : class
-        {
-            // Locals.
-            instance = null;
-            exception = null;
-
-            if (TryGetInstanceFromFactory(factory, out var factoryInstance, out exception))
-            {
-                instance = factoryInstance as TExpectedInstance;
-                if (instance == null)
-                {
-                    exception = InvalidInstanceFromFactoryDelegateException(typeof(TExpectedInstance), factoryInstance.GetType());
-                    return false;
-                }
-
-                return true;
-            }
-
-            return false;
         }
         
         private static InvalidOperationException FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(Exception ex = null)

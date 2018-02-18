@@ -132,7 +132,7 @@ namespace Xer.Cqrs.Tests.Commands
                     var commandHandler = new TestAttributedCommandHandler(_outputHelper);
 
                     var registration = new SingleMessageHandlerRegistration();
-                    registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeRegistration.ForType<TestAttributedCommandHandler>(() => null));
+                    registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeMethod.FromType<TestAttributedCommandHandler>(() => null));
 
                     try
                     {
@@ -155,8 +155,8 @@ namespace Xer.Cqrs.Tests.Commands
                     var commandHandler = new TestAttributedCommandHandler(_outputHelper);
 
                     var registration = new SingleMessageHandlerRegistration();
-                    registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeRegistration.ForType(typeof(TestAttributedCommandHandler), 
-                                                                                                              () => new TestEventHandler(_outputHelper)));
+                    registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeMethod.FromType(typeof(TestAttributedCommandHandler), 
+                                                                                                         () => new TestEventHandler(_outputHelper)));
 
                     try
                     {
@@ -179,7 +179,7 @@ namespace Xer.Cqrs.Tests.Commands
                     var commandHandler = new TestAttributedCommandHandler(_outputHelper);
 
                     var registration = new SingleMessageHandlerRegistration();
-                    registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeRegistration.ForType<TestAttributedCommandHandler>(() => throw new Exception("Intentional exception.")));
+                    registration.RegisterCommandHandlerAttributes(CommandHandlerAttributeMethod.FromType<TestAttributedCommandHandler>(() => throw new Exception("Intentional exception.")));
 
                     try
                     {

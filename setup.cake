@@ -4,11 +4,14 @@ Environment.SetVariableNames();
 
 BuildParameters.SetParameters(context: Context,
                             buildSystem: BuildSystem,
-                            sourceDirectoryPath: "./",
+                            sourceDirectoryPath: "./Src",
                             title: "Xer.Cqrs",
+                            solutionFilePath: "./Xer.Cqrs.sln",
                             repositoryOwner: "XerProjects",
                             repositoryName: "Xer.Cqrs",
                             appVeyorAccountName: "mvput",
+                            testFilePattern: "/**/*Tests.csproj",
+                            testDirectoryPath: "./Tests",
                             shouldRunDupFinder: false,
                             shouldRunDotNetCorePack: true);
 

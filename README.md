@@ -1,6 +1,8 @@
 # Build
 
-Master [![Build status](https://ci.appveyor.com/api/projects/status/y2vr09jehie2yu05/branch/master?svg=true)](https://ci.appveyor.com/project/XerProjects25246/xer-cqrs/branch/master)
+| Branch | Status |
+|--------|--------|
+| Master | [![Build status](https://ci.appveyor.com/api/projects/status/y2vr09jehie2yu05/branch/master?svg=true)](https://ci.appveyor.com/project/XerProjects25246/xer-cqrs/branch/master) |
 
 
 # Table of contents

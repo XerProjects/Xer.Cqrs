@@ -2,6 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard1.0</TargetFramework>
+    <Authors>jeyjeyemem;mvput</Authors>
+    <Description>A very simple library for handling queries on applications based on the CQRS pattern.</Description>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Copyright>Copyright (c) XerProjects contributors</Copyright>
+    <PackageLicenseUrl>https://github.com/XerProjects/Xer.Cqrs/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/XerProjects/Xer.Cqrs</PackageProjectUrl>
+    <PackageTags>cqrs;command;query;event;query-handler-event-handler;command-handler</PackageTags>
   </PropertyGroup>
 
 </Project>

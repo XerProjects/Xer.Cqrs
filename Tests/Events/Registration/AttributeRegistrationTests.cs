@@ -33,8 +33,8 @@ namespace Xer.Cqrs.Tests.Events.Registration
 
                 var registration = new MultiMessageHandlerRegistration();
                 registration.RegisterEventHandlerAttributes(() => attributedHandler1);
-                registration.RegisterEventHandlerAttributes(() => attributedHandler2);
-                registration.RegisterEventHandlerAttributes(() => attributedHandler3);
+                registration.RegisterEventHandlerAttributes(EventHandlerAttributeMethod.FromType<TestAttributedEventHandler>(() => attributedHandler2));
+                registration.RegisterEventHandlerAttributes(EventHandlerAttributeMethod.FromType(typeof(TestAttributedEventHandler), () => attributedHandler3));
                 
                 IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
 

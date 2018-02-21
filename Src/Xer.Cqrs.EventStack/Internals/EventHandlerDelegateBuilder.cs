@@ -205,9 +205,10 @@ namespace Xer.Cqrs.EventStack
 
         #region From Delegate
 
-        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TEvent>(Func<object> attributedObjectFactory, 
-                                                                                   Func<object, TEvent, Task> asyncAction)
-                                                                                   where TEvent : class
+        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory, 
+                                                                                                Func<TAttributed, TEvent, Task> asyncAction)
+                                                                                                where TAttributed : class
+                                                                                                where TEvent : class
         {
             if (attributedObjectFactory == null)
             {
@@ -221,7 +222,7 @@ namespace Xer.Cqrs.EventStack
 
             return (inputEvent, ct) =>
             {
-                if (!TryGetInstanceFromFactory(attributedObjectFactory, out var instance, out Exception exception))
+                if (!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
                 {
                     // Exception occurred or null is returned by factory.
                     return TaskUtility.FromException(exception);
@@ -231,9 +232,10 @@ namespace Xer.Cqrs.EventStack
             };
         }
 
-        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TEvent>(Func<object> attributedObjectFactory, 
-                                                                                   Func<object, TEvent, CancellationToken, Task> cancellableAsyncAction)
-                                                                                   where TEvent : class
+        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory, 
+                                                                                                Func<TAttributed, TEvent, CancellationToken, Task> cancellableAsyncAction)
+                                                                                                where TAttributed : class
+                                                                                                where TEvent : class
         {
             if (attributedObjectFactory == null)
             {
@@ -247,7 +249,7 @@ namespace Xer.Cqrs.EventStack
 
             return (inputEvent, ct) =>
             {
-                if (!TryGetInstanceFromFactory(attributedObjectFactory, out var instance, out Exception exception))
+                if (!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
                 {
                     // Exception occurred or null is returned by factory.
                     return TaskUtility.FromException(exception);
@@ -257,10 +259,11 @@ namespace Xer.Cqrs.EventStack
             };
         }
 
-        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TEvent>(Func<object> attributedObjectFactory, 
-                                                                                   Action<object, TEvent> action, 
-                                                                                   bool yieldExecution = false)
-                                                                                   where TEvent : class
+        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory, 
+                                                                                                Action<TAttributed, TEvent> action,
+                                                                                                bool yieldSynchronousExecution = false)
+                                                                                                where TAttributed : class
+                                                                                                where TEvent : class
         {
             if (attributedObjectFactory == null)
             {
@@ -272,7 +275,7 @@ namespace Xer.Cqrs.EventStack
                 throw new ArgumentNullException(nameof(action));
             }
 
-            if (yieldExecution)
+            if (yieldSynchronousExecution)
             {
                 return async (inputEvent, ct) =>
                 {
@@ -280,7 +283,7 @@ namespace Xer.Cqrs.EventStack
                     // This will allow other handlers to start execution.
                     await Task.Yield();
 
-                    if (!TryGetInstanceFromFactory(attributedObjectFactory, out var instance, out Exception exception))
+                    if (!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
                     {
                         // Exception occurred or null is returned by factory.
                         throw exception;
@@ -294,7 +297,7 @@ namespace Xer.Cqrs.EventStack
             {
                 try
                 {
-                    if (!TryGetInstanceFromFactory(attributedObjectFactory, out var instance, out Exception exception))
+                    if (!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
                     {
                         // Exception occurred or null is returned by factory.
                         return TaskUtility.FromException(exception);
@@ -314,8 +317,8 @@ namespace Xer.Cqrs.EventStack
 
         #region Functions
 
-        private static bool TryGetInstanceFromFactory<TInstance>(Func<TInstance> factory, out TInstance instance, out Exception exception) 
-            where TInstance : class
+        private static bool TryGetInstanceFromFactory<T>(Func<T> factory, out T instance, out Exception exception) 
+            where T : class
         {
             // Locals.
             instance = null;
@@ -324,26 +327,53 @@ namespace Xer.Cqrs.EventStack
             try
             {
                 instance = factory.Invoke();
-                if (instance != null)
+                if (instance == null)
                 {
-                    return true;
+                    // Factory returned null, no exception actually occurred.
+                    exception = FailedToRetrieveInstanceFromFactoryDelegateException<T>();
+                    return false;
                 }
 
-                // Factory returned null, no exception actually occurred.
-                exception = FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>();
-                return false;
+                return true;
             }
             catch (Exception ex)
             {
                 // Wrap inner exception.
-                exception = FailedToRetrieveInstanceFromFactoryDelegateException<TInstance>(ex);
+                exception = FailedToRetrieveInstanceFromFactoryDelegateException<T>(ex);
                 return false;
             }
+        }
+
+        private static bool TryGetExpectedInstanceFromFactory<TExpectedInstance>(Func<object> factory, out TExpectedInstance instance, out Exception exception) 
+            where TExpectedInstance : class
+        {
+            // Locals.
+            instance = null;
+            exception = null;
+
+            if (TryGetInstanceFromFactory(factory, out var factoryInstance, out exception))
+            {
+                instance = factoryInstance as TExpectedInstance;
+                if (instance == null)
+                {
+                    exception = InvalidInstanceFromFactoryDelegateException(typeof(TExpectedInstance), factoryInstance.GetType());
+                    return false;
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         private static InvalidOperationException FailedToRetrieveInstanceFromFactoryDelegateException<T>(Exception ex = null)
         {
             return new InvalidOperationException($"Failed to retrieve an instance of {typeof(T).Name} from the instance factory delegate. Please check registration configuration.", ex);
+        }
+
+        private static InvalidOperationException InvalidInstanceFromFactoryDelegateException(Type expected, Type actual, Exception ex = null)
+        {
+            return new InvalidOperationException($"Invalid instance provided by factory delegate. Expected instnece is of {expected.Name} but was given {actual.Name}.", ex);
         }
 
         #endregion Functions

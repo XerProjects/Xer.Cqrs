@@ -1,3 +1,11 @@
+# Build
+
+| Branch | Status |
+|--------|--------|
+| Master | [![Build status](https://ci.appveyor.com/api/projects/status/jr4h0o8h064m6je2/branch/master?svg=true)](https://ci.appveyor.com/project/XerProjects25246/xer-cqrs-5e3ne/branch/master) |
+| Dev | [![Build status](https://ci.appveyor.com/api/projects/status/jr4h0o8h064m6je2/branch/dev?svg=true)](https://ci.appveyor.com/project/XerProjects25246/xer-cqrs-5e3ne/branch/dev) |
+
+
 # Table of contents
 * [Overview](#overview)
 * [Features](#features)

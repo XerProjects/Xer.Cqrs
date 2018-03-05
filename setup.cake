@@ -12,8 +12,10 @@ BuildParameters.SetParameters(context: Context,
                             appVeyorAccountName: "xerprojects-bot",
                             testFilePattern: "/**/*Tests.csproj",
                             testDirectoryPath: "./Tests",
+                            shouldRunDotNetCorePack: true,
                             shouldRunDupFinder: false,
-                            shouldRunDotNetCorePack: true);
+                            shouldRunCodecov: false,
+                            shouldRunInspectCode: false);
 
 BuildParameters.PrintParameters(Context);
 

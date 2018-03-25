@@ -47,7 +47,7 @@ namespace Xer.Cqrs.CommandStack
 
         #region From Factory
         
-        internal static Func<TCommand, CancellationToken, Task> FromCommandHandlerFactory<TCommand>(Func<ICommandAsyncHandler<TCommand>> commandHandlerFactory)
+        internal static MessageHandlerDelegate FromCommandHandlerFactory<TCommand>(Func<ICommandAsyncHandler<TCommand>> commandHandlerFactory)
             where TCommand : class
         {
             if (commandHandlerFactory == null)
@@ -63,11 +63,16 @@ namespace Xer.Cqrs.CommandStack
                     return TaskUtility.FromException(exception);
                 }
                 
-                return instance.HandleAsync((TCommand)inputCommand ?? throw new ArgumentException("Invalid command.", nameof(inputCommand)), cancellationToken);
+                if (inputCommand is TCommand c)
+                {
+                    return instance.HandleAsync(c, cancellationToken);
+                }
+
+                return TaskUtility.FromException(new ArgumentException($"Invalid command. Expected command of type {typeof(TCommand).Name} but {inputCommand.GetType().Name} was found.", nameof(inputCommand)));
             };
         }
 
-        internal static Func<TCommand, CancellationToken, Task> FromCommandHandlerFactory<TCommand>(Func<ICommandHandler<TCommand>> commandHandlerFactory)
+        internal static MessageHandlerDelegate FromCommandHandlerFactory<TCommand>(Func<ICommandHandler<TCommand>> commandHandlerFactory)
             where TCommand : class
         {
             if (commandHandlerFactory == null)
@@ -85,8 +90,13 @@ namespace Xer.Cqrs.CommandStack
                         return TaskUtility.FromException(exception);
                     }
 
-                    instance.Handle((TCommand)inputCommand ?? throw new ArgumentException("Invalid command.", nameof(inputCommand)));
-                    return TaskUtility.CompletedTask;
+                    if (inputCommand is TCommand c)
+                    {
+                        instance.Handle(c);
+                        return TaskUtility.CompletedTask;
+                    }
+
+                    return TaskUtility.FromException(new ArgumentException($"Invalid command. Expected command of type {typeof(TCommand).Name} but {inputCommand.GetType().Name} was found.", nameof(inputCommand)));
                 }
                 catch (Exception ex)
                 {

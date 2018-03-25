@@ -29,7 +29,8 @@ namespace Xer.Delegator.Registrations
                 throw new ArgumentNullException(nameof(commandAsyncHandlerFactory));
             }
 
-            registration.Register<TCommand>(CommandHandlerDelegateBuilder.FromCommandHandlerFactory(commandAsyncHandlerFactory));
+            MessageHandlerDelegate messageHandlerDelegate = CommandHandlerDelegateBuilder.FromCommandHandlerFactory(commandAsyncHandlerFactory);
+            registration.Register<TCommand>(messageHandlerDelegate.Invoke);
         }
         
         /// <summary>
@@ -53,7 +54,8 @@ namespace Xer.Delegator.Registrations
                 throw new ArgumentNullException(nameof(commandHandlerFactory));
             }
 
-            registration.Register<TCommand>(CommandHandlerDelegateBuilder.FromCommandHandlerFactory(commandHandlerFactory));
+            MessageHandlerDelegate messageHandlerDelegate = CommandHandlerDelegateBuilder.FromCommandHandlerFactory(commandHandlerFactory);
+            registration.Register<TCommand>(messageHandlerDelegate.Invoke);
         }
 
         #endregion Methods

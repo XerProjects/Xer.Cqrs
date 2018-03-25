@@ -22,12 +22,33 @@ namespace Xer.Cqrs.CommandStack.Tests.Registration
             }
 
             [Fact]
-            public void ShouldRegisterAllCommandHandlers()
+            public void ShouldRegisterCommandHandler()
             {
                 var commandHandler = new TestCommandHandler(_outputHelper);
 
                 var registration = new SingleMessageHandlerRegistration();
                 registration.RegisterCommandHandler(() => commandHandler.AsCommandSyncHandler<TestCommand>());
+
+                IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
+
+                MessageHandlerDelegate commandHandlerDelegate = resolver.ResolveMessageHandler(typeof(TestCommand));
+
+                commandHandlerDelegate.Should().NotBeNull();
+
+                // Delegate should invoke the actual command handler - TestCommandHandler.
+                commandHandlerDelegate.Invoke(new TestCommand());
+
+                commandHandler.HandledCommands.Should().HaveCount(1);
+                commandHandler.HasHandledCommand<TestCommand>().Should().BeTrue();
+            }
+
+            [Fact]
+            public void ShouldRegisterCommandAsyncHandler()
+            {
+                var commandHandler = new TestCommandHandler(_outputHelper);
+
+                var registration = new SingleMessageHandlerRegistration();
+                registration.RegisterCommandHandler(() => commandHandler.AsCommandAsyncHandler<TestCommand>());
 
                 IMessageHandlerResolver resolver = registration.BuildMessageHandlerResolver();
 

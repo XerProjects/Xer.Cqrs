@@ -28,8 +28,9 @@ namespace Xer.Delegator.Registrations
             {
                 throw new ArgumentNullException(nameof(eventAsyncHandlerFactory));
             }
-
-            registration.Register<TEvent>(EventHandlerDelegateBuilder.FromEventHandlerFactory(eventAsyncHandlerFactory));
+            
+            MessageHandlerDelegate messageHandlerDelegate = EventHandlerDelegateBuilder.FromEventHandlerFactory(eventAsyncHandlerFactory);
+            registration.Register<TEvent>(messageHandlerDelegate.Invoke);
         }
 
         /// <summary>
@@ -54,7 +55,8 @@ namespace Xer.Delegator.Registrations
                 throw new ArgumentNullException(nameof(eventHandlerFactory));
             }
 
-            registration.Register<TEvent>(EventHandlerDelegateBuilder.FromEventHandlerFactory(eventHandlerFactory, yieldExecution));
+            MessageHandlerDelegate messageHandlerDelegate = EventHandlerDelegateBuilder.FromEventHandlerFactory(eventHandlerFactory, yieldExecution);
+            registration.Register<TEvent>(messageHandlerDelegate.Invoke);
         }
 
         #endregion IMessageHandlerRegistration Extensions

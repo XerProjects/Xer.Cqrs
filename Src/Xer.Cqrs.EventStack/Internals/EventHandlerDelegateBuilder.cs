@@ -132,9 +132,9 @@ namespace Xer.Cqrs.EventStack
 
         #endregion From EventHandler
 
-        #region From EventHandlerFactory
+        #region From Factory
 
-        internal static Func<TEvent, CancellationToken, Task> FromEventHandlerFactory<TEvent>(Func<IEventAsyncHandler<TEvent>> eventHandlerFactory)
+        internal static MessageHandlerDelegate FromEventHandlerFactory<TEvent>(Func<IEventAsyncHandler<TEvent>> eventHandlerFactory)
             where TEvent : class
         {
             if (eventHandlerFactory == null)
@@ -150,13 +150,18 @@ namespace Xer.Cqrs.EventStack
                     return TaskUtility.FromException(exception);
                 }
 
-                return instance.HandleAsync(inputEvent, ct);
+                if (inputEvent is TEvent e)
+                {
+                    return instance.HandleAsync(e, ct);
+                }
+
+                return TaskUtility.FromException(new ArgumentException($"Invalid event. Expected event of type {typeof(TEvent).Name} but {inputEvent.GetType().Name} found.", nameof(inputEvent)));
             };
         }
 
-        internal static Func<TEvent, CancellationToken, Task> FromEventHandlerFactory<TEvent>(Func<IEventHandler<TEvent>> eventHandlerFactory, 
-                                                                                              bool yieldExecution = false)
-                                                                                              where TEvent : class
+        internal static MessageHandlerDelegate FromEventHandlerFactory<TEvent>(Func<IEventHandler<TEvent>> eventHandlerFactory, 
+                                                                               bool yieldExecution = false)
+                                                                               where TEvent : class
         {
             if (eventHandlerFactory == null)
             {
@@ -177,7 +182,12 @@ namespace Xer.Cqrs.EventStack
                         throw exception;
                     }
 
-                    instance.Handle(inputEvent);
+                    if (inputEvent is TEvent e)
+                    {
+                        instance.Handle(e);
+                    }
+
+                    throw new ArgumentException($"Invalid event. Expected event of type {typeof(TEvent).Name} but {inputEvent.GetType().Name} found.", nameof(inputEvent));
                 };
             }
 
@@ -191,8 +201,13 @@ namespace Xer.Cqrs.EventStack
                         return TaskUtility.FromException(exception);
                     }
 
-                    instance.Handle(inputEvent);
-                    return TaskUtility.CompletedTask;
+                    if (inputEvent is TEvent e)
+                    {
+                        instance.Handle(e);
+                        return TaskUtility.CompletedTask;
+                    }
+
+                    return TaskUtility.FromException(new ArgumentException($"Invalid event. Expected event of type {typeof(TEvent).Name} but {inputEvent.GetType().Name} found.", nameof(inputEvent)));
                 }
                 catch(Exception ex)
                 {
@@ -201,7 +216,7 @@ namespace Xer.Cqrs.EventStack
             };
         }
 
-        #endregion From EventHandlerFactory
+        #endregion From Factory
        
         #region Functions
 

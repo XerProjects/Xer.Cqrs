@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Attributes;
 using Xunit.Abstractions;
 
 namespace Xer.Cqrs.CommandStack.Tests.Entities

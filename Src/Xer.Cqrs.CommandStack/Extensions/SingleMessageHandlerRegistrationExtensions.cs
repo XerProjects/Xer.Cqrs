@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.CommandStack;
 
-namespace Xer.Delegator.Registrations
+namespace Xer.Delegator.Registration
 {
     public static class SingleMessageHandlerRegistrationExtensions
     {

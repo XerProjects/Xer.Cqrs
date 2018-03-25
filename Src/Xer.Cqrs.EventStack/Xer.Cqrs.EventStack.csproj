@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Xer.Delegator" Version="0.3.0" />
+    <PackageReference Include="Xer.Delegator" Version="0.4.0" />
     <PackageReference Include="Xer.Messaginator" Version="0.1.1" />
   </ItemGroup>
 

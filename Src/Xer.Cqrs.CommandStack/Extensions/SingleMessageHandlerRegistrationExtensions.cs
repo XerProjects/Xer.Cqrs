@@ -5,7 +5,7 @@ using Xer.Cqrs.CommandStack;
 
 namespace Xer.Delegator.Registrations
 {
-    public static partial class CommandHandlerRegistrationExtensions
+    public static class SingleMessageHandlerRegistrationExtensions
     {
         #region Methods
 

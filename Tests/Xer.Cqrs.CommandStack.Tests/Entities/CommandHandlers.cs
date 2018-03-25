@@ -105,70 +105,7 @@ namespace Xer.Cqrs.CommandStack.Tests.Entities
     }
 
     #endregion Command Handler
-
-    #region Attributed Command Handlers
-
-    public class TestAttributedCommandHandler : TestCommandHandler
-    {
-
-        public TestAttributedCommandHandler(ITestOutputHelper output)
-            : base(output)
-        {
-        }
-
-        [CommandHandler]
-        public void HandleTestCommand(TestCommand command)
-        {
-            BaseHandle(command);
-        }
-
-        [CommandHandler]
-        public void HandleThrowExceptionCommand(ThrowExceptionCommand command)
-        {
-            BaseHandle(command);
-            throw new TestCommandHandlerException("This is a triggered exception.");
-        }
-
-        [CommandHandler]
-        public Task HandleCancellableTestCommand(CancellableTestCommand command, CancellationToken ctx)
-        {
-            if(ctx == null)
-            {
-                return Task.FromException(new TestCommandHandlerException("Cancellation token is null. Please check attribute registration."));
-            }
-
-            BaseHandle(command);
-            return Task.CompletedTask;
-        }
-
-        [CommandHandler]
-        public async Task HandleDelayCommand(DelayCommand command, CancellationToken ctx)
-        {
-            await Task.Delay(command.DurationInMilliSeconds, ctx);
-
-            BaseHandle(command);
-        }
-    }
-
-    /// <summary>
-    /// This will not be allowed.
-    /// </summary>
-    public class TestAttributedSyncCommandHandlerWithCancellationToken : TestCommandHandler
-    {
-        public TestAttributedSyncCommandHandlerWithCancellationToken(ITestOutputHelper output)
-            : base(output)
-        {
-        }
-
-        [CommandHandler]
-        public void HandleTestCommand(TestCommand command, CancellationToken cancellationToken)
-        {
-            BaseHandle(command);
-        }
-    }
-
-    #endregion Attributed Command Handlers
-    
+      
     public class TestCommandHandlerException : Exception
     {
         public TestCommandHandlerException() { }

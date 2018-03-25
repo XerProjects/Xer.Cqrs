@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Domain.Commands;
+using Domain.DomainEvents;
 using Domain.Repositories;
 using Infrastructure.DomainEventHandlers;
 using Microsoft.AspNetCore.Builder;
@@ -68,7 +69,9 @@ namespace AspNetCore
             {
                 // Register event handlers through attribute registration.
                 var eventHandlerRegistration = new MultiMessageHandlerRegistration();
-                eventHandlerRegistration.RegisterEventHandlerAttributes(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+                eventHandlerRegistration.RegisterEventHandler<ProductRegisteredEvent>(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+                eventHandlerRegistration.RegisterEventHandler<ProductActivatedEvent>(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+                eventHandlerRegistration.RegisterEventHandler<ProductDeactivatedEvent>(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
 
                 return new EventDelegator(eventHandlerRegistration.BuildMessageHandlerResolver());
             });

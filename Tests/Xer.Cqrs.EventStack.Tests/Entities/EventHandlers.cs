@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xer.Cqrs.EventStack;
-using Xer.Cqrs.EventStack.Attributes;
 using Xunit.Abstractions;
 
 namespace Xer.Cqrs.EventStack.Tests.Entities
@@ -118,70 +117,6 @@ namespace Xer.Cqrs.EventStack.Tests.Entities
     }
 
     #endregion Event Handler
-
-    #region Attribute Event Handlers
-
-    public class TestAttributedEventHandler : TestEventHandler
-    {
-        public TestAttributedEventHandler(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
-        {
-        }
-        
-        [EventHandler]
-        public void HandleTestEvent1(TestEvent1 @event)
-        {
-            BaseHandle(@event);
-        }
-
-        [EventHandler]
-        public void HandleTestEvent2(TestEvent2 @event)
-        {
-            BaseHandle(@event);
-        }
-
-        [EventHandler]
-        public void HandleTestEvent3(TestEvent3 @event)
-        {
-            BaseHandle(@event);
-        }
-
-        [EventHandler]
-        public Task HandleTestEvent1Async(TestEvent1 @event)
-        {
-            BaseHandle(@event);
-            return Task.CompletedTask;
-        }
-
-        [EventHandler]
-        public Task HandleTestEvent2Async(TestEvent2 @event)
-        {
-            BaseHandle(@event);
-            return Task.CompletedTask;
-        }
-
-        [EventHandler]
-        public Task HandleTestEvent3Async(TestEvent3 @event)
-        {
-            BaseHandle(@event);
-            return Task.CompletedTask;
-        }
-
-        [EventHandler]
-        public Task HandleLongRunningEventAsync(LongRunningEvent @event, CancellationToken cancellationToken)
-        {
-            BaseHandle(@event);
-            return Task.Delay(@event.DurationInMilliseconds, cancellationToken);
-        }
-
-        public static int GetEventHandlerAttributeCountFor<TEvent>() => 
-            typeof(TestAttributedEventHandler)
-                .GetTypeInfo()
-                .DeclaredMethods
-                .Count(m => m.GetCustomAttributes(typeof(EventHandlerAttribute), true).Any() &&
-                            m.GetParameters().Any(p => p.ParameterType == typeof(TEvent)));
-    }
-
-    #endregion Attribute Event Handlers
 
     public class TestEventHandlerException : Exception
     {

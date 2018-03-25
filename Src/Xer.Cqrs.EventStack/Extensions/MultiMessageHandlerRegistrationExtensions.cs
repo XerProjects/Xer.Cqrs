@@ -5,7 +5,7 @@ using Xer.Cqrs.EventStack;
 
 namespace Xer.Delegator.Registrations
 {
-    public static partial class EventHandlerRegistrationExtensions
+    public static class MultiMessageHandlerRegistrationExtensions
     {
         #region IMessageHandlerRegistration Extensions
 
@@ -38,7 +38,7 @@ namespace Xer.Delegator.Registrations
         /// <typeparam name="TEvent">Type of event to subscribe to.</typeparam>
         /// <param name="registration">Instance of MultiMessageHandlerRegistration.</param>
         /// <param name="eventHandlerFactory">Factory which will create an instance of an event handler that handles the specified <typeparamref name="TEvent"/> event.</param>
-        /// <param name="yieldExecution">True if execution of synchronous handler should be yielded. Otherwise, false.</param>
+        /// <param name="yieldExecution">True if execution of synchronous handler should yield. Otherwise, false.</param>
         public static void RegisterEventHandler<TEvent>(this MultiMessageHandlerRegistration registration,
                                                         Func<IEventHandler<TEvent>> eventHandlerFactory,
                                                         bool yieldExecution = false) 

@@ -16,16 +16,16 @@ using Xer.Cqrs.EventStack;
 using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Dispatchers;
 using Xer.Cqrs.QueryStack.Registrations;
-using Xer.Delegator.Registrations;
+using Xer.Delegator.Registration;
 
 namespace AspNetCore
 {
-    class StartupWithBasicRegistration
+    class StartupWithSimpleRegistration
     {
         private static readonly string AspNetCoreAppXmlDocPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, 
-                                                                    $"{typeof(StartupWithBasicRegistration).Assembly.GetName().Name}.xml");
+                                                                    $"{typeof(StartupWithSimpleRegistration).Assembly.GetName().Name}.xml");
                                                                     
-        public StartupWithBasicRegistration(IConfiguration configuration)
+        public StartupWithSimpleRegistration(IConfiguration configuration)
         {
             Configuration = configuration;
         }

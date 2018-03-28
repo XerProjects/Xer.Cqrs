@@ -18,7 +18,7 @@ using Xer.Cqrs.EventStack;
 using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Dispatchers;
 using Xer.Cqrs.QueryStack.Resolvers;
-using Xer.Delegator.Registrations;
+using Xer.Delegator.Registration;
 
 namespace AspNetCore
 {
@@ -55,7 +55,7 @@ namespace AspNetCore
             // Register command delegator.
             services.AddSingleton<CommandDelegator>((serviceProvider) =>
             {
-                // Register command handlers through basic registration.
+                // Register command handlers through simple registration.
                 var commandHandlerRegistration = new SingleMessageHandlerRegistration();
                 commandHandlerRegistration.RegisterCommandHandler(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
                 commandHandlerRegistration.RegisterCommandHandler(() => new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
@@ -67,7 +67,7 @@ namespace AspNetCore
             // Register event delegator.
             services.AddSingleton<EventDelegator>((serviceProvider) =>
             {
-                // Register event handlers through attribute registration.
+                // Register event handlers through simple registration.
                 var eventHandlerRegistration = new MultiMessageHandlerRegistration();
                 eventHandlerRegistration.RegisterEventHandler<ProductRegisteredEvent>(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
                 eventHandlerRegistration.RegisterEventHandler<ProductActivatedEvent>(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));

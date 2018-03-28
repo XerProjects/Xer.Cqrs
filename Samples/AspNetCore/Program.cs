@@ -42,9 +42,9 @@ namespace AspNetCore
                               .Build();
             }
 
-            // Basic as default.
+            // Simple as default.
             return WebHost.CreateDefaultBuilder(args.Skip(1).ToArray())
-                            .UseStartup<StartupWithBasicRegistration>()
+                            .UseStartup<StartupWithSimpleRegistration>()
                             .Build();
         }
     }

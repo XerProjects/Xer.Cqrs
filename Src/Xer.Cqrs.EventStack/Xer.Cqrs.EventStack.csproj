@@ -2,18 +2,17 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard1.0</TargetFramework>
-    <Authors>jeyjeyemem;mvput</Authors>
+    <Authors>jeyjeyemem;mvput;xerprojects-contributors;</Authors>
     <Description>A very simple library for handling events on applications based on the CQRS pattern.</Description>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Copyright>Copyright (c) XerProjects contributors</Copyright>
     <PackageLicenseUrl>https://github.com/XerProjects/Xer.Cqrs/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/XerProjects/Xer.Cqrs</PackageProjectUrl>
-    <PackageTags>cqrs;command;query;event;query-handler-event-handler;command-handler</PackageTags>
+    <PackageTags>cqrs;domain-event;eventing;event;event-handler;event-message;</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Xer.Delegator" Version="0.4.0" />
-    <PackageReference Include="Xer.Messaginator" Version="0.1.1" />
+    <PackageReference Include="Xer.Delegator" Version="1.0.0" />
+    <PackageReference Include="Xer.Messaginator" Version="1.0.0" />
   </ItemGroup>
 
 </Project>

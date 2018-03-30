@@ -3,10 +3,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xer.Messaginator;
 
-namespace Xer.Cqrs.EventStack.Hosted
+namespace Xer.Cqrs.EventStack
 {
     public abstract class HostedEventHandler : HostedEventHandler<object>
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="messageSource">Source of message.</param>
+        public HostedEventHandler(IMessageSource<object> messageSource) : base(messageSource)
+        {
+        }
     }
 
     public abstract class HostedEventHandler<TEvent> : MessageProcessor<TEvent>,
@@ -15,6 +22,14 @@ namespace Xer.Cqrs.EventStack.Hosted
                                                        where TEvent : class
     {
         /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="messageSource">Source of message.</param>
+        public HostedEventHandler(IMessageSource<TEvent> messageSource) : base(messageSource)
+        {
+        }
+
+        /// <summary>
         /// Handle event by putting it to the event source for asynchronous processing.
         /// </summary>
         /// <param name="@event">Event to handle.</param>
@@ -22,7 +37,7 @@ namespace Xer.Cqrs.EventStack.Hosted
         /// <returns>Completed task.</returns>
         Task IEventAsyncHandler<TEvent>.HandleAsync(TEvent @event, CancellationToken cancellationToken)
         {
-            return MessageSource.ReceiveAsync(@event);
+            return MessageSource.ReceiveAsync(new MessageContainer<TEvent>(@event), cancellationToken);
         }
 
         /// <summary>
@@ -31,7 +46,7 @@ namespace Xer.Cqrs.EventStack.Hosted
         /// <param name="@event">Event to handle.</param>
         void IEventHandler<TEvent>.Handle(TEvent @event)
         {
-            MessageSource.ReceiveAsync(@event).GetAwaiter().GetResult();
+            MessageSource.ReceiveAsync(new MessageContainer<TEvent>(@event)).GetAwaiter().GetResult();
         }
     }
 }

@@ -263,6 +263,6 @@ __pycache__/
 # VS Code
 .vscode/
 
-tools/**
-!tools/packages.config
+[Tt]ools/**
+![Tt]ools/packages.config
 BuildArtifacts/**

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Domain.Exceptions;
 using Domain.Repositories;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.CommandStack.Attributes;
+// using Xer.Cqrs.CommandStack.Attributes;
 
 namespace Domain.Commands
 {
@@ -31,7 +31,7 @@ namespace Domain.Commands
             _productRepository = productRepository;
         }
 
-        [CommandHandler] // To allow this method to be registered through attribute registration.
+        // [CommandHandler] // To allow this method to be registered through attribute registration.
         public async Task HandleAsync(DeactivateProductCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
             Product product = await _productRepository.GetProductByIdAsync(command.ProductId);

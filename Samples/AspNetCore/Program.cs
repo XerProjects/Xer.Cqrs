@@ -23,13 +23,13 @@ namespace AspNetCore
             // Check them out at Startup folder. You can specify a different Startup here to test it.
             string startupSelection = args.FirstOrDefault();
             
-            if (string.Equals(startupSelection, "attribute", StringComparison.OrdinalIgnoreCase))
-            {
-                return WebHost.CreateDefaultBuilder(args.Skip(1).ToArray())
-                              .UseStartup<StartupWithAttributeRegistration>()
-                              .Build();
-            }
-            else if (string.Equals(startupSelection, "container", StringComparison.OrdinalIgnoreCase))
+            // if (string.Equals(startupSelection, "attribute", StringComparison.OrdinalIgnoreCase))
+            // {
+            //     return WebHost.CreateDefaultBuilder(args.Skip(1).ToArray())
+            //                   .UseStartup<StartupWithAttributeRegistration>()
+            //                   .Build();
+            // }
+            if (string.Equals(startupSelection, "container", StringComparison.OrdinalIgnoreCase))
             {
                 return WebHost.CreateDefaultBuilder(args.Skip(1).ToArray())
                               .UseStartup<StartupWithContainerRegistration>()
@@ -42,9 +42,9 @@ namespace AspNetCore
                               .Build();
             }
 
-            // Basic as default.
+            // Simple as default.
             return WebHost.CreateDefaultBuilder(args.Skip(1).ToArray())
-                            .UseStartup<StartupWithBasicRegistration>()
+                            .UseStartup<StartupWithSimpleRegistration>()
                             .Build();
         }
     }

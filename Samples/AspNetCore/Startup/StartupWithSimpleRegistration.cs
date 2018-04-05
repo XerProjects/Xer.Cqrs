@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Domain.Commands;
 using Domain.DomainEvents;
@@ -9,7 +8,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ReadSide.Products;
 using ReadSide.Products.Queries;
 using ReadSide.Products.Repositories;
 using Swashbuckle.AspNetCore.Swagger;
@@ -17,17 +15,17 @@ using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.EventStack;
 using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Dispatchers;
-using Xer.Cqrs.QueryStack.Resolvers;
+using Xer.Cqrs.QueryStack.Registrations;
 using Xer.Delegator.Registration;
 
 namespace AspNetCore
 {
-    class StartupWithMixedRegistration
+    class StartupWithSimpleRegistration
     {
         private static readonly string AspNetCoreAppXmlDocPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, 
-                                                                    $"{typeof(StartupWithMixedRegistration).Assembly.GetName().Name}.xml");
-
-        public StartupWithMixedRegistration(IConfiguration configuration)
+                                                                    $"{typeof(StartupWithSimpleRegistration).Assembly.GetName().Name}.xml");
+                                                                    
+        public StartupWithSimpleRegistration(IConfiguration configuration)
         {
             Configuration = configuration;
         }
@@ -40,7 +38,7 @@ namespace AspNetCore
             // Swagger.
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new Info { Title = "AspNetCore Mixed Registration Sample", Version = "v1" });
+                c.SwaggerDoc("v1", new Info { Title = "AspNetCore Basic Registration Sample", Version = "v1" });
                 c.IncludeXmlComments(AspNetCoreAppXmlDocPath);
             });
 
@@ -53,9 +51,9 @@ namespace AspNetCore
             services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
 
             // Register command delegator.
-            services.AddSingleton<CommandDelegator>((serviceProvider) =>
+            services.AddSingleton<CommandDelegator>(serviceProvider => 
             {
-                // Register command handlers through simple registration.
+                 // Register command handlers.
                 var commandHandlerRegistration = new SingleMessageHandlerRegistration();
                 commandHandlerRegistration.RegisterCommandHandler(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
                 commandHandlerRegistration.RegisterCommandHandler(() => new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
@@ -67,7 +65,7 @@ namespace AspNetCore
             // Register event delegator.
             services.AddSingleton<EventDelegator>((serviceProvider) =>
             {
-                // Register event handlers through simple registration.
+                // Register event handlers.
                 var eventHandlerRegistration = new MultiMessageHandlerRegistration();
                 eventHandlerRegistration.RegisterEventHandler<ProductRegisteredEvent>(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
                 eventHandlerRegistration.RegisterEventHandler<ProductActivatedEvent>(() => new ProductDomainEventsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
@@ -76,14 +74,16 @@ namespace AspNetCore
                 return new EventDelegator(eventHandlerRegistration.BuildMessageHandlerResolver());
             });
 
-            // Register query handlers to container.
-            services.AddTransient<IQueryAsyncHandler<QueryAllProducts, IReadOnlyCollection<ProductReadModel>>, QueryAllProductsHandler>();
-            services.AddTransient<IQueryAsyncHandler<QueryProductById, ProductReadModel>, QueryProductByIdHandler>();
-
             // Register query dispatcher.
             services.AddSingleton<IQueryAsyncDispatcher>(serviceProvider =>
-                new QueryDispatcher(new ContainerQueryAsyncHandlerResolver(new AspNetCoreServiceProviderAdapter(serviceProvider)))
-            );
+            {
+                // Register query handlers.
+                var registration = new QueryHandlerRegistration();
+                registration.Register(() => new QueryAllProductsHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+                registration.Register(() => new QueryProductByIdHandler(serviceProvider.GetRequiredService<IProductReadSideRepository>()));
+
+                return new QueryDispatcher(registration);
+            });
 
             services.AddMvc();
         }
@@ -102,7 +102,7 @@ namespace AspNetCore
             // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "AspNetCore Mixed Registration Sample V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "AspNetCore Basic Registration Sample V1");
             });
 
             app.UseMvc();

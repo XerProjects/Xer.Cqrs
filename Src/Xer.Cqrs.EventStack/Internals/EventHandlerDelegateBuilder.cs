@@ -132,9 +132,9 @@ namespace Xer.Cqrs.EventStack
 
         #endregion From EventHandler
 
-        #region From EventHandlerFactory
+        #region From Factory
 
-        internal static Func<TEvent, CancellationToken, Task> FromEventHandlerFactory<TEvent>(Func<IEventAsyncHandler<TEvent>> eventHandlerFactory)
+        internal static MessageHandlerDelegate FromEventHandlerFactory<TEvent>(Func<IEventAsyncHandler<TEvent>> eventHandlerFactory)
             where TEvent : class
         {
             if (eventHandlerFactory == null)
@@ -150,13 +150,18 @@ namespace Xer.Cqrs.EventStack
                     return TaskUtility.FromException(exception);
                 }
 
-                return instance.HandleAsync(inputEvent, ct);
+                if (inputEvent is TEvent e)
+                {
+                    return instance.HandleAsync(e, ct);
+                }
+
+                return TaskUtility.FromException(new ArgumentException($"Invalid event. Expected event of type {typeof(TEvent).Name} but {inputEvent.GetType().Name} found.", nameof(inputEvent)));
             };
         }
 
-        internal static Func<TEvent, CancellationToken, Task> FromEventHandlerFactory<TEvent>(Func<IEventHandler<TEvent>> eventHandlerFactory, 
-                                                                                              bool yieldExecution = false)
-                                                                                              where TEvent : class
+        internal static MessageHandlerDelegate FromEventHandlerFactory<TEvent>(Func<IEventHandler<TEvent>> eventHandlerFactory, 
+                                                                               bool yieldExecution = false)
+                                                                               where TEvent : class
         {
             if (eventHandlerFactory == null)
             {
@@ -177,7 +182,12 @@ namespace Xer.Cqrs.EventStack
                         throw exception;
                     }
 
-                    instance.Handle(inputEvent);
+                    if (inputEvent is TEvent e)
+                    {
+                        instance.Handle(e);
+                    }
+
+                    throw new ArgumentException($"Invalid event. Expected event of type {typeof(TEvent).Name} but {inputEvent.GetType().Name} found.", nameof(inputEvent));
                 };
             }
 
@@ -191,8 +201,13 @@ namespace Xer.Cqrs.EventStack
                         return TaskUtility.FromException(exception);
                     }
 
-                    instance.Handle(inputEvent);
-                    return TaskUtility.CompletedTask;
+                    if (inputEvent is TEvent e)
+                    {
+                        instance.Handle(e);
+                        return TaskUtility.CompletedTask;
+                    }
+
+                    return TaskUtility.FromException(new ArgumentException($"Invalid event. Expected event of type {typeof(TEvent).Name} but {inputEvent.GetType().Name} found.", nameof(inputEvent)));
                 }
                 catch(Exception ex)
                 {
@@ -201,120 +216,8 @@ namespace Xer.Cqrs.EventStack
             };
         }
 
-        #endregion From EventHandlerFactory
-
-        #region From Delegate
-
-        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory, 
-                                                                                                Func<TAttributed, TEvent, Task> asyncAction)
-                                                                                                where TAttributed : class
-                                                                                                where TEvent : class
-        {
-            if (attributedObjectFactory == null)
-            {
-                throw new ArgumentNullException(nameof(attributedObjectFactory));
-            }
-
-            if (asyncAction == null)
-            {
-                throw new ArgumentNullException(nameof(asyncAction));
-            }
-
-            return (inputEvent, ct) =>
-            {
-                if (!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
-                {
-                    // Exception occurred or null is returned by factory.
-                    return TaskUtility.FromException(exception);
-                }
-
-                return asyncAction.Invoke(instance, inputEvent);
-            };
-        }
-
-        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory, 
-                                                                                                Func<TAttributed, TEvent, CancellationToken, Task> cancellableAsyncAction)
-                                                                                                where TAttributed : class
-                                                                                                where TEvent : class
-        {
-            if (attributedObjectFactory == null)
-            {
-                throw new ArgumentNullException(nameof(attributedObjectFactory));
-            }
-
-            if (cancellableAsyncAction == null)
-            {
-                throw new ArgumentNullException(nameof(cancellableAsyncAction));
-            }
-
-            return (inputEvent, ct) =>
-            {
-                if (!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
-                {
-                    // Exception occurred or null is returned by factory.
-                    return TaskUtility.FromException(exception);
-                }
-                
-                return cancellableAsyncAction.Invoke(instance, inputEvent, ct);
-            };
-        }
-
-        internal static Func<TEvent, CancellationToken, Task> FromDelegate<TAttributed, TEvent>(Func<object> attributedObjectFactory, 
-                                                                                                Action<TAttributed, TEvent> action,
-                                                                                                bool yieldSynchronousExecution = false)
-                                                                                                where TAttributed : class
-                                                                                                where TEvent : class
-        {
-            if (attributedObjectFactory == null)
-            {
-                throw new ArgumentNullException(nameof(attributedObjectFactory));
-            }
-
-            if (action == null)
-            {
-                throw new ArgumentNullException(nameof(action));
-            }
-
-            if (yieldSynchronousExecution)
-            {
-                return async (inputEvent, ct) =>
-                {
-                    // Yield so the sync handler will be scheduled to execute asynchronously.
-                    // This will allow other handlers to start execution.
-                    await Task.Yield();
-
-                    if (!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
-                    {
-                        // Exception occurred or null is returned by factory.
-                        throw exception;
-                    }
-
-                    action.Invoke(instance, inputEvent);
-                };
-            }
-
-            return (inputEvent, ct) =>
-            {
-                try
-                {
-                    if (!TryGetExpectedInstanceFromFactory(attributedObjectFactory, out TAttributed instance, out Exception exception))
-                    {
-                        // Exception occurred or null is returned by factory.
-                        return TaskUtility.FromException(exception);
-                    }
-
-                    action.Invoke(instance, inputEvent);
-                    return TaskUtility.CompletedTask;
-                }
-                catch(Exception ex)
-                {
-                    return TaskUtility.FromException(ex);
-                }
-            };
-        }
-
-        #endregion From Delegate
-
+        #endregion From Factory
+       
         #region Functions
 
         private static bool TryGetInstanceFromFactory<T>(Func<T> factory, out T instance, out Exception exception) 

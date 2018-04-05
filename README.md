@@ -1,6 +1,6 @@
 # Important
 
-:exclamation::exclamation: ** This repository is no longer maintained. Please check the seperate repo's: [Query Stack](https://github.com/XerProjects/Xer.Cqrs.QueryStack) [Command Stack](https://github.com/XerProjects/Xer.Cqrs.CommandStack) [EventStack](https://github.com/XerProjects/Xer.Cqrs.EventStack) **  :exclamation::exclamation:
+:exclamation::exclamation: **This repository is no longer maintained. Please check the seperate repo's: [Query Stack](https://github.com/XerProjects/Xer.Cqrs.QueryStack) [Command Stack](https://github.com/XerProjects/Xer.Cqrs.CommandStack) [EventStack](https://github.com/XerProjects/Xer.Cqrs.EventStack)**  :exclamation::exclamation:
 
 
 

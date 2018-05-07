@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Domain.Commands;
@@ -23,7 +24,7 @@ namespace ConsoleApp.UseCases
         {
             string id = RequestInput("Enter product ID:", input =>
             {
-                if(int.TryParse(input, out int i))
+                if (Guid.TryParse(input, out Guid i))
                 {
                     return InputValidationResult.Success;
                 }
@@ -33,7 +34,7 @@ namespace ConsoleApp.UseCases
 
             string productName = RequestInput("Enter product name:");
 
-            await _commandDelegator.SendAsync(new RegisterProductCommand(int.Parse(id), productName));
+            await _commandDelegator.SendAsync(new RegisterProductCommand(Guid.Parse(id), productName));
 
             System.Console.WriteLine($"{productName} registered.");
         }

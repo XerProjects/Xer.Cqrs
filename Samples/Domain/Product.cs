@@ -1,45 +1,53 @@
 using System;
 using System.Collections.Generic;
 using Domain.DomainEvents;
+using Xer.DomainDriven;
 
 namespace Domain
 {
-    public class Product : IDomainEventSource
+    public class Product : AggregateRoot
     {
-        private List<IDomainEvent> _pendingDomainEvents = new List<IDomainEvent>();
-
-        public int Id { get; }
-        public string Name { get; }
+        public string Name { get; private set; }
         public bool IsActive { get; private set; }
 
-        public Product(int id, string name)
+        public Product(Guid id, string name)
+            : base(id)
         {
-            Id = id;
-            Name = name;
+            RegisterDomainEventAppliers();
 
-            _pendingDomainEvents.Add(new ProductRegisteredEvent(Id, Name));
+            ApplyDomainEvent(new ProductRegisteredEvent(id, name));
         }
-
+        
         public void Activate()
         {
-            IsActive = true;
-            _pendingDomainEvents.Add(new ProductActivatedEvent(Id));
+            ApplyDomainEvent(new ProductActivatedEvent(Id));
         }
 
         public void Deactivate()
         {
+            ApplyDomainEvent(new ProductDeactivatedEvent(Id));
+        }
+
+        private void RegisterDomainEventAppliers()
+        {
+            RegisterDomainEventApplier<ProductRegisteredEvent>(OnProductRegisteredEvent);
+            RegisterDomainEventApplier<ProductActivatedEvent>(OnProductActivatedEvent);
+            RegisterDomainEventApplier<ProductDeactivatedEvent>(OnProductDeactivatedEvent);
+        }
+
+        private void OnProductRegisteredEvent(ProductRegisteredEvent domainEvent)
+        {
+            Name = domainEvent.ProductName;
+        }
+
+        private void OnProductActivatedEvent(ProductActivatedEvent domainEvent)
+        {
+            IsActive = true;
+        }
+
+        private void OnProductDeactivatedEvent(ProductDeactivatedEvent domainEvent)
+        {
             IsActive = false;
-            _pendingDomainEvents.Add(new ProductDeactivatedEvent(Id));
-        }
-
-        public IReadOnlyCollection<IDomainEvent> GetUncommittedDomainEvents()
-        {
-            return _pendingDomainEvents.AsReadOnly();
-        }
-
-        public void ClearUncommittedDomainEvents()
-        {
-            _pendingDomainEvents.Clear();
         }
     }
 }

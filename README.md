@@ -38,12 +38,16 @@ This project composes of components for implementing the CQRS pattern (Command H
       * achieved by marking methods with [CommandHandler] or [EventHandler] attributes from the Xer.Cqrs.CommandStack.Extensions.Attributes and Xer.Cqrs.EventStack.Extensions.Attributes packages.
       
         * Xer.Cqrs.CommandStack.Extensions.Attributes
-          * [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.CommandStack.Extensions.Attributes.svg)](https://www.nuget.org/packages/Xer.Cqrs.CommandStack.Extensions.Attributes/)
-          * See https://github.com/XerProjects/Xer.Cqrs.CommandStack.Extensions.Attributes/blob/dev/README.md for documentation.
+          
+          [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.CommandStack.Extensions.Attributes.svg)](https://www.nuget.org/packages/Xer.Cqrs.CommandStack.Extensions.Attributes/)
+          
+          See https://github.com/XerProjects/Xer.Cqrs.CommandStack.Extensions.Attributes/blob/dev/README.md for documentation.
         
         * Xer.Cqrs.EventStack.Extensions.Attributes
-          * [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.EventStack.Extensions.Attributes.svg)](https://www.nuget.org/packages/Xer.Cqrs.EventStack.Extensions.Attributes/)
-          * See https://github.com/XerProjects/Xer.Cqrs.EventStack.Extensions.Attributes/blob/dev/README.md for documentation.
+          
+          [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.EventStack.Extensions.Attributes.svg)](https://www.nuget.org/packages/Xer.Cqrs.EventStack.Extensions.Attributes/)
+         
+          See https://github.com/XerProjects/Xer.Cqrs.EventStack.Extensions.Attributes/blob/dev/README.md for documentation.
 
 ## Installation
 You can simply clone this repository, build the source, reference the dll from the project, and code away!

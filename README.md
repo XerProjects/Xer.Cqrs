@@ -39,7 +39,7 @@ This project composes of components for implementing the CQRS pattern (Command H
 You can simply clone this repository, build the source, reference the dll from the project, and code away!
 
 Xer.Cqrs is available as a Nuget package:
-* https://www.nuget.org/packages/Xer.Cqrs/
+* [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.svg)](https://www.nuget.org/packages/Xer.Cqrs/)
 
 To install Nuget package:
 1. Open command prompt
@@ -57,7 +57,7 @@ To install Nuget package:
 (Samples are in ASP.NET Core)
 
 ### Command Handling
-See https://github.com/XerProjects/Xer.Cqrs.CommandStack/blob/dev/README.md.
+See https://github.com/XerProjects/Xer.Cqrs.CommandStack/blob/dev/README.md for documentation.
 
 ### Event Handling
-See https://github.com/XerProjects/Xer.Cqrs.EventStack/blob/dev/README.md.
+See https://github.com/XerProjects/Xer.Cqrs.EventStack/blob/dev/README.md for documentation.

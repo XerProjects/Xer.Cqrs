@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="SimpleInjector" Version="4.2.2" />
+    <PackageReference Include="Xer.Cqrs.Extensions.SimpleInjector" Version="2.0.1" />
     <PackageReference Include="Xer.Cqrs.QueryStack" Version="1.0.0" />
   </ItemGroup>
 

@@ -50,8 +50,8 @@ namespace AspNetCore
 
             // Write-side repository.
             services.AddSingleton<IAggregateRootRepository<Product>>((serviceProvider) => 
-                new PublishingRepository<Product>(new InMemoryAggregateRootRepository<Product>(), 
-                                                  serviceProvider.GetRequiredService<IDomainEventPublisher>())
+                new PublishingAggregateRootRepository<Product>(new InMemoryAggregateRootRepository<Product>(), 
+                                                               serviceProvider.GetRequiredService<IDomainEventPublisher>())
             );
 
             // Domain event publisher.
@@ -60,17 +60,9 @@ namespace AspNetCore
             // Read-side repository.
             services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
 
-            // Register command handlers here.
-            // You can use assembly scanners to scan for handlers.
-            services.AddTransient<ICommandAsyncHandler<RegisterProductCommand>, RegisterProductCommandHandler>();
-            services.AddTransient<ICommandAsyncHandler<ActivateProductCommand>, ActivateProductCommandHandler>();
-            services.AddTransient<ICommandAsyncHandler<DeactivateProductCommand>, DeactivateProductCommandHandler>();
-
-            // Register event handlers.
-            // You can use assembly scanners to scan for handlers.
-            services.AddTransient<IEventAsyncHandler<ProductRegisteredEvent>, ProductDomainEventsHandler>();
-            services.AddTransient<IEventAsyncHandler<ProductActivatedEvent>, ProductDomainEventsHandler>();
-            services.AddTransient<IEventAsyncHandler<ProductDeactivatedEvent>, ProductDomainEventsHandler>();
+            // Add command and event handlers.
+            services.AddCqrs(typeof(RegisterProductCommandHandler).Assembly,
+                             typeof(ProductDomainEventsHandler).Assembly);
 
             // Register query handlers.
             // You can use assembly scanners to scan for handlers.

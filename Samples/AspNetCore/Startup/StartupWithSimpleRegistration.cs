@@ -47,8 +47,8 @@ namespace AspNetCore
 
             // Write-side repository.
             services.AddSingleton<IAggregateRootRepository<Product>>((serviceProvider) => 
-                new PublishingRepository<Product>(new InMemoryAggregateRootRepository<Product>(), 
-                                                  serviceProvider.GetRequiredService<IDomainEventPublisher>())
+                new PublishingAggregateRootRepository<Product>(new InMemoryAggregateRootRepository<Product>(), 
+                                                               serviceProvider.GetRequiredService<IDomainEventPublisher>())
             );
 
             // Domain event publisher.

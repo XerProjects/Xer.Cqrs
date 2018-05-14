@@ -43,7 +43,8 @@ namespace ConsoleApp
 
             // Product write-side repository.
             container.RegisterSingleton<IAggregateRootRepository<Product>>(() =>
-                new PublishingRepository<Product>(new InMemoryAggregateRootRepository<Product>(), container.GetInstance<IDomainEventPublisher>())
+                new PublishingAggregateRootRepository<Product>(new InMemoryAggregateRootRepository<Product>(), 
+                                                               container.GetInstance<IDomainEventPublisher>())
             );
 
             // Domain event publisher.
@@ -52,28 +53,15 @@ namespace ConsoleApp
             // Product read-side repository.
             container.RegisterSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
 
-            // Register all async command handlers in assembly.
-            container.Register(typeof(ICommandAsyncHandler<>), new[] { typeof(RegisterProductCommandHandler).Assembly });
+            // Register all async command and event handlers in assemblies.
+            container.RegisterCqrs(typeof(RegisterProductCommandHandler).Assembly,
+                                   typeof(ProductDomainEventsHandler).Assembly);
 
             // Register all async query handlers in assembly.
             container.Register(typeof(IQueryAsyncHandler<,>), new[] { typeof(QueryProductByIdHandler).Assembly });
 
-            // Register all async event handlers in assembly.
-            container.RegisterCollection(typeof(IEventAsyncHandler<>), typeof(ProductDomainEventsHandler).Assembly);
-
             // Register container adapters to be used by resolvers.
             container.RegisterSingleton<SimpleInjectorContainerAdapter>(() => new SimpleInjectorContainerAdapter(container));
-
-            // Register command delegator.
-            container.RegisterSingleton<CommandDelegator>(() =>
-                new CommandDelegator(new ContainerCommandAsyncHandlerResolver(container.GetInstance<SimpleInjectorContainerAdapter>()))
-            );
-
-            // Register event delegator.
-            container.RegisterSingleton<EventDelegator>(() =>
-                new EventDelegator(new ContainerEventHandlerResolver(container.GetInstance<SimpleInjectorContainerAdapter>(), 
-                                                                     yieldExecutionOfSyncHandlers: true))
-            );
 
             // Register query dispatcher.
             container.RegisterSingleton<IQueryAsyncDispatcher>(() => 

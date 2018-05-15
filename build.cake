@@ -17,8 +17,7 @@ var configuration = Argument<string>("configuration", "Release");
 
 var solutions = GetFiles("./**/*.sln");
 var projects = GetFiles("./**/*.csproj").Select(x => x.GetDirectory());
-
-GitVersion gitVersion;
+BuildParameters buildParameters;
 
 ///////////////////////////////////////////////////////////////////////////////
 // SETUP / TEARDOWN
@@ -26,26 +25,23 @@ GitVersion gitVersion;
 
 Setup(context =>
 {
-    gitVersion = GitVersion(new GitVersionSettings {
-        UpdateAssemblyInfo = true
-    });
-
-    BuildParameters.Initialize(Context);
+    buildParameters = new BuildParameters(Context);
     
     // Executed BEFORE the first task.
     Information("Xer.Cqrs");
-    Information("Parameters");
-    Information("///////////////////////////////////////////////////////////////////////////////");
-    Information("Branch: {0}", BuildParameters.Instance.BranchName);
-    Information("Version semver: {0}", gitVersion.LegacySemVerPadded);
-    Information("Version assembly: {0}", gitVersion.MajorMinorPatch);
-    Information("Version informational: {0}", gitVersion.InformationalVersion);
-    Information("Master branch: {0}", BuildParameters.Instance.IsMasterBranch);
-    Information("Dev branch: {0}", BuildParameters.Instance.IsDevBranch);
-    Information("Hotfix branch: {0}", BuildParameters.Instance.IsHotFixBranch);
-    Information("Publish to myget: {0}", BuildParameters.Instance.ShouldPublishMyGet);
-    Information("Publish to nuget: {0}", BuildParameters.Instance.ShouldPublishNuGet);
-    Information("///////////////////////////////////////////////////////////////////////////////");
+    Information("===========================================================================================");
+    Information("Git Version");
+    Information("Semver: {0}", buildParameters.GitVersion.LegacySemVerPadded);
+    Information("Major minor patch: {0}", buildParameters.GitVersion.MajorMinorPatch);
+    Information("Assembly: {0}", buildParameters.GitVersion.AssemblySemVer);
+    Information("Informational: {0}", buildParameters.GitVersion.InformationalVersion);
+    if (DirectoryExists(buildParameters.BuildArtifactsDirectory))
+    {
+        // Cleanup build artifacts.
+        Information($"Cleaning up {buildParameters.BuildArtifactsDirectory} directory.");
+        DeleteDirectory(buildParameters.BuildArtifactsDirectory, new DeleteDirectorySettings { Recursive = true });
+    }    
+    Information("===========================================================================================");
 });
 
 Teardown(context =>
@@ -88,11 +84,7 @@ Task("Restore")
 
     var settings = new DotNetCoreRestoreSettings
     {
-        ArgumentCustomization = args => args
-            .Append("/p:Version={0}", gitVersion.LegacySemVerPadded)
-            .Append("/p:AssemblyVersion={0}", gitVersion.MajorMinorPatch)
-            .Append("/p:FileVersion={0}", gitVersion.MajorMinorPatch)
-            .Append("/p:AssemblyInformationalVersion={0}", gitVersion.InformationalVersion)
+        ArgumentCustomization = args => buildParameters.AppendVersionArguments(args)
     };
 
     // Restore all NuGet packages.
@@ -119,11 +111,7 @@ Task("Build")
     var settings = new DotNetCoreBuildSettings
     {
         Configuration = configuration,
-        ArgumentCustomization = args => args
-            .Append("/p:Version={0}", gitVersion.LegacySemVerPadded)
-            .Append("/p:AssemblyVersion={0}", gitVersion.MajorMinorPatch)
-            .Append("/p:FileVersion={0}", gitVersion.MajorMinorPatch)
-            .Append("/p:AssemblyInformationalVersion={0}", gitVersion.InformationalVersion)
+        ArgumentCustomization = args => buildParameters.AppendVersionArguments(args)
     };
 
     // Build all solutions.
@@ -161,10 +149,11 @@ Task("Test")
 });
 
 Task("Pack")
+    .Description("Create NuGet packages.")
     .IsDependentOn("Test")
     .Does(() =>
 {
-    var projects = GetFiles("./src/**/*.csproj");
+    var projects = GetFiles("./Src/**/*.csproj");
     
     if (projects.Count() == 0)
     {
@@ -174,13 +163,10 @@ Task("Pack")
 
     var settings = new DotNetCorePackSettings 
     {
-        NoBuild = true,
+        OutputDirectory = buildParameters.BuildArtifactsDirectory,
         Configuration = configuration,
-        ArgumentCustomization = (args) => args
-            .Append("/p:Version={0}", gitVersion.LegacySemVerPadded)
-            .Append("/p:AssemblyVersion={0}", gitVersion.MajorMinorPatch)
-            .Append("/p:FileVersion={0}", gitVersion.MajorMinorPatch)
-            .Append("/p:AssemblyInformationalVersion={0}", gitVersion.InformationalVersion)
+        NoBuild = true,
+        ArgumentCustomization = args => buildParameters.AppendVersionArguments(args)
     };
 
     foreach (var project in projects)
@@ -189,64 +175,17 @@ Task("Pack")
     }
 });
 
-Task("PublishMyGet")
-    .WithCriteria(() => BuildParameters.Instance.ShouldPublishMyGet)
-    .IsDependentOn("Pack")
-    .Does(() =>
-{
-    var nupkgs = GetFiles("./**/*.nupkg");
-    
-    if (nupkgs.Count() == 0)
-    {
-        Information("No nupkgs found.");
-        return;
-    }
-
-    foreach (var nupkgFile in nupkgs)
-    {
-        Information("Pulishing to myget {0}", nupkgFile);
-
-        NuGetPush(nupkgFile, new NuGetPushSettings 
-        {
-            Source = BuildParameters.Instance.MyGetFeed,
-            ApiKey = BuildParameters.Instance.MyGetApiKey
-        });
-    }
-});
-
-Task("PublishNuGet")
-    .WithCriteria(() => BuildParameters.Instance.ShouldPublishNuGet)
-    .IsDependentOn("Pack")
-    .Does(() =>
-{
-    var nupkgs = GetFiles("./**/*.nupkg");
-
-    if (nupkgs.Count() == 0)
-    {
-        Information("No nupkgs found.");
-        return;
-    }
-
-    foreach (var nupkgFile in nupkgs)
-    {
-        Information("Pulishing to nuget {0}", nupkgFile);
-        NuGetPush(nupkgFile, new NuGetPushSettings 
-        {
-            Source = BuildParameters.Instance.NuGetFeed,
-            ApiKey = BuildParameters.Instance.NuGetApiKey
-        });
-    }
-});
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // TARGETS
 ///////////////////////////////////////////////////////////////////////////////
 
 Task("Default")
     .Description("This is the default task which will be ran if no specific target is passed in.")
-    .IsDependentOn("PublishNuGet")
-    .IsDependentOn("PublishMyGet");
+    .IsDependentOn("Pack")
+    .IsDependentOn("Test")
+    .IsDependentOn("Build")
+    .IsDependentOn("Restore")
+    .IsDependentOn("Clean");
 
 ///////////////////////////////////////////////////////////////////////////////
 // EXECUTION
@@ -255,61 +194,23 @@ Task("Default")
 RunTarget(target);
 
 public class BuildParameters
-{
-    private static BuildParameters _buildParameters;
-
-    public static BuildParameters Instance => _buildParameters;
-    
+{    
     private ICakeContext _context;
+    private GitVersion _gitVersion;
 
-    private BuildParameters(ICakeContext context)
+    public BuildParameters(ICakeContext context)
     {
         _context = context;
+        _gitVersion = context.GitVersion();
     }
 
-    public static void Initialize(ICakeContext context)
-    {
-        if(_buildParameters != null)
-        {
-            return;
-        }
+    public GitVersion GitVersion => _gitVersion;
 
-        _buildParameters = new BuildParameters(context);
-    }
+    public string BuildArtifactsDirectory => "./BuildArtifacts";
 
-    public bool IsAppVeyorBuild => _context.BuildSystem().AppVeyor.IsRunningOnAppVeyor;
-
-    public bool IsLocalBuild => _context.BuildSystem().IsLocalBuild;
-
-    public string BranchName
-    {
-        get
-        {
-            return IsLocalBuild 
-                ? _context.GitBranchCurrent(".").FriendlyName
-                : _context.BuildSystem().AppVeyor.Environment.Repository.Branch;
-        }
-    }
-
-    public string MyGetFeed => _context.EnvironmentVariable("MYGET_SOURCE");
-
-    public string MyGetApiKey => _context.EnvironmentVariable("MYGET_API_KEY");
-
-    public string NuGetFeed => _context.EnvironmentVariable("NUGET_SOURCE");
-
-    public string NuGetApiKey => _context.EnvironmentVariable("NUGET_API_KEY");
-
-    public bool IsMasterBranch => StringComparer.OrdinalIgnoreCase.Equals("master", BranchName);
-
-    public bool IsDevBranch => StringComparer.OrdinalIgnoreCase.Equals("dev", BranchName);
-
-    public bool IsReleaseBranch => BranchName.StartsWith("release", StringComparison.OrdinalIgnoreCase);
-
-    public bool IsHotFixBranch => BranchName.StartsWith("hotfix", StringComparison.OrdinalIgnoreCase);
-
-    public bool ShouldPublishMyGet => !string.IsNullOrWhiteSpace(MyGetApiKey) && !string.IsNullOrWhiteSpace(MyGetFeed);
-
-    public bool ShouldPublishNuGet => !string.IsNullOrWhiteSpace(NuGetApiKey) 
-        && !string.IsNullOrWhiteSpace(NuGetFeed)
-        && (IsMasterBranch || IsHotFixBranch);
+    public ProcessArgumentBuilder AppendVersionArguments(ProcessArgumentBuilder args) => args
+        .Append("/p:Version={0}", GitVersion.LegacySemVerPadded)
+        .Append("/p:AssemblyVersion={0}", GitVersion.MajorMinorPatch)
+        .Append("/p:FileVersion={0}", GitVersion.MajorMinorPatch)
+        .Append("/p:AssemblyInformationalVersion={0}", GitVersion.InformationalVersion);
 }

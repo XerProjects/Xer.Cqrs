@@ -22,7 +22,7 @@ namespace ConsoleApp.UseCases
         {
             string productId = RequestInput("Enter product ID:", input =>
             {
-                if(int.TryParse(input, out int i))
+                if (Guid.TryParse(input, out Guid i))
                 {
                     return InputValidationResult.Success;
                 }
@@ -30,7 +30,7 @@ namespace ConsoleApp.UseCases
                 return InputValidationResult.WithErrors("Invalid product ID.");
             });
 
-            await _commandDelegator.SendAsync(new ActivateProductCommand(int.Parse(productId)));
+            await _commandDelegator.SendAsync(new ActivateProductCommand(Guid.Parse(productId)));
 
             System.Console.WriteLine("Product activated.");
         }

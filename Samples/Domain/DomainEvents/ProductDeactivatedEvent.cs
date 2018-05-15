@@ -1,12 +1,18 @@
+using System;
+using Xer.DomainDriven;
+
 namespace Domain.DomainEvents
 {
     public class ProductDeactivatedEvent : IDomainEvent
     {
-        public int ProductId { get; }
+        public Guid AggregateRootId { get; }
 
-        public ProductDeactivatedEvent(int productId)
+        public DateTime TimeStamp { get; } = DateTime.UtcNow;
+
+
+        public ProductDeactivatedEvent(Guid productId)
         {
-            ProductId = productId;
+            AggregateRootId = productId;
         }
     }
 }

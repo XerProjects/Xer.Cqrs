@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Src\Xer.Cqrs.CommandStack\Xer.Cqrs.CommandStack.csproj" />
-    <ProjectReference Include="..\..\Src\Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj" />
-    <ProjectReference Include="..\..\Src\Xer.Cqrs.EventStack\Xer.Cqrs.EventStack.csproj" />
     <ProjectReference Include="..\Domain\Domain.csproj" />
     <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
     <ProjectReference Include="..\ReadSide\ReadSide.csproj" />
+    <ProjectReference Include="..\..\Src\Xer.Cqrs\Xer.Cqrs.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SimpleInjector" Version="4.0.12" />
+    <PackageReference Include="SimpleInjector" Version="4.2.2" />
+    <PackageReference Include="Xer.Cqrs.Extensions.SimpleInjector" Version="2.0.1" />
+    <PackageReference Include="Xer.Cqrs.QueryStack" Version="1.0.0" />
   </ItemGroup>
 
   <PropertyGroup>

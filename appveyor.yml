@@ -1,0 +1,30 @@
+version: '{build}'
+pull_requests:
+  do_not_increment_build_number: true
+image: Visual Studio 2017
+nuget:
+  disable_publish_on_pr: true
+build_script:
+- ps: .\build.ps1
+test: off
+artifacts:
+- path: .\BuildArtifacts\*.nupkg
+  name: NuGet
+skip_commits:
+  message: /^\[nobuild\](.*)?/  # Skip build if commit message starts with [nobuild]
+deploy:
+- provider: NuGet
+  server: https://www.myget.org/F/xerprojects-ci/api/v2/package
+  api_key:
+    secure: u04sQwcw2Dg6ymwifBf1PoYRwo6HrQOsEagB7IQYvwRPt+10tyFcrbuKq7Az34Oz
+  skip_symbols: true
+  on:
+    branch: /(^dev$|^master$|^release[-/](.*)|^hotfix[-/](.*))/ # Branches: dev, master, release-*, release/*, hotfix-*, hotfix/*
+- provider: NuGet
+  name: production
+  skip_symbols: true
+  api_key:
+    secure: 1fEVy/0Jgny/LKUOQC75fofhRjEfpAaVV0Y8u3nH+oKdmrPFFFEF1swA+iS0W0rV
+  on:
+    branch: master
+    appveyor_repo_tag: true # Only deploy to NuGet if a tag is found.

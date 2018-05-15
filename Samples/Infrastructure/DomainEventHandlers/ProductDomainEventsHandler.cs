@@ -36,7 +36,7 @@ namespace Infrastructure.DomainEventHandlers
             // Add product to read-side repository if event is received.
             return _productReadSideRepository.AddProductAsync(new ProductReadModel()
             {
-                ProductId = productRegisteredEvent.ProductId,
+                ProductId = productRegisteredEvent.AggregateRootId,
                 ProductName = productRegisteredEvent.ProductName
             });
         }
@@ -49,7 +49,7 @@ namespace Infrastructure.DomainEventHandlers
         /// <returns>Asynchronous task which can be awaited for completion.</returns>
         public async Task HandleAsync(ProductActivatedEvent productActivatedEvent, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var product = await _productReadSideRepository.GetProductByIdAsync(productActivatedEvent.ProductId, cancellationToken);
+            var product = await _productReadSideRepository.GetProductByIdAsync(productActivatedEvent.AggregateRootId, cancellationToken);
 
             // Set read-side product to active.
             product.IsActive = true;
@@ -65,7 +65,7 @@ namespace Infrastructure.DomainEventHandlers
         /// <returns>Asynchronous task which can be awaited for completion.</returns>
         public async Task HandleAsync(ProductDeactivatedEvent productDeactivatedEvent, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var product = await _productReadSideRepository.GetProductByIdAsync(productDeactivatedEvent.ProductId, cancellationToken);
+            var product = await _productReadSideRepository.GetProductByIdAsync(productDeactivatedEvent.AggregateRootId, cancellationToken);
 
             // Set read-side product to inactive.
             product.IsActive = false;

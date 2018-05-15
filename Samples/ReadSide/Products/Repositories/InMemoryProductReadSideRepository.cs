@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -20,7 +21,7 @@ namespace ReadSide.Products.Repositories
             return Task.CompletedTask;
         }
 
-        public Task DeleteProductByIdAsync(int productId, CancellationToken cancellationToken = default(CancellationToken))
+        public Task DeleteProductByIdAsync(Guid productId, CancellationToken cancellationToken = default(CancellationToken))
         {
             _products.RemoveAll(p => p.ProductId == productId);
             return Task.CompletedTask;
@@ -31,7 +32,7 @@ namespace ReadSide.Products.Repositories
             return Task.FromResult((IReadOnlyCollection<ProductReadModel>)_products.ToList());
         }
 
-        public Task<ProductReadModel> GetProductByIdAsync(int productId, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ProductReadModel> GetProductByIdAsync(Guid productId, CancellationToken cancellationToken = default(CancellationToken))
         {
             var product = _products.FirstOrDefault(p => p.ProductId == productId);
             return Task.FromResult(product);

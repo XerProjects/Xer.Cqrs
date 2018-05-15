@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Src\Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj" />
+    <PackageReference Include="Xer.Cqrs.QueryStack" Version="1.0.0" />
   </ItemGroup>
 
   <PropertyGroup>

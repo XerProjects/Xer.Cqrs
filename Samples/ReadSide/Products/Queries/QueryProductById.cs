@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using ReadSide.Products.Repositories;
@@ -7,9 +8,9 @@ namespace ReadSide.Products.Queries
 {
     public class QueryProductById : IQuery<ProductReadModel>
     {
-        public int ProductId { get; }
+        public Guid ProductId { get; }
         
-        public QueryProductById(int productId) 
+        public QueryProductById(Guid productId) 
         {
             ProductId = productId;
         }

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Domain;
 using Domain.Commands;
 using Domain.DomainEvents;
-using Domain.Repositories;
 using Infrastructure.DomainEventHandlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -13,12 +13,15 @@ using ReadSide.Products;
 using ReadSide.Products.Queries;
 using ReadSide.Products.Repositories;
 using Swashbuckle.AspNetCore.Swagger;
+using Xer.Cqrs;
 using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.EventStack;
 using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Dispatchers;
 using Xer.Cqrs.QueryStack.Resolvers;
 using Xer.Delegator.Registration;
+using Xer.DomainDriven;
+using Xer.DomainDriven.Repositories;
 
 namespace AspNetCore
 {
@@ -45,9 +48,13 @@ namespace AspNetCore
             });
 
             // Write-side repository.
-            services.AddSingleton<IProductRepository>((serviceProvider) => 
-                new PublishingProductRepository(new InMemoryProductRepository(), serviceProvider.GetRequiredService<EventDelegator>())
+            services.AddSingleton<IAggregateRootRepository<Product>>((serviceProvider) => 
+                new PublishingAggregateRootRepository<Product>(new InMemoryAggregateRootRepository<Product>(), 
+                                                               serviceProvider.GetRequiredService<IDomainEventPublisher>())
             );
+
+            // Domain event publisher.
+            services.AddSingleton<IDomainEventPublisher, DomainEventPublisher>();
 
             // Read-side repository.
             services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
@@ -57,9 +64,9 @@ namespace AspNetCore
             {
                 // Register command handlers through simple registration.
                 var commandHandlerRegistration = new SingleMessageHandlerRegistration();
-                commandHandlerRegistration.RegisterCommandHandler(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-                commandHandlerRegistration.RegisterCommandHandler(() => new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
-                commandHandlerRegistration.RegisterCommandHandler(() => new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IProductRepository>()));
+                commandHandlerRegistration.RegisterCommandHandler(() => new RegisterProductCommandHandler(serviceProvider.GetRequiredService<IAggregateRootRepository<Product>>()));
+                commandHandlerRegistration.RegisterCommandHandler(() => new ActivateProductCommandHandler(serviceProvider.GetRequiredService<IAggregateRootRepository<Product>>()));
+                commandHandlerRegistration.RegisterCommandHandler(() => new DeactivateProductCommandHandler(serviceProvider.GetRequiredService<IAggregateRootRepository<Product>>()));
 
                 return new CommandDelegator(commandHandlerRegistration.BuildMessageHandlerResolver());
             });

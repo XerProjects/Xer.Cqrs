@@ -2,17 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Domain;
 using Domain.Commands;
-using Domain.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using ReadSide.Products;
 using ReadSide.Products.Queries;
 using Xer.Cqrs.CommandStack;
-using Xer.Cqrs.EventStack;
 using Xer.Cqrs.QueryStack;
-using Xer.Delegator;
 
 namespace AspNetCore.Controllers
 {
@@ -54,7 +50,7 @@ namespace AspNetCore.Controllers
         /// </summary>
         /// <param name="productId">ID of product to retrieve.</param>
         [HttpGet("{productId}")]
-        public async Task<IActionResult> GetProduct(int productId)
+        public async Task<IActionResult> GetProduct(Guid productId)
         {
             ProductReadModel product = await _queryDispatcher.DispatchAsync<QueryProductById, ProductReadModel>(new QueryProductById(productId));
             if (product != null)
@@ -92,7 +88,7 @@ namespace AspNetCore.Controllers
         /// </param>
         /// <param name="payload">JSON payload, if available.</param>
         [HttpPut("{productId}")]
-        public Task<IActionResult> ModifyProduct(int productId, [FromHeader]string operation, [FromBody]JObject payload)
+        public Task<IActionResult> ModifyProduct(Guid productId, [FromHeader]string operation, [FromBody]JObject payload)
         {
             switch(operation)
             {
@@ -105,13 +101,13 @@ namespace AspNetCore.Controllers
             }
         }
 
-        private async Task<IActionResult> InternalActivateProduct(int productId)
+        private async Task<IActionResult> InternalActivateProduct(Guid productId)
         {
             await _commandDelegator.SendAsync(new ActivateProductCommand(productId));
             return Ok();
         }
 
-        private async Task<IActionResult> InternalDeactivateProduct(int productId)
+        private async Task<IActionResult> InternalDeactivateProduct(Guid productId)
         {
             await _commandDelegator.SendAsync(new DeactivateProductCommand(productId));
             return Ok();
@@ -126,7 +122,7 @@ namespace AspNetCore.Controllers
             /// Product ID.
             /// </summary>
             /// <returns></returns>
-            public int ProductId { get; set; }
+            public Guid ProductId { get; set; }
 
             /// <summary>
             /// Product name.

@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Src\Xer.Cqrs.CommandStack\Xer.Cqrs.CommandStack.csproj" />
-    <ProjectReference Include="..\..\Src\Xer.Cqrs.QueryStack\Xer.Cqrs.QueryStack.csproj" />
-    <ProjectReference Include="..\..\Src\Xer.Cqrs.EventStack\Xer.Cqrs.EventStack.csproj" />
+    <ProjectReference Include="..\..\Src\Xer.Cqrs\Xer.Cqrs.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

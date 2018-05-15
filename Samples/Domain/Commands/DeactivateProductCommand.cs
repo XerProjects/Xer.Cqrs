@@ -2,17 +2,17 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Domain.Exceptions;
-using Domain.Repositories;
 using Xer.Cqrs.CommandStack;
+using Xer.DomainDriven.Repositories;
 // using Xer.Cqrs.CommandStack.Attributes;
 
 namespace Domain.Commands
 {
     public class DeactivateProductCommand
     {
-        public int ProductId { get; }
+        public Guid ProductId { get; }
 
-        public DeactivateProductCommand(int productId) 
+        public DeactivateProductCommand(Guid productId) 
         {
             ProductId = productId; 
         }        
@@ -24,9 +24,9 @@ namespace Domain.Commands
     /// </summary>
     public class DeactivateProductCommandHandler : ICommandAsyncHandler<DeactivateProductCommand>
     {
-        private readonly IProductRepository _productRepository;
+        private readonly IAggregateRootRepository<Product> _productRepository;
 
-        public DeactivateProductCommandHandler(IProductRepository productRepository)
+        public DeactivateProductCommandHandler(IAggregateRootRepository<Product> productRepository)
         {
             _productRepository = productRepository;
         }
@@ -34,8 +34,8 @@ namespace Domain.Commands
         // [CommandHandler] // To allow this method to be registered through attribute registration.
         public async Task HandleAsync(DeactivateProductCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
-            Product product = await _productRepository.GetProductByIdAsync(command.ProductId);
-            if(product == null)
+            Product product = await _productRepository.GetByIdAsync(command.ProductId);
+            if (product == null)
             {
                 throw new ProductNotFoundException("Product not found.");
             }

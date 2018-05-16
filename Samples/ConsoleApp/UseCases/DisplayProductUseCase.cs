@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Domain;
@@ -22,7 +23,7 @@ namespace ConsoleApp.UseCases
         {
             string productId = RequestInput("Enter ID of product to display:", input =>
             {
-                if(int.TryParse(input, out int i))
+                if (Guid.TryParse(input, out Guid i))
                 {
                     return InputValidationResult.Success;
                 }
@@ -30,7 +31,7 @@ namespace ConsoleApp.UseCases
                 return InputValidationResult.WithErrors("Invalid product ID.");
             });
 
-            ProductReadModel product = await _queryDispatcher.DispatchAsync<QueryProductById, ProductReadModel>(new QueryProductById(int.Parse(productId)));
+            ProductReadModel product = await _queryDispatcher.DispatchAsync<QueryProductById, ProductReadModel>(new QueryProductById(Guid.Parse(productId)));
             if (product != null)
             {
                 System.Console.WriteLine($"Product ID: {product.ProductId}, Product Name: {product.ProductName}, IsActive: {product.IsActive}");

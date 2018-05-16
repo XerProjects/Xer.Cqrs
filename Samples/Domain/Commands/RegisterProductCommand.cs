@@ -1,19 +1,18 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Domain.Exceptions;
-using Domain.Repositories;
 using Xer.Cqrs.CommandStack;
+using Xer.DomainDriven.Repositories;
 // using Xer.Cqrs.CommandStack.Attributes;
 
 namespace Domain.Commands
 {
     public class RegisterProductCommand
     {
-        public int ProductId { get; }
+        public Guid ProductId { get; }
         public string ProductName { get; }
         
-        public RegisterProductCommand(int productId, string productName) 
+        public RegisterProductCommand(Guid productId, string productName) 
         {
             ProductId = productId;
             ProductName = productName;
@@ -26,9 +25,9 @@ namespace Domain.Commands
     /// </summary>
     public class RegisterProductCommandHandler : ICommandAsyncHandler<RegisterProductCommand>
     {
-        private readonly IProductRepository _productRepository;
+        private readonly IAggregateRootRepository<Product> _productRepository;
 
-        public RegisterProductCommandHandler(IProductRepository productRepository)
+        public RegisterProductCommandHandler(IAggregateRootRepository<Product> productRepository)
         {
             _productRepository = productRepository;
         }

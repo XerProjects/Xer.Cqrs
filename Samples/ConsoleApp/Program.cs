@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using ConsoleApp.UseCases;
 using Domain.Commands;
-using Domain.Repositories;
 using Infrastructure.DomainEventHandlers;
 using ReadSide.Products.Repositories;
 using ReadSide.Products.Queries;
@@ -15,8 +14,10 @@ using Xer.Cqrs.EventStack.Resolvers;
 using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Dispatchers;
 using Xer.Cqrs.QueryStack.Resolvers;
-using Xer.Delegator;
-using Xer.Delegator.Resolvers;
+using Xer.DomainDriven.Repositories;
+using Domain;
+using Xer.DomainDriven;
+using Xer.Cqrs;
 
 namespace ConsoleApp
 {
@@ -41,35 +42,26 @@ namespace ConsoleApp
             container.RegisterCollection(typeof(IUseCase), typeof(IUseCase).Assembly);
 
             // Product write-side repository.
-            container.RegisterSingleton<IProductRepository>(() =>
-                new PublishingProductRepository(new InMemoryProductRepository(), container.GetInstance<EventDelegator>())
+            container.RegisterSingleton<IAggregateRootRepository<Product>>(() =>
+                new PublishingAggregateRootRepository<Product>(new InMemoryAggregateRootRepository<Product>(), 
+                                                               container.GetInstance<IDomainEventPublisher>())
             );
+
+            // Domain event publisher.
+            container.RegisterSingleton<IDomainEventPublisher, DomainEventPublisher>();
 
             // Product read-side repository.
             container.RegisterSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
 
-            // Register all async command handlers in assembly.
-            container.Register(typeof(ICommandAsyncHandler<>), new[] { typeof(RegisterProductCommandHandler).Assembly });
+            // Register all async command and event handlers in assemblies.
+            container.RegisterCqrs(typeof(RegisterProductCommandHandler).Assembly,
+                                   typeof(ProductDomainEventsHandler).Assembly);
 
             // Register all async query handlers in assembly.
             container.Register(typeof(IQueryAsyncHandler<,>), new[] { typeof(QueryProductByIdHandler).Assembly });
 
-            // Register all async event handlers in assembly.
-            container.RegisterCollection(typeof(IEventAsyncHandler<>), typeof(ProductDomainEventsHandler).Assembly);
-
             // Register container adapters to be used by resolvers.
             container.RegisterSingleton<SimpleInjectorContainerAdapter>(() => new SimpleInjectorContainerAdapter(container));
-
-            // Register command delegator.
-            container.RegisterSingleton<CommandDelegator>(() =>
-                new CommandDelegator(new ContainerCommandAsyncHandlerResolver(container.GetInstance<SimpleInjectorContainerAdapter>()))
-            );
-
-            // Register event delegator.
-            container.RegisterSingleton<EventDelegator>(() =>
-                new EventDelegator(new ContainerEventHandlerResolver(container.GetInstance<SimpleInjectorContainerAdapter>(), 
-                                                                     yieldExecutionOfSyncHandlers: true))
-            );
 
             // Register query dispatcher.
             container.RegisterSingleton<IQueryAsyncDispatcher>(() => 

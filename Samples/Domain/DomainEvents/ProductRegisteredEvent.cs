@@ -1,15 +1,20 @@
+using System;
 using Xer.Cqrs.EventStack;
+using Xer.DomainDriven;
 
 namespace Domain.DomainEvents
 {
     public class ProductRegisteredEvent : IDomainEvent
     {
-        public int ProductId { get; }
         public string ProductName { get; }
 
-        public ProductRegisteredEvent(int productId, string productName)
+        public Guid AggregateRootId { get; }
+
+        public DateTime TimeStamp { get; } = DateTime.UtcNow;
+
+        public ProductRegisteredEvent(Guid productId, string productName)
         {
-            ProductId = productId;
+            AggregateRootId = productId;
             ProductName = productName;
         }
     }

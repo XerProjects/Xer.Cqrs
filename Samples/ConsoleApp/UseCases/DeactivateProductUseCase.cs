@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Domain.Commands;
@@ -21,7 +22,7 @@ namespace ConsoleApp.UseCases
         {
             string productId = RequestInput("Enter product ID:", input =>
             {
-                if(int.TryParse(input, out int i))
+                if (Guid.TryParse(input, out Guid i))
                 {
                     return InputValidationResult.Success;
                 }
@@ -29,7 +30,7 @@ namespace ConsoleApp.UseCases
                 return InputValidationResult.WithErrors("Invalid product ID.");
             });
             
-            await _commandDelegator.SendAsync(new DeactivateProductCommand(int.Parse(productId)));
+            await _commandDelegator.SendAsync(new DeactivateProductCommand(Guid.Parse(productId)));
 
             System.Console.WriteLine("Product deactivated.");
         }

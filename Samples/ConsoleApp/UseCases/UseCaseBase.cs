@@ -13,15 +13,15 @@ namespace ConsoleApp.UseCases
             System.Console.WriteLine(message);
             string input = System.Console.ReadLine();
 
-            if(inputValidator != null)
+            if (inputValidator != null)
             {
-                while(true)
+                while (true)
                 {
                     InputValidationResult result = inputValidator.Invoke(input);
-                    if(!result.IsSuccessful)
+                    if (!result.IsSuccessful)
                     {
                         System.Console.WriteLine("Input error:");
-                        foreach(string error in result.ErrorMessages)
+                        foreach (string error in result.ErrorMessages)
                         {
                             System.Console.WriteLine($"- {error}");
                         }

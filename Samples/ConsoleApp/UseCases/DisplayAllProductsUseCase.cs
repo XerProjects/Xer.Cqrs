@@ -26,7 +26,7 @@ namespace ConsoleApp.UseCases
             IReadOnlyCollection<ProductReadModel> products = 
                 await _queryDispatcher.DispatchAsync<QueryAllProducts, IReadOnlyCollection<ProductReadModel>>(new QueryAllProducts(), cancellationToken);
             
-            if(products.Count > 0)
+            if (products.Count > 0)
             {
                 foreach(ProductReadModel product in products)
                     Console.WriteLine($"Product ID: {product.ProductId}, Product Name: {product.ProductName}, IsActive: {product.IsActive}");

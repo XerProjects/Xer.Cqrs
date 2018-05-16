@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Domain;
 using Domain.Commands;
 using Domain.DomainEvents;
-using Domain.Repositories;
 using Infrastructure.DomainEventHandlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -13,6 +13,7 @@ using ReadSide.Products;
 using ReadSide.Products.Queries;
 using ReadSide.Products.Repositories;
 using Swashbuckle.AspNetCore.Swagger;
+using Xer.Cqrs;
 using Xer.Cqrs.CommandStack;
 using Xer.Cqrs.CommandStack.Resolvers;
 using Xer.Cqrs.EventStack;
@@ -20,6 +21,8 @@ using Xer.Cqrs.EventStack.Resolvers;
 using Xer.Cqrs.QueryStack;
 using Xer.Cqrs.QueryStack.Dispatchers;
 using Xer.Cqrs.QueryStack.Resolvers;
+using Xer.DomainDriven;
+using Xer.DomainDriven.Repositories;
 
 namespace AspNetCore
 {
@@ -46,24 +49,20 @@ namespace AspNetCore
             });
 
             // Write-side repository.
-            services.AddSingleton<IProductRepository>((serviceProvider) => 
-                new PublishingProductRepository(new InMemoryProductRepository(), serviceProvider.GetRequiredService<EventDelegator>())
+            services.AddSingleton<IAggregateRootRepository<Product>>((serviceProvider) => 
+                new PublishingAggregateRootRepository<Product>(new InMemoryAggregateRootRepository<Product>(), 
+                                                               serviceProvider.GetRequiredService<IDomainEventPublisher>())
             );
+
+            // Domain event publisher.
+            services.AddSingleton<IDomainEventPublisher, DomainEventPublisher>();
 
             // Read-side repository.
             services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
 
-            // Register command handlers here.
-            // You can use assembly scanners to scan for handlers.
-            services.AddTransient<ICommandAsyncHandler<RegisterProductCommand>, RegisterProductCommandHandler>();
-            services.AddTransient<ICommandAsyncHandler<ActivateProductCommand>, ActivateProductCommandHandler>();
-            services.AddTransient<ICommandAsyncHandler<DeactivateProductCommand>, DeactivateProductCommandHandler>();
-
-            // Register event handlers.
-            // You can use assembly scanners to scan for handlers.
-            services.AddTransient<IEventAsyncHandler<ProductRegisteredEvent>, ProductDomainEventsHandler>();
-            services.AddTransient<IEventAsyncHandler<ProductActivatedEvent>, ProductDomainEventsHandler>();
-            services.AddTransient<IEventAsyncHandler<ProductDeactivatedEvent>, ProductDomainEventsHandler>();
+            // Add command and event handlers.
+            services.AddCqrs(typeof(RegisterProductCommandHandler).Assembly,
+                             typeof(ProductDomainEventsHandler).Assembly);
 
             // Register query handlers.
             // You can use assembly scanners to scan for handlers.

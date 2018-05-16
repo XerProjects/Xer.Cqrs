@@ -3,7 +3,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Domain\Domain.csproj" />
     <ProjectReference Include="..\ReadSide\ReadSide.csproj" />
-    <ProjectReference Include="..\..\Src\Xer.Cqrs.EventStack\Xer.Cqrs.EventStack.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

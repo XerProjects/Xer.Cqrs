@@ -1,8 +1,9 @@
 using System;
+using Xer.DomainDriven.Exceptions;
 
 namespace Domain.Exceptions
 {
-    public class ProductNotFoundException : Exception
+    public class ProductNotFoundException : AggregateRootNotFoundException
     {
         public ProductNotFoundException(string message) : base(message)
         {

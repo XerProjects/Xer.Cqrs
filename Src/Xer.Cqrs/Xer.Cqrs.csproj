@@ -2,6 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard1.0</TargetFramework>
+    <Authors>jeyjeyemem;mvput;xerprojects-contributors;</Authors>
+    <Description>A very simple library for building applications based on the DDD/CQRS patterns. This is a convenience package that combines the Xer.DomainDriven, Xer.Cqrs.CommandStack, and Xer.Cqrs.EvenStack packages.</Description>
+    <Copyright>Copyright (c) XerProjects contributors</Copyright>
+    <PackageLicenseUrl>https://github.com/XerProjects/Xer.Cqrs/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/XerProjects/Xer.Cqrs</PackageProjectUrl>
+    <PackageTags>cqrs;command;command-handler;event-handler;domain-driven-design;domain-events;aggregate-roots;entities;value-objects;</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

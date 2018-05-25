@@ -33,7 +33,19 @@ This project composes of components for implementing the CQRS pattern (Command H
 * Multiple ways of registering command/event handlers:
     * Simple handler registration (no IoC container).
     * IoC container registration
-      * achieved by creating implementations of IContainerAdapter or using pre-made extensions pakckages for supported containers. 
+      * achieved by creating implementations of IContainerAdapter or using pre-made extensions pakckages for supported containers.
+        * Xer.Cqrs.Extensions.Microsoft.DependencyInjection
+          
+          [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.Extensions.Microsoft.DependencyInjection.svg)](https://www.nuget.org/packages/Xer.Cqrs.Extensions.Microsoft.DependencyInjection//)
+          
+        * Xer.Cqrs.Extensions.SimpleInjector
+          
+          [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.Extensions.SimpleInjector.svg)](https://www.nuget.org/packages/Xer.Cqrs.Extensions.SimpleInjector/)
+                    
+        * Xer.Cqrs.Extensions.Autofac
+          
+          [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.Extensions.Autofac.svg)](https://www.nuget.org/packages/Xer.Cqrs.Extensions.Autofac/)
+                    
     * Attribute registration
       * achieved by marking methods with [CommandHandler] or [EventHandler] attributes from the Xer.Cqrs.CommandStack.Extensions.Attributes and Xer.Cqrs.EventStack.Extensions.Attributes packages.
       

@@ -1,6 +1,6 @@
 # What is Xer.Cqrs?
 
-Xer.Cqrs is a convenience package that contains all packages needed to build a CQRS write side with DDD concepts. It groups together other smaller XerProjects libraries:
+Xer.Cqrs is a convenience package that contains all packages needed to build a CQRS write side with DDD concepts. It groups together other lightweight XerProjects libraries:
 * [Domain Driven](https://github.com/XerProjects/Xer.DomainDriven) - contains Domain Driven Design (DDD) components/concepts.
 * [Command Stack](https://github.com/XerProjects/Xer.Cqrs.CommandStack) - contains components for handling commands.
 * [Event Stack](https://github.com/XerProjects/Xer.Cqrs.EventStack) - contains components for handling events.
@@ -33,18 +33,24 @@ This project composes of components for implementing the CQRS pattern (Command H
 * Multiple ways of registering command/event handlers:
     * Simple handler registration (no IoC container).
     * IoC container registration
-      * achieved by creating implementations of IContainerAdapter or using pre-made extensions pakckages for supported containers.
-        * Xer.Cqrs.Extensions.Microsoft.DependencyInjection
+      * achieved by creating implementations of IContainerAdapter or using pre-made extensions pakcages for supported containers.
+        * Microsoft.DependencyInjection
           
-          [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.Extensions.Microsoft.DependencyInjection.svg)](https://www.nuget.org/packages/Xer.Cqrs.Extensions.Microsoft.DependencyInjection//)
+          [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.Extensions.Microsoft.DependencyInjection.svg)](https://www.nuget.org/packages/Xer.Cqrs.Extensions.Microsoft.DependencyInjection/)
           
-        * Xer.Cqrs.Extensions.SimpleInjector
+          See https://github.com/XerProjects/Xer.Cqrs.Extensions.Microsoft.DependencyInjection for source.
+          
+        * SimpleInjector
           
           [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.Extensions.SimpleInjector.svg)](https://www.nuget.org/packages/Xer.Cqrs.Extensions.SimpleInjector/)
+          
+          See https://github.com/XerProjects/Xer.Cqrs.Extensions.SimpleInjector for source.
                     
-        * Xer.Cqrs.Extensions.Autofac
+        * Autofac
           
           [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.Extensions.Autofac.svg)](https://www.nuget.org/packages/Xer.Cqrs.Extensions.Autofac/)
+          
+          See https://github.com/XerProjects/Xer.Cqrs.Extensions.Autofac for source.
                     
     * Attribute registration
       * achieved by marking methods with [CommandHandler] or [EventHandler] attributes from the Xer.Cqrs.CommandStack.Extensions.Attributes and Xer.Cqrs.EventStack.Extensions.Attributes packages.
@@ -53,13 +59,13 @@ This project composes of components for implementing the CQRS pattern (Command H
           
           [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.CommandStack.Extensions.Attributes.svg)](https://www.nuget.org/packages/Xer.Cqrs.CommandStack.Extensions.Attributes/)
           
-          See https://github.com/XerProjects/Xer.Cqrs.CommandStack.Extensions.Attributes/blob/dev/README.md for documentation.
+          See https://github.com/XerProjects/Xer.Cqrs.CommandStack.Extensions.Attributes/ for source.
         
         * Xer.Cqrs.EventStack.Extensions.Attributes
           
           [![NuGet](https://img.shields.io/nuget/v/Xer.Cqrs.EventStack.Extensions.Attributes.svg)](https://www.nuget.org/packages/Xer.Cqrs.EventStack.Extensions.Attributes/)
          
-          See https://github.com/XerProjects/Xer.Cqrs.EventStack.Extensions.Attributes/blob/dev/README.md for documentation.
+          See https://github.com/XerProjects/Xer.Cqrs.EventStack.Extensions.Attributes/ for source.
 
 ## Installation
 You can simply clone this repository, build the source, reference the dll from the project, and code away!

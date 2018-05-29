@@ -48,18 +48,6 @@ namespace AspNetCore
                 c.IncludeXmlComments(AspNetCoreAppXmlDocPath);
             });
 
-            // Write-side repository.
-            services.AddSingleton<IAggregateRootRepository<Product>>((serviceProvider) => 
-                new PublishingAggregateRootRepository<Product>(new InMemoryAggregateRootRepository<Product>(), 
-                                                               serviceProvider.GetRequiredService<IDomainEventPublisher>())
-            );
-
-            // Domain event publisher.
-            services.AddSingleton<IDomainEventPublisher, DomainEventPublisher>();
-
-            // Read-side repository.
-            services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
-
             // Add command and event handlers.
             services.AddCqrs(typeof(RegisterProductCommandHandler).Assembly,
                              typeof(ProductDomainEventsHandler).Assembly);
@@ -69,25 +57,22 @@ namespace AspNetCore
             services.AddTransient<IQueryAsyncHandler<QueryAllProducts, IReadOnlyCollection<ProductReadModel>>, QueryAllProductsHandler>();
             services.AddTransient<IQueryAsyncHandler<QueryProductById, ProductReadModel>, QueryProductByIdHandler>();
 
-            // Register service provider adapter.
-            services.AddSingleton<AspNetCoreServiceProviderAdapter>();
-
-            // Register command delegator.
-            services.AddSingleton<CommandDelegator>(serviceProvider => 
-                // This resolver only resolves async handlers. For sync handlers, ContainerCommandHandlerResolver should be used.
-                new CommandDelegator(new ContainerCommandAsyncHandlerResolver(serviceProvider.GetRequiredService<AspNetCoreServiceProviderAdapter>()))
-            );
-
-            // Register event delegator.
-            services.AddSingleton<EventDelegator>(serviceProvider => 
-                new EventDelegator(new ContainerEventHandlerResolver(serviceProvider.GetRequiredService<AspNetCoreServiceProviderAdapter>()))
-            );
-
             // Register query dispatcher.
             services.AddSingleton<IQueryAsyncDispatcher>((serviceProvider) =>
                 // This resolver only resolves async handlers. For sync handlers, ContainerQueryHandlerResolver should be used.
                 new QueryDispatcher(new ContainerQueryAsyncHandlerResolver(serviceProvider.GetRequiredService<AspNetCoreServiceProviderAdapter>()))
             );
+
+            // Write-side repository.
+            services.AddSingleton<IAggregateRootRepository<Product>>((serviceProvider) => 
+                new PublishingAggregateRootRepository<Product>(new InMemoryAggregateRootRepository<Product>(), 
+                                                               serviceProvider.GetRequiredService<IDomainEventPublisher>())
+            );
+
+            // Domain event publisher.
+            services.AddSingleton<IDomainEventPublisher, DomainEventPublisher>();
+            // Read-side repository.
+            services.AddSingleton<IProductReadSideRepository, InMemoryProductReadSideRepository>();
 
             services.AddMvc();
         }
